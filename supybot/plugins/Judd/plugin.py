@@ -106,13 +106,13 @@ class Judd(callbacks.Plugin):
 
             pkgs.sort( lambda a,b: debian_support.version_compare( a[1], b[1] ) )
 
-            reply = "%s:" % package
+            reply = "%s --" % package
             for row in pkgs:
 		atleaseone=True
                 if( row[2] == 'main' ):
-                    reply += " %s (%s)" % (row[1], row[0])
+                    reply += " %s: %s" % (row[0], row[1])
                 else:
-                    reply += " %s (%s/%s)" % (row[1], row[0], row[2])
+                    reply += " %s/%s: %s" % (row[0], row[2], row[1])
 
         else:
             package = package.replace( "*", "%" )
@@ -142,10 +142,10 @@ class Judd(callbacks.Plugin):
                     if( row[2] == 'main' ):
                         reply += " %s %s" % (row[2], row[1] )
                     else:
-                        reply += " %s %s(%s)" % (row[2], row[1], row[3] )
+                        reply += " %s: %s %s" % (row[0], row[2], row[1] )
                 else:
                     if( row[2] == 'main' ):
-                        reply += " %s %s (%s)" % (row[2], row[1], row[0])
+                        reply += " %s: %s %s" % (row[0], row[2], row[1])
 #                    else:
 #                        reply += " %s %s (%s/%s)" % (row[2], row[1], row[0], row[3])
 
