@@ -1,0 +1,100 @@
+#!/bin/sh
+#
+# Download updated PCI-Ids and kernel .debs 
+
+set -u
+set -e
+# set -x
+
+PCIIDURL="http://pciids.sourceforge.net/v2.2/pci.ids"
+PCIIDFILE="pci.ids"
+
+KERNELRE='linux-image-2.6.[0-9]+-[0-9]-686$'
+
+TARGET=${1-.}
+
+if [ ! -d "$TARGET" ]
+then
+  echo "E: Target directory doesn't exist."
+  echo "E: Please create '$TARGET'"
+  exit 1
+fi
+
+if [ ! -f kernels.list ]
+then
+  cat <<EOF
+E: couldn't find kernels.list config file
+Format of file should be:
+    distname,    deb url release sections,     packageregexp"
+where:
+  distname      is 'sid' 'lenny' etc
+  deb url ...   is a valid line for an apt source.list
+  packageregexp is an aptitude search pattern that will match the desired
+                kernel. Default is '$KERNELRE'
+EOF
+  exit 1
+fi
+
+TEMPDIR=$(mktemp -t -d piccy_update.XXXXXX)
+
+trap "/bin/rm -rf $TEMPDIR ; exit 1" EXIT INT QUIT
+
+# Fetch the PCI-Ids
+wget -O $TEMPDIR/pci.ids http://pciids.sourceforge.net/v2.2/pci.ids
+mv $TEMPDIR/pci.ids $TARGET/
+
+grep -v '^#' kernels.list | 
+while read line    # read from kernels.list config file
+do
+  echo "========================================================================"
+  #echo $line
+  NAME=$(echo "$line" | awk -F, '{print $1}' | awk '{$1=$1;print}')
+  SRC=$(echo "$line" | awk -F, '{print $2}' | awk '{$1=$1;print}')
+  MATCH=$(echo "$line" | awk -F, '{print $3}' | awk '{$1=$1;print}')
+
+  MATCH=${MATCH:-$KERNELRE}
+
+  echo "Release:'$NAME' from '$SRC'"
+  echo "Kernel pattern: '$MATCH'"
+
+  # Separate the working directory for each of the releases
+  WD="$TEMPDIR/$NAME"
+
+  # Create some of the directories that will be required so that apt
+  # doesn't complain
+  for d in /etc/apt  /var/lib/apt/lists/partial /var/cache/apt/archives/partial
+  do
+    mkdir -p $WD$d
+  done
+
+  # Create the sources.list and then grab the Packages file
+  echo "$SRC" > $WD/etc/apt/sources.list
+  aptitude -o "Debug::NoLocking=true" -o "Dir=$WD" update
+
+  # In principle, this should be enough:
+  #   KERNEL=$(aptitude -o "Dir=$WD" search ~n"$MATCH" -F'%p' | tail -1)
+  # But unfortunately, aptitude still looks in /var/lib/dpkg/status even when
+  # told to use a different location and so it throws up strange hits.
+  # It turns out that apt-cache madison only looks at the Packages files so
+  # this is a convoluted way of finding out the latest version of the kernel
+  # package that is available.
+  KERNEL=$(apt-cache -o "Dir=$WD" madison $(aptitude -o "Dir=$WD" search ~n"$MATCH" -F%p) | awk '{print $1}')
+
+  # Work out what actual filename of the kernel package will be and the
+  # version string of the kernel
+  KERNELDEB=$(apt-cache -o "Dir=$WD" show $KERNEL | sed -n "s,Filename: .*/\([^/]*\),\1,p")
+  VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
+
+  (cd $WD && aptitude -o "Debug::NoLocking=true" -o "Dir=$WD" download $KERNEL)
+
+  # Unpack the kernel package and create the modules map
+  dpkg -x $WD/$KERNELDEB $WD
+  depmod -b $WD $VER
+
+  # Finally, copy out the map file
+  cp $WD/lib/modules/*/modules.pcimap $TARGET/modules.pcimap-$NAME
+  cp $WD/boot/config-* $TARGET/config-$NAME
+done
+
+# Clean up the tempdir before exit
+rm -rf $TEMPDIR

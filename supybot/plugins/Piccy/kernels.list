@@ -1,0 +1,12 @@
+# List of releases, sources.list lines and (optional) package regexp for
+# finding the available kernels for the Piccy bot module.
+#
+# Format:
+# releasename,        sources.list line,         package regexp
+#
+trunk,      deb http://kernel-archive.buildserver.net/debian-kernel trunk main
+sid,        deb http://ftp.uk.debian.org/debian/ sid main
+squeeze,    deb http://ftp.uk.debian.org/debian/ squeeze main
+lenny,      deb http://ftp.uk.debian.org/debian/ lenny main
+etchnhalf,  deb http://ftp.uk.debian.org/debian/ etch main,                       linux-image-2.6.*etchnhalf.*-686$
+etch,       deb http://ftp.uk.debian.org/debian/ etch main
