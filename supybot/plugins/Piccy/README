@@ -1,0 +1,109 @@
+"Piccy" -- a PCI-Id plugin for supybot
+======================================
+
+Copyright (c) 2009, Stuart Prescott
+Piccy is released under a BSD-style licence (below).
+
+
+Quick start guide
+=================
+
+Piccy needs data files to run -- the "refreshdata" utility can download the
+necessary files from sourceforge and from a Debian mirror.
+
+After unpacking the Piccy files in the appropriate place for your supybot to
+find them, create a directory for Piccy to store its data files. The data files
+for 6 Debian kernels amounts to ~3 MB. The most sensible place for this data
+is probably in the supybot data directory:
+
+  /path/to/your/supybot/data/piccy/
+
+So:
+  mkdir /path/to/your/supybot/data/piccy
+  cd /path/to/your/supybot/plugins/Piccy
+  ./refreshdata /path/to/your/supybot/data/piccy
+
+and wait while the kernel packages are downloaded.
+
+
+Further details
+===============
+
+Piccy needs:
+
+* a mapping of PCI-Ids to device manufacturer and device name
+* a mapping of PCI-Ids to kernel module
+* the kernel config file
+
+Piccy comes with a script "refreshdata" to grab the latest copies of these
+files from the internet.
+
+The PCI-Ids file is the same as the pci.ids file that is shipped in the debian
+package pciutils and which can be updated using the command "update-pciids".
+You can configure Piccy to directly use /usr/share/misc/pci.ids or you can
+have a local copy of this file that is routinely updated using "refreshdata".
+
+In the Debian kernel packages, module mapping is done at install time using
+depmod. Piccy uses the /lib/modules/$(uname -r)/modules.pcimap file and you
+can either copy that into the configured data directory for Piccy or you can
+let "refreshdata" download the kernel module, unpack it into a temporary
+location and run depmod over it. Doing so requires that you are on a Debian
+system as "refreshdata" makes use of apt-cache and aptitude to obtain the
+necessary information about the packages that are available and the to 
+download the .deb files. At present, "refreshdata" will only look for kernels
+for the current architecture that apt would use (see dpkg-architecture) but
+the default package matching regular expression assumes that -686 kernels will
+be available.
+
+The kernel config files are shipped by Debian kernel packages as 
+/boot/config-$(uname -r) and are extracted by the "refreshdata" utility at
+the same time as the pcimap is obtained. You can always give Piccy some other
+kernel config file if you want.
+
+The "refreshdata" utility can be configured by editing the kernel.list file.
+The releases that are to be refreshed, the mirror to use and the regular
+expresison that should be used to identify the most recent kernel are all
+configurable in this file. The format of this file is described within it.
+
+At present, the available releases for Piccy to answer queries for are
+configured within the source code.
+
+
+Example usage
+=============
+
+  pciid 8086:4222
+  pciid "[8086:4222]"                # note the quotes!
+  pciid 8086:4222 --release sid
+
+  kconfig SMB_FS
+  kconfig SMB_FS --release etch
+
+
+Licence
+=======
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+  * Redistributions of source code must retain the above copyright notice,
+    this list of conditions, and the following disclaimer.
+  * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions, and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+  * Neither the name of the author of this software nor the name of
+    contributors to this software may be used to endorse or promote products
+    derived from this software without specific prior written consent.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
