@@ -48,7 +48,8 @@ release_map = { 'trunk'       : 'trunk',
                 'oldstablea'  : 'etchnhalf',
                 'oldstable'   : 'etch' }
 
-verbose = True
+#verbose = True
+verbose = False
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
@@ -103,7 +104,6 @@ class Piccy(callbacks.Plugin):
             moduletext = "with kernel module '%s' in %s." % (self.bold(module), self.bold(release))
 
         hcllink = self.registryValue('hcl_url') % ( "%s:%s" % (vendor, device))
-        #hcllink = "http://kmuto.jp/debian/hcl/index.cgi?check=1&lspci=%s:%s" % (vendor, device)
 
         reply = "[%s:%s] is '%s' from '%s' %s See also %s" % (vendor, device, dname, vname, moduletext, hcllink)
 
@@ -157,16 +157,13 @@ class Piccy(callbacks.Plugin):
         """
         mapfile = self.registryValue('pci_map')
         path    = self.registryValue('base_path')
-        data    = conf.supybot.directories.data() #self.registryValue('directories.data')
+        data    = conf.supybot.directories.data()
 
-        print "data=%s" % data
         mapfile = os.path.join(data, path, mapfile)
         try:
             idmap = open(mapfile, 'r')
         except IOError, e:
-            #print e
             self.log.error(str(e))
-            # FIXME: log this error some how
             return None, None
 
         found = False
@@ -205,7 +202,7 @@ class Piccy(callbacks.Plugin):
         """
         modfile = self.registryValue('module_map') % release
         path    = self.registryValue('base_path')
-        data    = conf.supybot.directories.data() #data    = self.registryValue('directories.data')
+        data    = conf.supybot.directories.data() 
 
         modfile = os.path.join(data, path, modfile)
         try:
@@ -271,7 +268,7 @@ class Piccy(callbacks.Plugin):
         """
         conffile = self.registryValue('kernel_config') % release
         path     = self.registryValue('base_path')
-        data    = conf.supybot.directories.data() #data    = self.registryValue('directories.data')
+        data    = conf.supybot.directories.data() 
 
         conffile = os.path.join(data, path, conffile)
         print conffile
