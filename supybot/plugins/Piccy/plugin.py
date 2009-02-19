@@ -202,7 +202,7 @@ class Piccy(callbacks.Plugin):
         """
         modfile = self.registryValue('module_map') % release
         path    = self.registryValue('base_path')
-        data    = conf.supybot.directories.data() 
+        data    = conf.supybot.directories.data()
 
         modfile = os.path.join(data, path, modfile)
         try:
@@ -268,10 +268,9 @@ class Piccy(callbacks.Plugin):
         """
         conffile = self.registryValue('kernel_config') % release
         path     = self.registryValue('base_path')
-        data    = conf.supybot.directories.data() 
+        data    = conf.supybot.directories.data()
 
         conffile = os.path.join(data, path, conffile)
-        print conffile
         try:
             configs = open(conffile, 'r')
         except IOError, e:
