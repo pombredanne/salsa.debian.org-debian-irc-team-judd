@@ -41,11 +41,17 @@ import supybot.callbacks as callbacks
 import re
 import os
 
+# All data files are stored using the release code names (right half of the
+# mapping) but this mapping also allows users to search using the release
+# status name. Note that to handle minor releases like "etchnhalf" use 
+# a second entry such as "stable1". This map is also used for the input
+# sanitisation of the release argument -- if it's not in this map, it is
+# ignored.
 release_map = { 'trunk'       : 'trunk',
                 'unstable'    : 'sid',
                 'testing'     : 'squeeze',
                 'stable'      : 'lenny',
-                'oldstablea'  : 'etchnhalf',
+                'oldstable1'  : 'etchnhalf',
                 'oldstable'   : 'etch' }
 
 #verbose = True
