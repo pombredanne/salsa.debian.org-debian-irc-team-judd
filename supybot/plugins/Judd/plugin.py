@@ -39,15 +39,15 @@ from debian_bundle import debian_support
 
 import psycopg2
 
-release_map = { 'unstable':'sid', 'testing':'lenny', 'stable':'etch' }
-releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
+release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny' }
+releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'lenny-backports', 'lenny-volatile', 'squeeze', 'squeeze-security', 'squeeze-multimedia', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
 
 arches = [ 'alpha', 'amd64', 'arm', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
 
 def parse_standard_options( optlist, args=None ):
     if not args:
         args=[]
-    release='etch'
+    release='lenny'
     arch='i386'
 
     for( option,arg ) in optlist:
