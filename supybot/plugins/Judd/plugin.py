@@ -40,15 +40,26 @@ from debian_bundle import debian_support
 import psycopg2
 
 release_map = { 'unstable':'sid', 'testing':'lenny', 'stable':'etch' }
+releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
 
-def parse_standard_options( optlist ):
+arches = [ 'alpha', 'amd64', 'arm', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
+
+def parse_standard_options( optlist, args=None ):
+    if not args:
+        args=[]
     release='etch'
     arch='i386'
+
     for( option,arg ) in optlist:
         if option=='release':
             release=arg;
         elif option=='arch':
             arch=arg;
+
+    if args in releases:
+        release=args
+    elif args in arches:
+        arch=args
 
     if release_map.has_key( release ):
         release = release_map[ release ]
@@ -72,7 +83,7 @@ class Judd(callbacks.Plugin):
 
 
 
-    def versions(self, irc, msg, args, package, optlist):
+    def versions(self, irc, msg, args, package, optlist, something ):
         """
         Output available versions of a package.
         Usage: "versions pattern [--arch i386] [--release etch]"
@@ -87,6 +98,13 @@ class Judd(callbacks.Plugin):
                 release=arg;
             elif option=='arch':
                 arch=arg;
+        for option in args:
+            if option in releases:
+                release=option
+            elif option in arches:
+                arch=option
+        if release_map.has_key( release ):
+            release = release_map[ release ]
 
         c = self.psql.cursor()
         if package.find( '*' ) == -1 and package.find( '?' ) == -1:
@@ -155,14 +173,14 @@ class Judd(callbacks.Plugin):
         else:
             irc.reply( "No package named %s found" % package )
         
-    versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ) ] )
+    versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
     
-    def info(self, irc, msg, args, package, optlist ):
+    def info(self, irc, msg, args, package, optlist, something ):
         """
         Output brief info about a package.
         Usage: "info packagename [--arch i386] [--release etch]"
         """
-        release,arch = parse_standard_options( optlist )
+        release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
         c.execute( "SELECT section, priority, version, size, installed_size, description FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all') AND release=%(release)s", 
@@ -182,15 +200,16 @@ class Judd(callbacks.Plugin):
 
         
     info = wrap(info, ['something', getopts( { 'arch':'something',
-                                              'release':'something' } ) ] )
+                                              'release':'something' } ), optional( 'something' ) ] )
 
-    def depends( self, irc, msg, args, package, optlist ):
+    def depends( self, irc, msg, args, package, optlist, something ):
         """
         Show Depends: of a given package.
         Usage: "depends packagename [--arch i386] [--release etch]"
         """
-        release,arch = parse_standard_options( optlist )
+        release,arch = parse_standard_options( optlist, something )
 
+        print( "release: %s arch: %s" % (release, arch) )
         c = self.psql.cursor()
         c.execute( "SELECT depends FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s", 
                    dict( package=package, 
@@ -203,13 +222,23 @@ class Judd(callbacks.Plugin):
 
         
     depends = wrap(depends, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ) ] );
-    def source( self, irc, msg, args, package, optlist ):
+                                                     'release':'something' } ), 
+                             optional( 'something' ) ] );
+
+    def danke( self, irc, msg, args ):
+        """
+        Someone is trying to speak esperanto to me
+        """
+        irc.reply( "ne dankinde" )
+
+    danke = wrap( danke, [] )
+
+    def source( self, irc, msg, args, package, optlist, something ):
         """
         Show Source: of a given package.
         Usage: "source packagename [--release etch]"
         """
-        release,arch = parse_standard_options( optlist )
+        release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
         c.execute( "SELECT source FROM packages WHERE package=%(package)s AND release=%(release)s limit 1", 
@@ -222,40 +251,15 @@ class Judd(callbacks.Plugin):
             irc.reply( "%s -- Source: %s" % ( package, row[0]) )
 
         
-    source = wrap(source, ['something', getopts( { 'release':'something' } ) ] );
+    source = wrap(source, ['something', getopts( { 'release':'something' } ),
+                           optional( 'something' ) ] );
 
-    def find( self, irc, msg, args, filename, optlist ):
-        """
-        Show package containing a given file.
-        Usage: "find filename [--release etch] [--arch i386]"
-        """
-        release,arch = parse_standard_options( optlist )
-
-        c = self.psql.cursor()
-        c.execute( "SELECT package FROM package_contents WHERE Filename=%(filename)s AND release=%(release)s and arch=%(arch)s", 
-                   dict( filename=filename, 
-                         arch=arch,
-                         release=release) );
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Source: %s" % ( package, row[0]) )
-
-        
-    source = wrap(source, ['something', getopts( { 'release':'something' } ) ] );
-        
-    def obsolete_testing( self, irc, msg, args ):
-        """
-        Find packages which are in testing-security but don't exist in testing or unstable
-        """
-        pass
-
-    def builddep( self, irc, msg, args, package, optlist ):
+    def builddep( self, irc, msg, args, package, optlist, something ):
         """
         Show BuildDepends: of a given package.
         Usage: "buliddep packagename [--arch i386] [--release etch]"
         """
-        release,arch = parse_standard_options( optlist )
+        release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
         c.execute( "SELECT build_depends FROM sources WHERE source=%(package)s AND release=%(release)s limit 1", 
@@ -279,14 +283,14 @@ class Judd(callbacks.Plugin):
 
         
         
-    builddep = wrap(builddep, ['something', getopts( { 'release':'something' } ) ] );
+    builddep = wrap(builddep, ['something', getopts( { 'release':'something' } ), optional( 'something' )] );
         
-    def conflicts( self, irc, msg, args, package, optlist ):
+    def conflicts( self, irc, msg, args, package, optlist, something ):
         """
         Show Conflicts: of a given package.
         Usage: "conflicts packagename [--arch i386] [--release etch]"
         """
-        release,arch = parse_standard_options( optlist )
+        release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
         c.execute( "SELECT conflicts FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s limit 1", 
@@ -300,13 +304,15 @@ class Judd(callbacks.Plugin):
 
         
     conflicts = wrap(conflicts, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ) ] );
-    def recommends( self, irc, msg, args, package, optlist ):
+                                                         'release':'something' } ),
+                                 optional( 'something' )] );
+
+    def recommends( self, irc, msg, args, package, optlist, something ):
         """
         Show Recommends: of a given package.
         Usage: "recommends packagename [--arch i386] [--release etch]"
         """
-        release,arch = parse_standard_options( optlist )
+        release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
         c.execute( "SELECT recommends FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s limit 1", 
@@ -320,14 +326,15 @@ class Judd(callbacks.Plugin):
 
         
     recommends = wrap(recommends, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ) ] );
+                                                         'release':'something' } ),
+                                   optional( 'something' )] );
 
-    def suggests( self, irc, msg, args, package, optlist ):
+    def suggests( self, irc, msg, args, package, optlist, something ):
         """
         Show Suggests: of a given package.
         Usage: "suggests packagename [--arch i386] [--release etch]"
         """
-        release,arch = parse_standard_options( optlist )
+        release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
         c.execute( "SELECT suggests FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s limit 1", 
@@ -341,7 +348,8 @@ class Judd(callbacks.Plugin):
 
         
     suggests = wrap(suggests, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ) ] );
+                                                         'release':'something' } ),
+                               optional( 'something' ) ] );
     def bug( self, irc, msg, args, bugno ):
         """ 
         Show information about a bug in a given pacage.  
