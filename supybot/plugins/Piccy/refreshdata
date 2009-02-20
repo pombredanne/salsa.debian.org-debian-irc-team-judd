@@ -89,7 +89,7 @@ do
 
   # Unpack the kernel package and create the modules map
   dpkg -x $WD/$KERNELDEB $WD
-  depmod -b $WD $VER
+  /sbin/depmod -b $WD $VER
 
   # Finally, copy out the map file
   cp $WD/lib/modules/*/modules.pcimap $TARGET/modules.pcimap-$NAME
