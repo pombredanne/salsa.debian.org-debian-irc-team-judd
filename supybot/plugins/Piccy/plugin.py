@@ -43,7 +43,7 @@ import os
 
 # All data files are stored using the release code names (right half of the
 # mapping) but this mapping also allows users to search using the release
-# status name. Note that to handle minor releases like "etchnhalf" use 
+# status name. Note that to handle minor releases like "etchnhalf" use
 # a second entry such as "stable1". This map is also used for the input
 # sanitisation of the release argument -- if it's not in this map, it is
 # ignored.
@@ -139,8 +139,10 @@ class Piccy(callbacks.Plugin):
         configlist = self.getkconfig(pattern, release)
 
         if configlist is None:
-            configtext = self.bold("[Error looking up config list]") + '.'
-        elif len(configlist) == 0:
+            irc.error("Error looking up config list for release %s." % release)
+            return
+
+        if len(configlist) == 0:
             configtext = self.bold('no results')
         else:
             #print configlist
