@@ -91,9 +91,12 @@ do
   dpkg -x $WD/$KERNELDEB $WD
   /sbin/depmod -b $WD $VER
 
-  # Finally, copy out the map file
+  # Copy out the map file and kernel config
   cp $WD/lib/modules/*/modules.pcimap $TARGET/modules.pcimap-$NAME
   cp $WD/boot/config-* $TARGET/config-$NAME
+
+  # Clean up the downloads so far to reduce disk usage during multiple updates
+  rm -rf $WD
 done
 
 # Clean up the tempdir before exit
