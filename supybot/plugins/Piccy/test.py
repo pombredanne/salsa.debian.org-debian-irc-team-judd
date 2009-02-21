@@ -32,6 +32,9 @@ from supybot.test import *
 
 class PiccyPluginTestCase(PluginTestCase):
     plugins = ('Piccy',)
+    
+    # prevent supybot-test from deleting all the data
+    cleanDataDir = False
        
     def testPCImap(self):
         self.assertNotError('pciid "[8086:4222]"')
