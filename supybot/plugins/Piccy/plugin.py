@@ -54,8 +54,8 @@ release_map = { 'trunk'       : 'trunk',
                 'oldstable1'  : 'etchnhalf',
                 'oldstable'   : 'etch' }
 
-#verbose = True
-verbose = False
+verbose = True
+#verbose = False
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
@@ -289,15 +289,29 @@ class Piccy(callbacks.Plugin):
 
         # format of the config-$uname -r) is:
         # CONFIG_FOO=y
+        # CONFIG_GOO=m
+        # # CONFIG_HOO is not set
         # where all keys start with CONFIG_, comments start with a # and there are blank lines.
 
-        r = '^([^#].*%s|%s)' % (pattern, pattern)
-        config = re.compile(r)
+        # generic search term to find matching lines
+        config = re.compile(pattern)
+        if pattern[0:7] == "CONFIG_":
+          searchkey = pattern[7:]
+        else:
+          searchkey = ".*" + pattern
+        # specific term for matching "is not set" comments
+        notset = re.compile("^#\s+CONFIG_(%s.*)\s+is not set" % searchkey)
+        
         for line in configs:
             m = config.search(line)
             if not (m is None):
-                line = line.strip()
-                line = line[7:]    # strip off the CONFIG_ for brevity of output
+                nm = notset.match(line)
+                if not (nm is None):
+                    # strip off the CONFIG_ and is not set parts of the response
+                    line = "%s=n" % nm.groups(1)[0]
+                else:
+                    line = line.strip()
+                    line = line[7:]    # strip off the CONFIG_ for brevity of output
                 keys.append(line)
 
         configs.close()
