@@ -54,8 +54,8 @@ release_map = { 'trunk'       : 'trunk',
                 'oldstable1'  : 'etchnhalf',
                 'oldstable'   : 'etch' }
 
-verbose = True
-#verbose = False
+#verbose = True
+verbose = False
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
