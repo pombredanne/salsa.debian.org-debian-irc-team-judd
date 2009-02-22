@@ -287,6 +287,9 @@ class Piccy(callbacks.Plugin):
 
         keys = []
 
+        # Cleanse any characters that aren't allowed in the regexp
+        pattern = re.sub('[^\s\w\d]', '', pattern)
+
         # format of the config-$uname -r) is:
         # CONFIG_FOO=y
         # CONFIG_GOO=m
