@@ -59,6 +59,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('kconfig PROC')                  # returns multiple hits, partial module name
         self.assertNotError('kconfig foobar')                        # fails to match
         self.assertNotError('kconfig CONFIG_SMB_FS --release etch')       # is set in etch
-        self.assertNotError('kconfig CONFIG_SMB_FS --release lenny')      # fails to match (is not set)
+        self.assertNotError('kconfig CONFIG_SMB_FS --release lenny')    # fails to match (is not set)
+        self.assertNotError('kconfig SMB --release lenny')      # fails to match (is not set)
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
