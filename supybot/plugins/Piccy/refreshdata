@@ -1,6 +1,37 @@
 #!/bin/sh
 #
-# Download updated PCI-Ids and kernel .debs 
+# Refresh the data for the Piccy supybot plugin.
+#
+#   Downloads updated PCI-Ids and kernel .debs, see README for details.
+#
+###
+# Copyright (c) 2009 Stuart Prescott
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   * Redistributions of source code must retain the above copyright notice,
+#     this list of conditions, and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright notice,
+#     this list of conditions, and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of the author of this software nor the name of
+#     contributors to this software may be used to endorse or promote products
+#     derived from this software without specific prior written consent.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+###
 
 set -u
 set -e
@@ -129,6 +160,7 @@ do
   # Work out what actual filename of the kernel package will be and the
   # version string of the kernel
   KERNELDEB=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*\),\1,p")
+  PKGVER=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Version:\s*\([^\s]*\),\1,p")
   VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
 
   (cd $WD && aptitude $APTARGS download $KERNEL > /dev/null)
@@ -148,6 +180,25 @@ do
   # Copy out the map file and kernel config
   cp $WD/lib/modules/*/modules.pcimap $TARGET/modules.pcimap-$NAME
   cp $WD/boot/config-* $TARGET/config-$NAME
+
+  # Record the versions of the kernels that have been obtained in the
+  # file "versions". Create this file first if it doesn't exist.
+  if [ ! -f versions ]
+  then
+    cat <<EOF >versions
+# List of kernel versions found in the archive
+# Format:
+#   release,  package version,  uname -r
+EOF
+  fi
+
+  # If it's a new kernel, add it to the list, otherwise edit the current entry
+  if grep -q "^\s*$NAME\s*," versions
+  then
+    sed -i "s/^\s*$NAME\s*,.*/$NAME, $PKGVER, $VER/" versions
+  else
+    echo "$NAME, $PKGVER, $VER" >> versions
+  fi
 
   # Clean up the downloads so far to reduce disk usage during multiple updates
   rm -rf $WD
