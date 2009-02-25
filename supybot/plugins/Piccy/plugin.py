@@ -185,7 +185,7 @@ class Piccy(callbacks.Plugin):
         versions = self.findkernels(release)
 
         versionstrings = []
-        if len(versions) > 0:
+        if versions:
             for v in versions:
                 versionstrings.append("%s: %s (%s)"
                                     % (self.bold(v["release"]),
