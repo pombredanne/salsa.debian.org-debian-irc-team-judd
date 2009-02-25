@@ -183,9 +183,9 @@ do
 
   # Record the versions of the kernels that have been obtained in the
   # file "versions". Create this file first if it doesn't exist.
-  if [ ! -f versions ]
+  if [ ! -f $TARGET/versions ]
   then
-    cat <<EOF >versions
+    cat <<EOF >$TARGET/versions
 # List of kernel versions found in the archive
 # Format:
 #   release,  package version,  uname -r
@@ -193,11 +193,11 @@ EOF
   fi
 
   # If it's a new kernel, add it to the list, otherwise edit the current entry
-  if grep -q "^\s*$NAME\s*," versions
+  if grep -q "^\s*$NAME\s*," $TARGET/versions
   then
-    sed -i "s/^\s*$NAME\s*,.*/$NAME, $PKGVER, $VER/" versions
+    sed -i "s/^\s*$NAME\s*,.*/$NAME, $PKGVER, $VER/" $TARGET/versions
   else
-    echo "$NAME, $PKGVER, $VER" >> versions
+    echo "$NAME, $PKGVER, $VER" >> $TARGET/versions
   fi
 
   # Clean up the downloads so far to reduce disk usage during multiple updates
