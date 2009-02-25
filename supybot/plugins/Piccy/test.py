@@ -62,4 +62,8 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('kconfig CONFIG_SMB_FS --release lenny')    # fails to match (is not set)
         self.assertNotError('kconfig SMB --release lenny')      # fails to match (is not set)
 
+    def testVersionList(self):
+        self.assertNotError('kversion')    # returns all versions
+        self.assertNotError('kversion --release etch')  # returns a single release
+
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

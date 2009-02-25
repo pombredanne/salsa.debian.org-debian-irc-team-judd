@@ -159,6 +159,40 @@ class Piccy(callbacks.Plugin):
     kconfig = wrap(kconfig, ['something', getopts( { 'release':'something' } ) ] )
 
 
+    def kversion(self, irc, msg, args, optlist):
+        """
+        Outputs the kernel versions in the archive.
+        Usage: "kversion [--release etch]".
+        """
+
+        release = None
+
+        for (option,arg) in optlist:
+            if option == 'release':
+                release = arg
+
+        versions = self.findkernels(release)
+
+        versionstrings = []
+        if len(versions) > 0:
+            for v in versions:
+                versionstrings.append("%s: %s (%s)"
+                                    % (self.bold(v["release"]),
+                                       v["uname"],
+                                       v["version"]))
+            reply = "Available kernel versions are: " + ("; ".join(versionstrings))
+        else:
+            reply = "No kernel versions found."
+
+        if verbose:
+            print
+            print reply
+
+        irc.reply(reply)
+
+    kversion = wrap(kversion, [ getopts( { 'release':'something' } ) ] )
+
+
     def findname(self, vendor, device):
         """
         /usr/share/misc/pci.ids
@@ -304,7 +338,7 @@ class Piccy(callbacks.Plugin):
           searchkey = ".*" + pattern
         # specific term for matching "is not set" comments
         notset = re.compile("^#\s+CONFIG_(%s.*)\s+is not set" % searchkey)
-        
+
         for line in configs:
             m = config.search(line)
             if not (m is None):
@@ -318,6 +352,43 @@ class Piccy(callbacks.Plugin):
                 keys.append(line)
 
         configs.close()
+        return keys
+
+    def findkernels(self, release):
+        """
+        Search through the list of available kernels for "release".
+        If release is None, return all kernels
+        """
+
+        versions = []
+
+        klist    = self.registryValue('kernel_versions')
+        path     = self.registryValue('base_path')
+        data     = conf.supybot.directories.data()
+
+        klist = os.path.join(data, path, klist)
+        try:
+            kernels = open(klist, 'r')
+        except IOError, e:
+            self.log.error(str(e))
+            return None
+
+        if release == None:
+            release = "[^#,]+"
+        else:
+            release = self.cleanreleasename(release)
+
+        keys = []
+        versionre = re.compile("^\s*(%s)\s*,\s*([^,]+)\s*,\s*(.+)\s*$" % release)
+        for line in kernels:
+            line = line.strip()
+            m = versionre.search(line)
+            if not (m is None):
+                keys.append({
+                                "release" : m.groups(1)[0],
+                                "version" : m.groups(1)[1],
+                                "uname"   : m.groups(1)[2]
+                             })
         return keys
 
 
