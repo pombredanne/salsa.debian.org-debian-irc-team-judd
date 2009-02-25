@@ -65,5 +65,8 @@ class PiccyPluginTestCase(PluginTestCase):
     def testVersionList(self):
         self.assertNotError('kversion')    # returns all versions
         self.assertNotError('kversion --release etch')  # returns a single release
+        # test alases to the functions:
+        self.assertNotError('kernelversion')    # returns all versions
+        self.assertNotError('kernels')    # returns all versions
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

@@ -54,8 +54,8 @@ release_map = { 'trunk'       : 'trunk',
                 'oldstable1'  : 'etchnhalf',
                 'oldstable'   : 'etch' }
 
-#verbose = True
-verbose = False
+verbose = True
+#verbose = False
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
@@ -159,10 +159,12 @@ class Piccy(callbacks.Plugin):
     kconfig = wrap(kconfig, ['something', getopts( { 'release':'something' } ) ] )
 
 
-    def kversion(self, irc, msg, args, optlist):
-        """
-        Outputs the kernel versions in the archive.
-        Usage: "kversion [--release etch]".
+    def kernelVersionHelper(self, irc, msg, args, optlist):
+        """[<--release etch>]
+
+        Outputs the kernel versions in the archive, optionally restricted to
+        one release. Note that semi-major releases like etchnhalf are treated
+        as separate releases.
         """
 
         release = None
@@ -190,7 +192,12 @@ class Piccy(callbacks.Plugin):
 
         irc.reply(reply)
 
-    kversion = wrap(kversion, [ getopts( { 'release':'something' } ) ] )
+    kernelversion = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
+
+    # provide convenience aliases for kernel version command
+    kversion      = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
+    kernel        = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
+    kernels       = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
 
 
     def findname(self, vendor, device):
