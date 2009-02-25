@@ -62,14 +62,20 @@ do
 
   # Create some of the directories that will be required so that apt
   # doesn't complain
-  for d in /etc/apt  /var/lib/apt/lists/partial /var/cache/apt/archives/partial
+  for d in /etc/apt  /var/lib/apt/lists/partial /var/cache/apt/archives/partial \
+                     /var/lib/dpkg/lists/partial
   do
     mkdir -p $WD$d
   done
+  touch $WD/var/lib/dpkg/status
 
   # Create the sources.list and then grab the Packages file
   echo "$SRC" > $WD/etc/apt/sources.list
-  aptitude -o "Debug::NoLocking=true" -o "Dir=$WD" update
+  aptitude -o "Debug::NoLocking=true"  \
+        -o "Dir::State=$WD/var/lib/dpkg" \
+        -o "Dir::State::status=status" \
+        -o "Dir=$WD" \
+        update
 
   # In principle, this should be enough:
   #   KERNEL=$(aptitude -o "Dir=$WD" search ~n"$MATCH" -F'%p' | tail -1)
@@ -78,14 +84,15 @@ do
   # It turns out that apt-cache madison only looks at the Packages files so
   # this is a convoluted way of finding out the latest version of the kernel
   # package that is available.
-  KERNEL=$(apt-cache -o "Dir=$WD" madison $(aptitude -o "Dir=$WD" search ~n"$MATCH" -F%p) | awk '{print $1}')
+#   KERNEL=$(apt-cache -o "Dir=$WD" madison $(aptitude -o "Dir=$WD" search ~n"$MATCH" -F%p) | awk '{print $1}')
+  KERNEL=$(aptitude -o "Dir::State=$WD/var/lib/dpkg" -o "Dir::State::status=status" -o "Dir=$WD" search ~n"$MATCH" -F'%p' | tail -1)
 
   # Work out what actual filename of the kernel package will be and the
   # version string of the kernel
-  KERNELDEB=$(apt-cache -o "Dir=$WD" show $KERNEL | sed -n "s,Filename: .*/\([^/]*\),\1,p")
+  KERNELDEB=$(apt-cache -o "Dir::State=$WD/var/lib/dpkg" -o "Dir::State::status=status" -o "Dir=$WD" show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*\),\1,p")
   VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
 
-  (cd $WD && aptitude -o "Debug::NoLocking=true" -o "Dir=$WD" download $KERNEL)
+  (cd $WD && aptitude -o "Dir::State=$WD/var/lib/dpkg" -o "Dir::State::status=status" -o "Debug::NoLocking=true" -o "Dir=$WD" download $KERNEL)
 
   # Unpack the kernel package and create the modules map
   dpkg -x $WD/$KERNELDEB $WD
