@@ -6,10 +6,19 @@ set -u
 set -e
 # set -x
 
+CLEANUP=true
+# CLEANUP=false
+
 PCIIDURL="http://pciids.sourceforge.net/v2.2/pci.ids"
 PCIIDFILE="pci.ids"
 
+# Note that if the architecture being targeted by the script is changed,
+# KERNERLRE will need changing too.
+ARCH="i386"
 KERNELRE='linux-image-2.6.[0-9]+-[0-9]-686$'
+# ARCH="amd64"
+# KERNELRE='linux-image-2.6.[0-9]+-[0-9]-amd64$'
+
 
 TARGET=${1-.}
 
@@ -37,11 +46,33 @@ fi
 
 TEMPDIR=$(mktemp -t -d piccy_update.XXXXXX)
 
-trap "/bin/rm -rf $TEMPDIR ; exit 1" EXIT INT QUIT
+trap "if $CLEANUP; then /bin/rm -rf $TEMPDIR ; fi; exit 1" EXIT INT QUIT
 
 # Fetch the PCI-Ids
-wget -O $TEMPDIR/pci.ids http://pciids.sourceforge.net/v2.2/pci.ids
+wget -q -O $TEMPDIR/pci.ids http://pciids.sourceforge.net/v2.2/pci.ids
 mv $TEMPDIR/pci.ids $TARGET/
+
+
+# Make short replacement for /usr/bin/gpgv to suppress apt's warnings
+# about keys for these repositories. The text of this was generated
+# by looking at the dialogue between apt-get update and gpgv by running
+# (as root):
+#     /usr/bin/gpgv --status-fd 1 --ignore-time-conflict \
+#      --keyring /etc/apt/trusted.gpg \
+#     $WD/var/lib/apt/lists/partial/ftp.uk.debian.org_debian_dists_sid_Release.gpg \
+#     $WD/var/lib/apt/lists/ftp.uk.debian.org_debian_dists_sid_Release
+echo \
+'#!/bin/sh
+FD=${2-1}
+cat <<EOF 1>&$FD
+[GNUPG:] SIG_ID qs2dE7AubJyiH5mphDt+perNiA0 2009-02-25 1235551571
+[GNUPG:] GOODSIG A70DAF536070D3A1 Debian Archive Automatic Signing Key (4.0/etch) <ftpmaster@debian.org>
+gpgv: Good signature from "Debian Archive Automatic Signing Key (4.0/etch) <ftpmaster@debian.org>"
+[GNUPG:] VALIDSIG A99951DAF9BB569BDB50AD90A70DAF536070D3A1 2009-02-25 1235551571 0 3 0 17 2 00 A99951DAF9BB569BDB50AD90A70DAF536070D3A1
+EOF
+' > $TEMPDIR/fakegpgv
+chmod +x $TEMPDIR/fakegpgv
+
 
 grep -v '^#' kernels.list | 
 while read line    # read from kernels.list config file
@@ -54,7 +85,7 @@ do
 
   MATCH=${MATCH:-$KERNELRE}
 
-  echo "Release:'$NAME' from '$SRC'"
+  echo "Release: '$NAME' from '$SRC'"
   echo "Kernel pattern: '$MATCH'"
 
   # Separate the working directory for each of the releases
@@ -62,37 +93,53 @@ do
 
   # Create some of the directories that will be required so that apt
   # doesn't complain
-  for d in /etc/apt  /var/lib/apt/lists/partial /var/cache/apt/archives/partial \
-                     /var/lib/dpkg/lists/partial
+  for d in /etc/apt/apt.conf.d \
+           /var/lib/apt/lists/partial \
+           /var/cache/apt/archives/partial \
+           /var/lib/dpkg/
   do
     mkdir -p $WD$d
   done
   touch $WD/var/lib/dpkg/status
 
+  APTARGS="-o quiet=1000
+           -o Debug::NoLocking=true
+           -o Dir::State=$WD/var/lib/apt
+           -o Dir::State::status=$WD/var/lib/dpkg/status
+           -o Dir=$WD
+           -o APT::Architecture=$ARCH
+           -o APT::Get::AllowUnauthenticated=true
+           -o Dir::Bin::gpg=$TEMPDIR/fakegpgv
+"
+#            -o Aptitude::Debtags-Binary=/bin/true
+
   # Create the sources.list and then grab the Packages file
   echo "$SRC" > $WD/etc/apt/sources.list
-  aptitude -o "Debug::NoLocking=true"  \
-        -o "Dir::State=$WD/var/lib/dpkg" \
-        -o "Dir::State::status=status" \
-        -o "Dir=$WD" \
-        update
+  apt-get $APTARGS update
 
-  # In principle, this should be enough:
-  #   KERNEL=$(aptitude -o "Dir=$WD" search ~n"$MATCH" -F'%p' | tail -1)
-  # But unfortunately, aptitude still looks in /var/lib/dpkg/status even when
-  # told to use a different location and so it throws up strange hits.
-  # It turns out that apt-cache madison only looks at the Packages files so
-  # this is a convoluted way of finding out the latest version of the kernel
-  # package that is available.
-#   KERNEL=$(apt-cache -o "Dir=$WD" madison $(aptitude -o "Dir=$WD" search ~n"$MATCH" -F%p) | awk '{print $1}')
-  KERNEL=$(aptitude -o "Dir::State=$WD/var/lib/dpkg" -o "Dir::State::status=status" -o "Dir=$WD" search ~n"$MATCH" -F'%p' | tail -1)
+  # Find the latest version of the kernel that matches the regexp
+  KERNEL=$(aptitude $APTARGS search ~n"$MATCH" -F'%p' | tail -1)
+
+  if [ -z "$KERNEL" ]
+  then
+    echo "E: No package matching '$MATCH' could not be found for release $NAME"
+    continue
+  fi
 
   # Work out what actual filename of the kernel package will be and the
   # version string of the kernel
-  KERNELDEB=$(apt-cache -o "Dir::State=$WD/var/lib/dpkg" -o "Dir::State::status=status" -o "Dir=$WD" show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*\),\1,p")
+  KERNELDEB=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*\),\1,p")
   VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
 
-  (cd $WD && aptitude -o "Dir::State=$WD/var/lib/dpkg" -o "Dir::State::status=status" -o "Debug::NoLocking=true" -o "Dir=$WD" download $KERNEL)
+  (cd $WD && aptitude $APTARGS download $KERNEL > /dev/null)
+
+  # Because aptitude download is run in a subshell, its failure won't
+  # cause the entire script to die. Note the failure and keep going.
+  if [ ! -f $WD/$KERNELDEB ]
+  then
+    echo "E: Package '$KERNEL' could not be found for release $NAME"
+    continue
+  fi
 
   # Unpack the kernel package and create the modules map
   dpkg -x $WD/$KERNELDEB $WD
@@ -107,4 +154,9 @@ do
 done
 
 # Clean up the tempdir before exit
-rm -rf $TEMPDIR
+if $CLEANUP
+then 
+  /bin/rm -rf $TEMPDIR
+fi
+
+exit 0
