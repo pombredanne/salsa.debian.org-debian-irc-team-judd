@@ -54,8 +54,8 @@ release_map = { 'trunk'       : 'trunk',
                 'oldstable1'  : 'etchnhalf',
                 'oldstable'   : 'etch' }
 
-verbose = True
-#verbose = False
+#verbose = True
+verbose = False
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
@@ -64,10 +64,14 @@ class Piccy(callbacks.Plugin):
         self.__parent = super(Piccy, self)
         self.__parent.__init__(irc)
 
-    def pciid(self, irc, msg, args, pciid, optlist):
-        """
-        Output the name of the device and matching kernel module if known.
-        Usage: "pciid pattern [--release etch]" where the pattern should be of the form 0000:0000
+    def pciidHelper(self, irc, msg, args, pciid, optlist):
+        """<pciid> [--release <release name>]
+
+        Output the name of the device and matching kernel module if known,
+        optionally restricted to the specified release.
+        The pciid should be of the form 0000:0000. [ and ] are permitted around
+        the pciid, but Supybot will try to act on those as nested commands unless
+        they are enclosed in double quotes, e.g "[0000:0000]".
         """
 
         release = ""
@@ -119,13 +123,15 @@ class Piccy(callbacks.Plugin):
 
         irc.reply(reply)
 
-    pciid = wrap(pciid, ['something', getopts( { 'release':'something' } ) ] )
+    pciid = wrap(pciidHelper, ['something', getopts( { 'release':'something' } ) ] )
 
 
-    def kconfig(self, irc, msg, args, pattern, optlist):
-        """
-        Outputs the kernel configs that match the given pattern.
-        Usage: "kconfig pattern [--release etch]". The pattern will have wildcards automatically added around it.
+    def kconfigHelper(self, irc, msg, args, pattern, optlist):
+        """<config string> [--release <release name>]
+
+        Outputs the kernel configs that match the given string, optionally
+        restricted to an individual release.
+        The pattern will have wildcards automatically added around it.
         """
 
         release = ""
@@ -156,11 +162,14 @@ class Piccy(callbacks.Plugin):
 
         irc.reply(reply)
 
-    kconfig = wrap(kconfig, ['something', getopts( { 'release':'something' } ) ] )
+    kconfig = wrap(kconfigHelper, ['something', getopts( { 'release':'something' } ) ] )
+
+    # provide a command alias as well
+    kernelconfig = wrap(kconfigHelper, ['something', getopts( { 'release':'something' } ) ] )
 
 
     def kernelVersionHelper(self, irc, msg, args, optlist):
-        """[<--release etch>]
+        """[--release <etch>]
 
         Outputs the kernel versions in the archive, optionally restricted to
         one release. Note that semi-major releases like etchnhalf are treated
