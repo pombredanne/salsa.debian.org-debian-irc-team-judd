@@ -276,7 +276,7 @@ class Piccy(callbacks.Plugin):
         # vendor and device ids are in hexadecimal format to 8 characters.
         # Since the ids have never been converted to numbers, they can be
         # used here as strings again.
-        r = '^([^\s]+)\s+0x0000%s\s+0x0000%s\s+' % (vendor, device)
+        r = r'^([^\s]+)\s+0x0000%s\s+0x0000%s\s+' % (vendor, device)
         #print r
         module = re.compile(r)
         for line in modmap:
@@ -296,7 +296,7 @@ class Piccy(callbacks.Plugin):
         #pciid = pciid.strip()
         vid = 0
         did = 0
-        m = re.search('\[?([\da-f]{4}):([\da-f]{4})\]?', pciid, re.I)
+        m = re.search(r'\[?([\da-f]{4}):([\da-f]{4})\]?', pciid, re.I)
         if not (m is None):
             vid = m.groups(1)[0]
             did = m.groups(1)[1]
@@ -353,7 +353,7 @@ class Piccy(callbacks.Plugin):
         else:
           searchkey = ".*" + pattern
         # specific term for matching "is not set" comments
-        notset = re.compile("^#\s+CONFIG_(%s.*)\s+is not set" % searchkey)
+        notset = re.compile(r"^#\s+CONFIG_(%s.*)\s+is not set" % searchkey)
 
         for line in configs:
             m = config.search(line)
@@ -390,12 +390,12 @@ class Piccy(callbacks.Plugin):
             return None
 
         if release == None:
-            release = "[^#,]+"
+            release = r"[^#,]+"
         else:
             release = self.cleanreleasename(release)
 
         keys = []
-        versionre = re.compile("^\s*(%s)\s*,\s*([^,]+)\s*,\s*(.+)\s*$" % release)
+        versionre = re.compile(r"^\s*(%s)\s*,\s*([^,]+)\s*,\s*(.+)\s*$" % release)
         for line in kernels:
             line = line.strip()
             m = versionre.search(line)
@@ -409,10 +409,10 @@ class Piccy(callbacks.Plugin):
 
 
     def bold(self, s):
-          if self.registryValue('use_bold'):
-              return ircutils.bold(s)
-          else:
-              return s
+        if self.registryValue('use_bold'):
+            return ircutils.bold(s)
+        else:
+            return s
 
 
 Class = Piccy
