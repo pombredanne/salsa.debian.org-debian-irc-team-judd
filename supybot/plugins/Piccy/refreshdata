@@ -50,21 +50,19 @@ KERNELRE='linux-image-2.6.[0-9]+-[0-9]-686$'
 # ARCH="amd64"
 # KERNELRE='linux-image-2.6.[0-9]+-[0-9]-amd64$'
 
-
-TARGET=${1-.}
-
-if [ ! -d "$TARGET" ]
-then
-  echo "E: Target directory doesn't exist."
-  echo "E: Please create '$TARGET'"
-  exit 1
-fi
-
-if [ ! -f kernels.list ]
-then
+usage() {
+  PROG=$(basename "$0")
   cat <<EOF
-E: couldn't find kernels.list config file
-Format of file should be:
+
+Usage: $PROG [kernels.list] [data_directory]
+
+If kernels.list is not specified, a file in the cwd or in the same location
+as the script itself will be used.
+
+If data_directory is not specified, cwd will be used if there is existing data
+in that directory already (e.g. pci.ids file and a versions file).
+
+Format of kernels.list file should be:
     distname,    deb url release sections,     packageregexp"
 where:
   distname      is 'sid' 'lenny' etc
@@ -73,6 +71,73 @@ where:
                 kernel. Default is '$KERNELRE'
 EOF
   exit 1
+}
+
+checktarget() {
+  if [ -f "pci.ids" -a -f "versions" ]
+  then
+    TARGET="."
+  else
+    echo "E: Cowardly refusing to dump data in pristine cwd"
+    usage
+  fi
+}
+
+checkklist() {
+  if [ -f "kernels.list" ]
+  then
+    KLIST="kernels.list"
+    return
+  else
+    LOC=$(dirname "$0")
+    if [ -f "$LOC/kernels.list" ]
+    then
+      KLIST="$LOC/kernels.list"
+      return
+    fi
+  fi
+  echo "E: Couldn't find kernels.list file in default locations."
+  usage
+}
+
+if [ $# -eq 2 ]
+then
+  KLIST="$1"
+  TARGET="$2"
+elif [ $# -gt 2 ]
+then
+  echo "E: Unknown options $@"
+  usage
+elif [ $# -eq 1 ]
+then
+  if [ -f "$1" ]    # if it's a file, then it's the kernels.list
+  then
+    KLIST="$1"
+    checktarget
+  elif [ -d "$1" ]
+  then
+    TARGET="$1"
+    checkklist
+  else
+    echo "E: couldn't figure out what to do with argument: $1"
+    usage
+  fi
+else # 0 args
+  checktarget
+  checkklist
+fi
+
+if [ ! -d "$TARGET" ]
+then
+  echo "E: Target directory doesn't exist."
+  echo "E: Please create '$TARGET'"
+  usage
+fi
+
+if [ ! -f $KLIST ]
+then
+  echo "E: Couldn't find kernels.list file in specified location."
+  usage
 fi
 
 TEMPDIR=$(mktemp -t -d piccy_update.XXXXXX)
@@ -105,7 +170,7 @@ EOF
 chmod +x $TEMPDIR/fakegpgv
 
 
-grep -v '^#' kernels.list | 
+grep -v '^#' $KLIST |
 while read line    # read from kernels.list config file
 do
   echo "========================================================================"
