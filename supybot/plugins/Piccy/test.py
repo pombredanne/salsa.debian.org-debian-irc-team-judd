@@ -69,4 +69,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('kernelversion')    # returns all versions
         self.assertNotError('kernels')    # returns all versions
 
+    def testUpdater(self):
+        self.assertNotError('update')    # update the data
+
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

@@ -40,6 +40,8 @@ import supybot.callbacks as callbacks
 
 import re
 import os
+import time
+import subprocess
 
 # All data files are stored using the release code names (right half of the
 # mapping) but this mapping also allows users to search using the release
@@ -59,6 +61,7 @@ verbose = False
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
+    threaded = True
 
     def __init__(self, irc):
         self.__parent = super(Piccy, self)
@@ -208,6 +211,41 @@ class Piccy(callbacks.Plugin):
     kernel        = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
     kernels       = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
 
+
+    def updateHelper(self, irc, msg, args):
+        """takes no arguments
+
+        Refreshes the data used by the plugin. (Requires elevated privileges.)
+        """
+
+        sourcedir = os.path.dirname(__file__)
+        refresh   = os.path.join(sourcedir, "refreshdata")
+
+        path      = self.registryValue('base_path')
+        data      = conf.supybot.directories.data()
+        data      = os.path.join(data, path)
+
+        if verbose:
+            print "Attempting to refresh with %s %s" % (refresh, data)
+        try:
+            starttime = time.time()
+            irc.reply("Starting to refresh the kernel and PCI-Id data (this takes a while)...")
+            output = subprocess.Popen([refresh, data],
+                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
+            if verbose:
+                print output
+
+            if re.search("^E:", "".join(output), re.MULTILINE):
+                self.log.error(output)
+                irc.error("Error refreshing data. Please see logs or run the update manually.")
+            else:
+                self.log.debug(output)
+                irc.reply("Data update completed in %d seconds." % (time.time()-starttime))
+        except OSError, e:
+            self.log.error("Error refreshing data. %s" % e)
+            irc.error("Error refreshing data. %s" % e)
+
+    update       = wrap(updateHelper, ['owner', 'private'] )
 
     def findname(self, vendor, device):
         """
