@@ -29,7 +29,11 @@
 ###
 
 # TODO:
-# usbids => device + module?
+#   * handle multiple modules for a device
+#   * handle stable-security kernel versions
+#   * allow loading table(s) of non-free module mappings
+#
+#   * usbids => device + module?
 
 import supybot.conf as conf
 import supybot.utils as utils
@@ -55,9 +59,6 @@ release_map = { 'trunk'       : 'trunk',
                 'stable'      : 'lenny',
                 'oldstable1'  : 'etchnhalf',
                 'oldstable'   : 'etch' }
-
-#verbose = True
-verbose = False
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
@@ -86,7 +87,6 @@ class Piccy(callbacks.Plugin):
         release = self.cleanreleasename(release)
 
         vendor, device = self.splitpciid(pciid)
-        #print "vendor = '%s', device = '%s'" % (vendor, device)
 
         if vendor == 0 or device == 0:
             irc.error("I don't know what you mean by PCI Id '%s'. 0000:0000 is my preferred format where both vendor Id and device Id are are in hexadecimal." % pciid)
@@ -120,10 +120,6 @@ class Piccy(callbacks.Plugin):
 
         reply = "[%s:%s] is '%s' from '%s' %s See also %s" % (vendor, device, dname, vname, moduletext, hcllink)
 
-        if verbose:
-            print
-            print reply
-
         irc.reply(reply)
 
     pciid = wrap(pciidHelper, ['something', getopts( { 'release':'something' } ) ] )
@@ -154,14 +150,9 @@ class Piccy(callbacks.Plugin):
         if len(configlist) == 0:
             configtext = self.bold('no results')
         else:
-            #print configlist
             configtext = ' '.join(configlist)
 
         reply = "Searching for '%s' in %s kernel config gives %s." % (self.bold(pattern), self.bold(release), configtext)
-
-        if verbose:
-            print
-            print reply
 
         irc.reply(reply)
 
@@ -198,10 +189,6 @@ class Piccy(callbacks.Plugin):
         else:
             reply = "No kernel versions found."
 
-        if verbose:
-            print
-            print reply
-
         irc.reply(reply)
 
     kernelversion = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
@@ -225,24 +212,23 @@ class Piccy(callbacks.Plugin):
         data      = conf.supybot.directories.data()
         data      = os.path.join(data, path)
 
-        if verbose:
-            print "Attempting to refresh with %s %s" % (refresh, data)
+        self.log.info("Attempting to refresh with %s %s", refresh, data)
         try:
             starttime = time.time()
             irc.reply("Starting to refresh the kernel and PCI-Id data (this takes a while)...")
             output = subprocess.Popen([refresh, data],
                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
-            if verbose:
-                print output
+            self.log.debug(output)
 
-            if re.search("^E:", "".join(output), re.MULTILINE):
-                self.log.error(output)
+            if re.search(r"^E:", "".join(output), re.MULTILINE):
+                self.log.debug("Error updating data: %s", output)
                 irc.error("Error refreshing data. Please see logs or run the update manually.")
             else:
-                self.log.debug(output)
+                self.log.debug("Updater output: %s", output)
+                self.log.info("Data refresh appeared to be successful")
                 irc.reply("Data update completed in %d seconds." % (time.time()-starttime))
         except OSError, e:
-            self.log.error("Error refreshing data. %s" % e)
+            self.log.error("Error refreshing data. %s", e)
             irc.error("Error refreshing data. %s" % e)
 
     update       = wrap(updateHelper, ['owner', 'private'] )
@@ -288,7 +274,7 @@ class Piccy(callbacks.Plugin):
                     dname=line[6:]
 
         idmap.close()
-        #print "Found: [%s:%s] => (%s) (%s)" % (vendor, device, vname, dname)
+        self.log.debug("Found: [%s:%s] => (%s) (%s)", vendor, device, vname, dname)
         return vname,dname
 
 
@@ -324,7 +310,7 @@ class Piccy(callbacks.Plugin):
                 break
 
         modmap.close()
-        #print "Found: [%s:%s] => (%s)" % (vendor, device, mname)
+        self.log.debug("Found: [%s:%s] => (%s)", vendor, device, mname)
         return mname
 
     def splitpciid(self, pciid):
@@ -338,6 +324,7 @@ class Piccy(callbacks.Plugin):
         if not (m is None):
             vid = m.groups(1)[0]
             did = m.groups(1)[1]
+        self.log.debug("PCI id parsing gives vendor = '%s', device = '%s'", vid, did)
         return vid, did
 
     def cleanreleasename(self, release):
@@ -376,7 +363,7 @@ class Piccy(callbacks.Plugin):
         keys = []
 
         # Cleanse any characters that aren't allowed in the regexp
-        pattern = re.sub('[^\s\w\d]', '', pattern)
+        pattern = re.sub(r'[^\s\w\d]', '', pattern)
 
         # format of the config-$uname -r) is:
         # CONFIG_FOO=y
