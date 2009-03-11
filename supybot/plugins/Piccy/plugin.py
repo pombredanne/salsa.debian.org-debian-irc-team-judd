@@ -233,6 +233,7 @@ class Piccy(callbacks.Plugin):
 
     update       = wrap(updateHelper, ['owner', 'private'] )
 
+
     def findname(self, vendor, device):
         """
         /usr/share/misc/pci.ids
