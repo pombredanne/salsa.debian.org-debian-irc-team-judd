@@ -1,0 +1,107 @@
+#!/usr/bin/python
+
+###
+# Copyright (c) 2009, Stuart Prescott
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   * Redistributions of source code must retain the above copyright notice,
+#     this list of conditions, and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright notice,
+#     this list of conditions, and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of the author of this software nor the name of
+#     contributors to this software may be used to endorse or promote products
+#     derived from this software without specific prior written consent.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+import sys
+import re
+import os
+
+infilename = 'grub.texi'
+outfilename = 'grub.dat'
+if len(sys.argv) >= 2:
+  infilename = sys.argv[1]
+
+if not os.path.exists(infilename):
+  print >> sys.stderr, "Usage: %s [grub.texi]" % sys.argv[0]
+  print >> sys.stderr, """
+Obtain grub.texi by:
+
+   apt-get source grub
+   cp grub-*/docs/grub.texi $plugin_data_dir
+
+The path to grub.texi need not be specified if it resides in the current directory.
+
+ See also:
+     http://www.gnu.org/software/grub/manual/grub.html#Troubleshooting
+"""
+  sys.exit(1)
+
+infile = open(infilename, 'r')
+outfile = open(outfilename, 'w')
+
+# Jump through the file to find the start of the error section
+#    @section Errors reported by the Stage 2
+sectionre = re.compile(r"^@section Errors.+Stage 2")
+for line in infile:
+  if sectionre.search(line):
+    break
+
+# Now find the main table
+#    @item errcode : short description
+#    Long description several lines
+#
+#    @table @asis
+tablere = re.compile(r"^@table")
+for line in infile:
+  if tablere.match(line):
+    break
+
+# iterate until the end of the table
+#    @end table
+tablere  = re.compile(r"^@end table")
+itemre   = re.compile(r"^@item\s+(\d+)\s*:\s*(.+)")
+endre    = re.compile(r"^\s*$")
+markupre = re.compile(r"@\w+{([^}]+)}")
+for line in infile:
+  endflag = False
+  #print line
+  if tablere.match(line):
+    #print "found end of table"
+    break
+  m = itemre.match(line)
+  if m:
+    errcode   = int(m.groups(1)[0])
+    shortdesc = m.groups(1)[1].replace("\t", " ")
+    longdesc  = []
+    for line in infile:
+      if endre.match(line):
+        break
+      if tablere.match(line):
+        endflag = True
+        break
+      longdesc.append(line.strip().replace("\t", " "))
+    longdesc = " ".join(longdesc)
+    longdesc = markupre.sub(r"\1", longdesc)
+    print >> outfile, "%d\t%s\t%s" % (errcode, shortdesc, longdesc)
+  if endflag: break
+
+
+infile.close()
+outfile.close()
+
