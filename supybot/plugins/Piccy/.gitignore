@@ -1,0 +1,4 @@
+config-*
+modules.pcimap*
+pci.ids
+versions
