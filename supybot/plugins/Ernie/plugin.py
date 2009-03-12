@@ -39,6 +39,7 @@ import re
 import os
 import errno
 import types
+import httplib
 
 
 class Ernie(callbacks.Plugin):
@@ -53,7 +54,7 @@ class Ernie(callbacks.Plugin):
 
         Output the description for a grub error code.
         """
-        
+
         # See http://www.gnu.org/software/grub/manual/grub.html#Stage2-errors
         # look through the grub error map
         grub    = self.registryValue('grub_map')
@@ -86,7 +87,7 @@ class Ernie(callbacks.Plugin):
 
         Output a brief error description for a posix numeric or literal error code.
         """
-        
+
         # see http://www.python.org/doc/2.5.2/lib/module-errno.html
         # Also: 
         # perl -MErrno -e 'my %e= map { Errno->$_()=>$_ } keys(%!); print grep ! /unknown error/i, map sprintf("%4d %-12s %s".$/,$_,$e{$_},$!=$_), 0..127'
@@ -99,11 +100,11 @@ class Ernie(callbacks.Plugin):
                 errcode = invmap[errcode]
         else:
             errcode = int(errcode)
-        
+
         if errcode in errno.errorcode.keys():
             name = errno.errorcode[errcode]
             description = os.strerror(errcode)
-          
+
         reply = "Error code %s could not be found" % errcode
         if not name == '':
             reply = "Error code %s is %s: %s." % (self.bold(errcode), self.bold(name), description)
@@ -111,6 +112,28 @@ class Ernie(callbacks.Plugin):
         irc.reply(reply)
 
     errno = wrap(errnoHelper, ['something'] )
+
+
+    def httpHelper(self, irc, msg, args, statuscode):
+        """<status code>
+
+        Output the name and a brief error description for an HTTP status code
+        """
+
+        # see http://docs.python.org/library/httplib.html
+
+        if statuscode in httplib.responses:
+            reply = "HTTP status code %s is %s." % (self.bold(statuscode),
+                                    self.bold(httplib.responses[statuscode]))
+        else:
+            reply = "Error code %s could not be found" % statuscode
+
+        irc.reply(reply)
+
+    http = wrap(httpHelper, ['int'] )
+
+
+
 
 
     def bold(self, s):

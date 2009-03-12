@@ -46,4 +46,10 @@ class ErnieTestCase(PluginTestCase):
         self.assertNotError('errno EPIPE')  # error 33
         self.assertNotError('errno EPIPE123')   # no such error code
 
+    def testHTTP(self):
+        self.assertNotError('http 200')     # Continue
+        self.assertNotError('http 404')     # Not found
+        self.assertError('http 404a')       # illegal status code
+        self.assertNotError('http 12345')   # no such status code
+
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
