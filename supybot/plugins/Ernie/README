@@ -15,6 +15,20 @@ Ernie needs data files to run --
     cp grub-*/docs/grub.texi $plugin_data_dir
     mkgrubdb grub.texi
 
+* smtp status codes:
+    make a file that is whitespace separated with code then description,
+    one per line. A sample is provided.
+
+Further details
+===============
+
+* POSIX error codes
+The mapping between POSIX error codes, names and descriptions are provided
+by the Python errno module.
+
+* HTTP status codes
+The mapping between HTTP status codes and w3c names is provided
+by the Python httplib module.
 
 
 Example usage
