@@ -79,7 +79,7 @@ class Ernie(callbacks.Plugin):
 
         irc.reply(reply)
 
-    grub = wrap(grubHelper, ['something'] )
+    grub = wrap(grubHelper, ['int'] )
 
 
     def errnoHelper(self, irc, msg, args, errcode):
