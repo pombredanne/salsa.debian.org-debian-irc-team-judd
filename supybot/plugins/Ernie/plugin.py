@@ -133,6 +133,36 @@ class Ernie(callbacks.Plugin):
     http = wrap(httpHelper, ['int'] )
 
 
+    def smtpHelper(self, irc, msg, args, statuscode):
+        """<status code>
+
+        Output the description for an SMTP status code.
+        """
+
+        smtp    = self.registryValue('smtp_map')
+        path    = self.registryValue('base_path')
+        data    = conf.supybot.directories.data()
+
+        smtp = os.path.join(data, path, smtp)
+        try:
+            smtpmap = open(smtp, 'r')
+        except IOError, e:
+            self.log.error(str(e))
+            irc.error("Error looking up smtp status codes.")
+            return None
+
+        reply = "No information was found for smtp status %s." % statuscode
+
+        statusre = re.compile(r"^%s\s+(.+)" % statuscode)
+        for line in smtpmap:
+            m = statusre.match(line)
+            if m:
+                reply = "SMTP status %s: %s" % (self.bold(statuscode), self.bold(m.groups(1)[0]))
+
+        irc.reply(reply)
+
+    smtp = wrap(smtpHelper, ['int'] )
+
 
 
 

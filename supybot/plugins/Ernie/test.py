@@ -52,4 +52,9 @@ class ErnieTestCase(PluginTestCase):
         self.assertError('http 404a')       # illegal status code
         self.assertNotError('http 12345')   # no such status code
 
+    def testSMTP(self):
+        self.assertNotError('smtp 211')     # Continue
+        self.assertError('smtp 123a')       # illegal status code
+        self.assertNotError('smtp 12345')   # no such status code
+
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
