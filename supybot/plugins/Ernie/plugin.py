@@ -184,6 +184,67 @@ class Ernie(callbacks.Plugin):
     http = wrap(httpHelper, ['int'] )
 
 
+    def gpgHelper(self, irc, msg, args, keyid):
+        """<key id>
+
+        Look up the name associated with a GPG key id in the Debian keyring.
+        """
+
+        # FIXME: move this to a configuration option.
+        keydbs = [
+                    "debian-archive-keyring.gpg", 
+                    "debian-backports-keyring.gpg", 
+                    "debian-keyring.gpg", 
+                    "debian-maintainers.gpg", 
+                    "debian-multimedia-keyring.gpg", 
+                    "debian-role-keys.gpg"
+                ];
+
+        if not re.match(r"^[a-f\d]+$", keyid, re.IGNORECASE):
+            irc.error("Sorry, %s doesn't look like a valid gpg key." % self.bold(keyid))
+            return
+
+        reply = "Sorry, I can't identify key %s." % self.bold(keyid)
+        errors = 0
+
+        for db in keydbs:
+            id, name = self.findKey(keyid, db)
+            if id:
+                reply = "Key Id %s belongs to %s and was found in %s." % \
+                            (self.bold(id), self.bold(name), db)
+                break
+            elif id == None:
+                errors += 1
+        
+        irc.reply(reply)
+        if errors:
+            irc.error("There were %s error(s) looking up key id." % errors)
+
+    gpg = wrap(gpgHelper, ['something'] )
+
+
+    def findKey(self, keyid, keyring):
+        keydb   = "%s.db" % keyring[:-4] 
+        keypath = self.registryValue('keyring_path')
+        path    = self.registryValue('base_path')
+        data    = conf.supybot.directories.data()
+
+        keydb = os.path.join(data, path, keypath, keydb)
+        try:
+            self.log.debug("Searching %s",  keydb)
+            keymap = open(keydb, 'r')
+        except IOError, e:
+            self.log.error(str(e))
+            return None, None
+
+        keyre = re.compile(r"^([a-f\d]*%s)\s+(.+)" % keyid, re.IGNORECASE)
+        for line in keymap:
+            m = keyre.match(line)
+            if m:
+                return m.groups(1)[0], m.groups(1)[1]
+        return "", ""
+
+
     def bold(self, s):
         if self.registryValue('use_bold'):
             return ircutils.bold(s)

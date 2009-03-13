@@ -48,6 +48,7 @@ Ernie = conf.registerPlugin('Ernie')
 conf.registerGlobalValue( Ernie, 'base_path', registry.String("ernie", "base path to the data files; if a relative path is used, it is relative to supybot.directories.data") )
 conf.registerGlobalValue( Ernie, 'grub_map', registry.String( "grub.dat", "grub error codes file (full path or path relative to base_path)" ) )
 conf.registerGlobalValue( Ernie, 'smtp_map', registry.String( "smtp.dat", "smtp status codes file (full path or path relative to base_path)" ) )
+conf.registerGlobalValue( Ernie, 'keyring_path', registry.String("", "base path to the data files; if a relative path is used, it is relative to the plugin's base_path") )
 conf.registerGlobalValue( Ernie, 'use_bold', registry.Boolean(True, "use bold face in selected places in the output") )
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

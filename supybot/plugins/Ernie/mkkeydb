@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ###
 # Copyright (c) 2009, Stuart Prescott
 # All rights reserved.
@@ -25,42 +27,28 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 ###
 
-from supybot.test import *
+# TODO: make this more sensibly configured
 
-class ErnieTestCase(PluginTestCase):
-    plugins = ('Ernie',)
+keyrings="
+debian-archive-keyring.gpg
+debian-backports-keyring.gpg
+debian-keyring.gpg
+debian-maintainers.gpg
+debian-multimedia-keyring.gpg
+debian-role-keys.gpg"
 
-    # prevent supybot-test from deleting all the data
-    cleanDataDir = False
-       
-    def testGrubMap(self):
-        self.assertNotError('grub 12')
-        self.assertNotError('grub 123')   # no such error code
+basedir="/usr/share/keyrings/"
 
-    def testErrno(self):
-        self.assertNotError('errno 2')      # EPERM
-        self.assertNotError('errno 1234')   # no such error code
-        self.assertNotError('errno EPIPE')  # error 33
-        self.assertNotError('errno EPIPE123')   # no such error code
+outputdir=.
 
-    def testHTTP(self):
-        self.assertNotError('http 200')     # Continue
-        self.assertNotError('http 404')     # Not found
-        self.assertError('http 404a')       # illegal status code
-        self.assertNotError('http 12345')   # no such status code
-
-    def testSMTP(self):
-        self.assertNotError('smtp 211')     # Continue
-        self.assertError('smtp 123a')       # illegal status code
-        self.assertNotError('smtp 12345')   # no such status code
-
-    def testkey(self):
-        self.assertNotError('gpg 16BA136C')     # backports.org key (8 chars)
-        self.assertNotError('gpg EA8E8B2116BA136C')     # backports.org key (full)
-        self.assertNotError('gpg 16BA136D')     # unknown key
-        self.assertError('gpg 16BA136Z')     # invalid key
-        
-# vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
+for keyring in $keyrings
+do
+    echo "Processing $keyring"
+    db=$(basename "$keyring" .gpg).db
+    gpg --with-colons --list-keys --no-default-keyring \
+        --keyring $basedir/$keyring |
+        awk -F: '/pub/ {print $5,$10}' \
+        > $outputdir/${db}
+done
