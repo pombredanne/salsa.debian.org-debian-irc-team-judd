@@ -165,6 +165,24 @@ class Ernie(callbacks.Plugin):
 
 
 
+    def httpHelper(self, irc, msg, args, statuscode):
+        """<status code>
+
+        Output the name and a brief error description for an HTTP status code
+        """
+
+        # see http://docs.python.org/library/httplib.html
+
+        if statuscode in httplib.responses:
+            reply = "HTTP status code %s is %s." % (self.bold(statuscode),
+                                    self.bold(httplib.responses[statuscode]))
+        else:
+            reply = "Error code %s could not be found" % statuscode
+
+        irc.reply(reply)
+
+    http = wrap(httpHelper, ['int'] )
+
 
     def bold(self, s):
         if self.registryValue('use_bold'):
