@@ -19,6 +19,11 @@ Ernie needs data files to run --
     make a file that is whitespace separated with code then description,
     one per line. A sample is provided.
 
+* GPG keyring lookup:
+    make a file that is whitespace separated with gpg key id then owner,
+    one per line. The utility mkkeydb will make such a file from a gpg
+    keyring file.
+
 Further details
 ===============
 
