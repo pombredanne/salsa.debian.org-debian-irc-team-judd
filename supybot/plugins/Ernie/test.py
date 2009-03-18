@@ -59,6 +59,7 @@ class ErnieTestCase(PluginTestCase):
 
     def testkey(self):
         self.assertNotError('gpg 16BA136C')     # backports.org key (8 chars)
+        self.assertNotError('gpg 0x16BA136C')     # backports.org key (8 chars with 0x)
         self.assertNotError('gpg EA8E8B2116BA136C')     # backports.org key (full)
         self.assertNotError('gpg 16BA136D')     # unknown key
         self.assertError('gpg 16BA136Z')     # invalid key

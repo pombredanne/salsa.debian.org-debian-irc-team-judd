@@ -200,6 +200,9 @@ class Ernie(callbacks.Plugin):
                     "debian-role-keys.gpg"
                 ];
 
+        if keyid[0:2] == "0x":
+            keyid = keyid[2:]
+
         if not re.match(r"^[a-f\d]+$", keyid, re.IGNORECASE):
             irc.error("Sorry, %s doesn't look like a valid gpg key." % self.bold(keyid))
             return
@@ -207,15 +210,22 @@ class Ernie(callbacks.Plugin):
         reply = "Sorry, I can't identify key %s." % self.bold(keyid)
         errors = 0
 
+        matches = []
         for db in keydbs:
             id, name = self.findKey(keyid, db)
             if id:
-                reply = "Key Id %s belongs to %s and was found in %s." % \
-                            (self.bold(id), self.bold(name), db)
-                break
+                matches.append([id, name, db])
             elif id == None:
                 errors += 1
-        
+
+        if matches:
+            replies = map(lambda entry: "Key Id %s belongs to %s and was found in %s." % \
+                            (self.bold(entry[0]), self.bold(entry[1]), entry[2]),
+                          matches )
+            reply = " ".join(replies)
+            if len(matches) > 1:
+                reply = "Multiple matches: %s" % reply
+
         irc.reply(reply)
         if errors:
             irc.error("There were %s error(s) looking up key id." % errors)
