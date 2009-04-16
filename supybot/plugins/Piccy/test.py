@@ -61,6 +61,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('kconfig CONFIG_SMB_FS --release etch')       # is set in etch
         self.assertNotError('kconfig CONFIG_SMB_FS --release lenny')    # fails to match (is not set)
         self.assertNotError('kconfig SMB --release lenny')      # fails to match (is not set)
+        self.assertNotError('kconfig proc')      # allow case-insensitive matching
 
     def testVersionList(self):
         self.assertNotError('kversion')    # returns all versions

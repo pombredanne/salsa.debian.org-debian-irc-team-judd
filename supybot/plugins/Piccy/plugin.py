@@ -395,13 +395,13 @@ class Piccy(callbacks.Plugin):
         # where all keys start with CONFIG_, comments start with a # and there are blank lines.
 
         # generic search term to find matching lines
-        config = re.compile(pattern)
+        config = re.compile(pattern, re.IGNORECASE)
         if pattern[0:7] == "CONFIG_":
           searchkey = pattern[7:]
         else:
           searchkey = ".*" + pattern
         # specific term for matching "is not set" comments
-        notset = re.compile(r"^#\s+CONFIG_(%s.*)\s+is not set" % searchkey)
+        notset = re.compile(r"^#\s+CONFIG_(%s.*)\s+is not set" % searchkey, re.IGNORECASE)
 
         for line in configs:
             m = config.search(line)
