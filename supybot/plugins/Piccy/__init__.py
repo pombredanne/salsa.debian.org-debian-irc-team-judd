@@ -39,15 +39,15 @@ import supybot.world as world
 # in here if you're keeping the plugin in CVS or some similar system.
 __version__ = ""
 
-# Replace this with an appropriate author or supybot.Author instance.
-__author__ = "Stuart Prescott"
+__author__ =  supybot.Author('Stuart Prescott', 'themill',
+                                'stuart+debian@nanonanonano.net')
 
 # This is a dictionary mapping supybot.Author instances to lists of
 # contributions.
 __contributors__ = {}
 
 # This is a url where the most recent plugin package can be downloaded.
-__url__ = 'http://git.vireo.org/~stew/git/judd.git/';
+__url__ = 'http://git.vireo.org/~stew/git/judd.git/'
 
 import config
 import plugin

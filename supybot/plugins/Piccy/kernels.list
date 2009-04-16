@@ -4,7 +4,7 @@
 # Format:
 # releasename,        sources.list line,         package regexp
 #
-trunk,      deb http://kernel-archive.buildserver.net/debian-kernel trunk main
+trunk,      deb http://kernel-archive.buildserver.net/debian-kernel trunk main,   linux-image-2.6.*trunk.*-686$
 sid,        deb http://ftp.uk.debian.org/debian/ sid main
 squeeze,    deb http://ftp.uk.debian.org/debian/ squeeze main
 lenny,      deb http://ftp.uk.debian.org/debian/ lenny main
