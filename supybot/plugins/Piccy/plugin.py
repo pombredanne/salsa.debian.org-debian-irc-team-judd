@@ -221,7 +221,7 @@ class Piccy(callbacks.Plugin):
             self.log.debug(output)
 
             if re.search(r"^E:", "".join(output), re.MULTILINE):
-                self.log.debug("Error updating data: %s", output)
+                self.log.warn("Error updating data: %s", output)
                 irc.error("Error refreshing data. Please see logs or run the update manually.")
             else:
                 self.log.debug("Updater output: %s", output)
@@ -232,6 +232,28 @@ class Piccy(callbacks.Plugin):
             irc.error("Error refreshing data. %s" % e)
 
     update       = wrap(updateHelper, ['owner', 'private'] )
+
+
+    def lastUpdateHelper(self, irc, msg, args):
+        """takes no arguments
+
+        Outputs when the data used by the plugin was last refreshed.
+        """
+
+        klist    = self.registryValue('kernel_versions')
+        path     = self.registryValue('base_path')
+        data     = conf.supybot.directories.data()
+
+        klist = os.path.join(data, path, klist)
+
+        try:
+            mtime = os.path.getmtime(klist)
+            irc.reply("Piccy plugin data last updated at %s" % time.strftime('%Y-%m-%d %H:%M', time.localtime(mtime)))
+        except OSError, e:
+            self.log.error("Error looking up kernel versions mtime. %s", e)
+            irc.error("Couldn't determine when data was last refreshed.")
+
+    lastupdate   = wrap(lastUpdateHelper)
 
 
     def findname(self, vendor, device):

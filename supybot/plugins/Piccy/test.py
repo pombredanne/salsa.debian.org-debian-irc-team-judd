@@ -74,4 +74,7 @@ class PiccyPluginTestCase(PluginTestCase):
         #self.assertNotError('update')    # update the data
         True
 
+    def testLastUpdate(self):
+        self.assertNotError('lastupdate')
+
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
