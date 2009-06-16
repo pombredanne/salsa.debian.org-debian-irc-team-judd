@@ -44,6 +44,7 @@ import supybot.callbacks as callbacks
 
 import re
 import os
+import string
 import time
 import subprocess
 
@@ -278,7 +279,7 @@ class Piccy(callbacks.Plugin):
         for line in idmap:
             #print line
             if len(line) < 4 or line[0] == '#': continue
-            if line[0:4] == vendor:
+            if string.lower(line[0:4]) == vendor:
                 vname = line[5:].strip()
                 #print "Match line: %s" % line
                 found = True
@@ -293,7 +294,7 @@ class Piccy(callbacks.Plugin):
                 if len(line) < 4 or line[0] == '#': continue
                 if line[0] != "\t": break
                 line = line.strip()
-                if line[0:4] == device:
+                if string.lower(line[0:4]) == device:
                     dname=line[6:]
 
         idmap.close()
@@ -345,8 +346,8 @@ class Piccy(callbacks.Plugin):
         did = 0
         m = re.search(r'\[?([\da-f]{4}):([\da-f]{4})\]?', pciid, re.I)
         if not (m is None):
-            vid = m.groups(1)[0]
-            did = m.groups(1)[1]
+            vid = string.lower(m.groups(1)[0])
+            did = string.lower(m.groups(1)[1])
         self.log.debug("PCI id parsing gives vendor = '%s', device = '%s'", vid, did)
         return vid, did
 
