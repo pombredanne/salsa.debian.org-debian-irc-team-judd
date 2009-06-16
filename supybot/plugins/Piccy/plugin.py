@@ -326,7 +326,7 @@ class Piccy(callbacks.Plugin):
         # used here as strings again.
         r = r'^([^\s]+)\s+0x0000%s\s+0x0000%s\s+' % (vendor, device)
         #print r
-        module = re.compile(r)
+        module = re.compile(r, re.I)
         for line in modmap:
             m = module.match(line)
             if not (m is None):
