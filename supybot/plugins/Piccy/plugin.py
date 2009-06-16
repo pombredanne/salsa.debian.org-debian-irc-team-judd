@@ -90,7 +90,7 @@ class Piccy(callbacks.Plugin):
         vendor, device = self.splitpciid(pciid)
 
         if vendor == 0 or device == 0:
-            irc.error("I don't know what you mean by PCI Id '%s'. 0000:0000 is my preferred format where both vendor Id and device Id are are in hexadecimal." % pciid)
+            irc.error("I don't know what you mean by PCI Id '%s'. 0000:0000 is my preferred format where both vendor Id and device Id are are in hexadecimal. You can find the PCI Id in the output of 'lspci -nn'." % pciid)
             return
 
         vname,dname = self.findname(vendor, device)
