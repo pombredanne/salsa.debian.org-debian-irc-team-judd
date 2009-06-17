@@ -49,6 +49,7 @@ conf.registerGlobalValue( Piccy, 'base_path', registry.String("piccy", "base pat
 conf.registerGlobalValue( Piccy, 'pci_map', registry.String( "pci.ids", "pci-id file (full path or path relative to base_path)" ) )
 conf.registerGlobalValue( Piccy, 'module_map', registry.String("modules.pcimap-%s", "kernel pci-id to module mapping file; use %s for the release name; (full path or path relative to base_path)") )
 conf.registerGlobalValue( Piccy, 'hcl_url', registry.String( "http://kmuto.jp/debian/hcl/index.rhtmlx?check=1&lspci=%s", "link for extra information about the pci-id; use %s for the pci-id; will not be included in output if set to empty string") )
+conf.registerGlobalValue( Piccy, 'extra_module_maps', registry.SpaceSeparatedListOfStrings(["fglrx"], "space separated list of extra kernel pci-id to module mapping files from out-of-tree modules; used in the %s 'release name' field of the module_map parameter; (full path or path relative to base_path)") )
 conf.registerGlobalValue( Piccy, 'kernel_config', registry.String("config-%s", "kernel config file; use %s for the release name; (full path or path relative to base_path)") )
 conf.registerGlobalValue( Piccy, 'kernel_versions', registry.String( "versions", "list of known kernel versions (full path or path relative to base_path)" ) )
 conf.registerGlobalValue( Piccy, 'default_release', registry.String("lenny", "default release kernel to look at for modules") )

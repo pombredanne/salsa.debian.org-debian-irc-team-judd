@@ -121,9 +121,16 @@ class Piccy(callbacks.Plugin):
             else:
                 moduletext = "with kernel module '%s' in %s." % (self.bold("".join(module)), self.bold(release))
 
+        extras = set([])
+        extramodules = ""
+        for label in self.registryValue('extra_module_maps'):
+            extras = extras.union(self.findmodule(vendor, device, label))
+        if len(extras):
+            extramodules = " and the out-of-tree %s module." % ", ".join(map(lambda m: "'%s'" % self.bold(m), extras))
+
         hcllink = self.registryValue('hcl_url') % ( "%s:%s" % (vendor, device))
 
-        reply = "[%s:%s] is '%s' from '%s' %s See also %s" % (vendor, device, dname, vname, moduletext, hcllink)
+        reply = "[%s:%s] is '%s' from '%s' %s See also %s%s" % (vendor, device, dname, vname, moduletext, hcllink, extramodules)
 
         irc.reply(reply)
 

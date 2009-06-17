@@ -39,7 +39,7 @@ class PiccyPluginTestCase(PluginTestCase):
     def testPCImap(self):
         self.assertNotError('pciid "[8086:4222]"')
         self.assertNotError('pciid "[8086:4222]" --release unstable')
-        self.assertNotError('pciid "[1002:7145]"')
+        self.assertNotError('pciid "[1002:7145]"')                     # ATI card (fglrx)
         self.assertNotError('pciid "[1002:7145]" --release unstable')
         self.assertNotError('pciid 14e4:170c')
         self.assertNotError('pciid 14e4:170c --release unstable')

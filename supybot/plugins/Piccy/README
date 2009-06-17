@@ -68,6 +68,15 @@ configurable in this file. The format of this file is described within it.
 At present, the available releases for Piccy to answer queries for are
 configured within the source code.
 
+Piccy can also accept a range of pcimap files for out-of-tree kernel modules.
+You will need to build and install the kernel modules to obtain a list of
+devices that they support.
+
+  grep fglrx /lib/modules/$(uname -r)/modules.pcimap \
+          > /path/to/data/piccy/modules.pcimap-fglrx
+
+and add "fglrx" to the space-separated "extra_module_maps" config key.
+
 
 Example usage
 =============
