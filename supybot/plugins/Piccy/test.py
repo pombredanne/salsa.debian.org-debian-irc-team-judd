@@ -44,7 +44,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('pciid 14e4:170c')
         self.assertNotError('pciid 14e4:170c --release unstable')
         self.assertNotError('pciid 168C:001B')                      # upper case
-        self.assertNotError('pciid 168C:001B --release unstable')
+        self.assertNotError('pciid 8086:27b9')                      # multiple matches
         self.assertNotError('pciid "[001c:0001]"')
         self.assertNotError('pciid ffff:0001')  # illegal vendor ID
         self.assertNotError('pciid 0069:0001')  # unknown vendor ID

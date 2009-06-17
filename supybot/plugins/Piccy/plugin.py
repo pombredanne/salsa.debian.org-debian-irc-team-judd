@@ -101,7 +101,7 @@ class Piccy(callbacks.Plugin):
         module = self.findmodule(vendor, device, release)
         if module is None:
             moduletext = self.bold("[Error looking up module list]") + '.'
-        elif module == "":
+        elif not len(module):
             modulefalltext=""
             fallback = self.cleanreleasename(self.registryValue('fallback_release'))
             if release != fallback:
@@ -109,13 +109,17 @@ class Piccy(callbacks.Plugin):
                 module = self.findmodule(vendor, device, fallback)
                 if module is None:
                     modulefalltext = self.bold(" [Error looking up module list for %s]" % fallback)
-                elif module == "":
+                elif not len(module):
                     modulefalltext = " or in %s" % fallback
                 else:
                     modulefalltext = " but has kernel module '%s' in %s" % (self.bold(module), self.bold(fallback))
             moduletext = "with no known kernel module in %s%s." % (release, modulefalltext)
         else:
-            moduletext = "with kernel module '%s' in %s." % (self.bold(module), self.bold(release))
+            if len(module) > 1:
+                modlist = map(lambda m: "'%s'" % self.bold(m), module)
+                moduletext = "with kernel modules %s in %s." % (", ".join(modlist), self.bold(release))
+            else:
+                moduletext = "with kernel module '%s' in %s." % (self.bold("".join(module)), self.bold(release))
 
         hcllink = self.registryValue('hcl_url') % ( "%s:%s" % (vendor, device))
 
@@ -317,7 +321,7 @@ class Piccy(callbacks.Plugin):
             self.log.error(str(e))
             return None
 
-        mname = ""
+        mname = []
 
         # format of the modules.pcimap is:
         # driver   vendor_id   device_id     [lots of other fields we don't care about]
@@ -330,12 +334,12 @@ class Piccy(callbacks.Plugin):
         for line in modmap:
             m = module.match(line)
             if not (m is None):
-                mname = m.groups(1)[0]
-                break
+                mname.append(m.groups(1)[0])
+                # break
 
         modmap.close()
-        self.log.debug("Found: [%s:%s] => (%s)", vendor, device, mname)
-        return mname
+        self.log.debug("Found: [%s:%s] => (%s)", vendor, device, ", ".join(mname))
+        return set(mname)
 
     def splitpciid(self, pciid):
         # Parse the pciid of the form [0000:0000] into vendor and device id parts.
