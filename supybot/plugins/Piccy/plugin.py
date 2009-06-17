@@ -128,9 +128,11 @@ class Piccy(callbacks.Plugin):
         if len(extras):
             extramodules = " and the out-of-tree %s module." % ", ".join(map(lambda m: "'%s'" % self.bold(m), extras))
 
-        hcllink = self.registryValue('hcl_url') % ( "%s:%s" % (vendor, device))
+        hcllink = [ self.registryValue('hcl_url') % ( "%s:%s" % (vendor, device)) ]
 
-        reply = "[%s:%s] is '%s' from '%s' %s See also %s%s" % (vendor, device, dname, vname, moduletext, hcllink, extramodules)
+        map(lambda page: hcllink.append(self.registryValue('wiki_url') % page), self.checkWikiLink(extras.union(module)))
+
+        reply = "[%s:%s] is '%s' from '%s' %s See also %s%s" % (vendor, device, dname, vname, moduletext, " ".join(hcllink), extramodules)
 
         irc.reply(reply)
 
@@ -347,6 +349,47 @@ class Piccy(callbacks.Plugin):
         modmap.close()
         self.log.debug("Found: [%s:%s] => (%s)", vendor, device, ", ".join(mname))
         return set(mname)
+
+
+    def checkWikiLink(self, modules):
+        """
+        Search through wiki page for links from module name to wiki page
+        """
+        if not len(modules):
+            return set([])
+
+        wikifile = self.registryValue('wiki_map')
+        path     = self.registryValue('base_path')
+        data     = conf.supybot.directories.data()
+
+        wikifile = os.path.join(data, path, wikifile)
+        try:
+            wikimap = open(wikifile, 'r')
+        except IOError, e:
+            self.log.error(str(e))
+            return []
+
+        wikipages = []
+
+        # format of the wiki page is:
+        # * iwl3945 [[iwlwifi]]
+        # * iwl4965 [[iwlwifi]], [[iwlagn]]
+        r = r'^\s*\*\s*(%s) (.*)' % "|".join(modules)
+        modulere = re.compile(r, re.I)
+        p = r'\[\[([a-z0-9\-_]+)\]\]'
+        linere = re.compile(p)
+        for line in wikimap:
+            linematches = modulere.match(line)
+            if not (linematches is None):
+                for page in re.split(r'[\s,]', linematches.groups(1)[1]):
+                    pagelist = linere.match(page)
+                    if pagelist:
+                        wikipages.append(pagelist.groups(1)[0])
+
+        wikimap.close()
+        self.log.debug("Found: [%s] => (%s)", ", ".join(modules), ", ".join(wikipages))
+        return set(wikipages)
+
 
     def splitpciid(self, pciid):
         # Parse the pciid of the form [0000:0000] into vendor and device id parts.

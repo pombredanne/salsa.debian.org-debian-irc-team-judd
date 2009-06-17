@@ -29,14 +29,21 @@ and wait while the kernel packages are downloaded.
 Further details
 ===============
 
-Piccy needs:
+Piccy requires:
 
 * a mapping of PCI-Ids to device manufacturer and device name
 * a mapping of PCI-Ids to kernel module
 * the kernel config file
 
-Piccy comes with a script "refreshdata" to grab the latest copies of these
-files from the internet.
+Piccy can optionally use:
+
+* a mapping of PCI-Ids to out-of-tree kernel modules
+* a mapping of kernel modules to URLs to give extra information
+
+Piccy comes with a script "refreshdata" to grab the latest copies of the
+required files from the internet.
+
+-- Refreshing data --
 
 The PCI-Ids file is the same as the pci.ids file that is shipped in the debian
 package pciutils and which can be updated using the command "update-pciids".
@@ -68,6 +75,8 @@ configurable in this file. The format of this file is described within it.
 At present, the available releases for Piccy to answer queries for are
 configured within the source code.
 
+-- Optional data sources --
+
 Piccy can also accept a range of pcimap files for out-of-tree kernel modules.
 You will need to build and install the kernel modules to obtain a list of
 devices that they support.
@@ -76,6 +85,15 @@ devices that they support.
           > /path/to/data/piccy/modules.pcimap-fglrx
 
 and add "fglrx" to the space-separated "extra_module_maps" config key.
+
+The list of URLs that Piccy should use for providing extra information for
+about the modules can be obtained directly from the Debian wiki:
+
+  wget -U Supybot -O /path/to/data/piccy/modules.wikilinks \
+          http://wiki.debian.org/DeviceDatabase/ModuleToWikipageMap?action=raw
+
+and set the config keys "wiki_url" to "http://wiki.debian.org/%s" and
+"wiki_map" to "modules.wikilinks".
 
 
 Example usage
