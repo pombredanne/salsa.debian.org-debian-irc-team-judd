@@ -240,7 +240,9 @@ do
 
   # Unpack the kernel package and create the modules map
   dpkg -x $WD/$KERNELDEB $WD
-  /sbin/depmod -b $WD $VER
+  # If this is running on a squeeze or later machine, -m is also needed for depmod
+  DEPMODARGS=$(dpkg --compare-versions $(depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m)
+  /sbin/depmod $DEPMODARGS -b $WD $VER
 
   # Copy out the map file and kernel config
   cp $WD/lib/modules/*/modules.pcimap $TARGET/modules.pcimap-$NAME
