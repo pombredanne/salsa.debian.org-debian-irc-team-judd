@@ -124,7 +124,8 @@ class Piccy(callbacks.Plugin):
         extras = set([])
         extramodules = ""
         for label in self.registryValue('extra_module_maps'):
-            extras = extras.union(self.findmodule(vendor, device, label))
+            extraslist = self.findmodule(vendor, device, label)
+            if extraslist: extras = extras.union(extraslist)
         if len(extras):
             extramodules = " and the out-of-tree %s module." % ", ".join(map(lambda m: "'%s'" % self.bold(m), extras))
 
