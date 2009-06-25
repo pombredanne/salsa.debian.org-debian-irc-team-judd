@@ -1,0 +1,108 @@
+#!/bin/sh
+#
+# Refresh the data for out-of-tree modules for the Piccy supybot plugin.
+#
+#   Tries to compile out-of-tree modules to extract PCI-Ids from them.
+#   Only run this script inside a disposable chroot (e.g. cowbuilder) as it 
+#   fiddles with the sources.list and installs lots of packages in unclean 
+#   ways.
+#
+###
+# Copyright (c) 2009 Stuart Prescott
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   * Redistributions of source code must retain the above copyright notice,
+#     this list of conditions, and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright notice,
+#     this list of conditions, and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of the author of this software nor the name of
+#     contributors to this software may be used to endorse or promote products
+#     derived from this software without specific prior written consent.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+###
+
+set -u
+#set -e
+
+if [ $# -ne 3 ]
+then
+  echo "
+Usage: $0 release KVER modulelistfile
+
+Note: this script is designed to be used inside a chroot where it can randomly
+download source packages and install modules. Don't run it in a live system.
+
+The script will attempt to compile all the out-of-tree modules listed in the
+modulelistfile (one per line) and extract the PCI-Ids that these modules would
+support into the file modules.pcimap-\${release}-extras
+
+Examples:
+  $0 lenny 2.6.26-2-686 /tmp/modulelist
+  $0 sid 2.6.30-1-686 /tmp/modulelist
+"
+  exit 1
+fi
+
+NAME=$1
+KVER=$2
+LIST=$3
+
+#aptitude -y install initramfs-tools
+#sed -i s/update_initramfs=yes/update_initramfs=no/ /etc/initramfs-tools/update-initramfs.conf
+
+echo "I: Enabling non-free"
+sed -i 's/main$/main contrib non-free/' /etc/apt/sources.list
+apt-get -q=2 update
+echo "I: Installing necessary packages"
+# pick up a couple of packages that are needed but not declared as depends
+aptitude -o quiet=1000 -y install build-essential module-assistant module-init-tools devscripts dpatch python quilt cdbs > /dev/null
+
+echo "I: Preparing module-assistant"
+m-a -i -q -l $KVER prepare > /dev/null
+
+# aptitude -y install $MODULE
+# m-a -i -l $KVER build $MODULE
+
+echo "I: Building modules"
+for MODULE in $(cat $LIST)
+do 
+  echo "I: ======================== $MODULE ========================"
+  aptitude -o quiet=1000 -y install $MODULE > /dev/null
+  LOG=m-a-$MODULE.log
+  m-a -i -q -l $KVER build $MODULE > $LOG
+  if [ ! $? ]
+  then
+    echo "W: build failed (see $LOG if you care)"
+  fi
+done
+
+echo "I: Unpacking modules"
+for i in /usr/src/*.deb
+do
+  dpkg -x "$i" /
+done
+
+
+echo "I: Making pcimap"
+DEPMODARGS=$(dpkg --compare-versions $(depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m)
+depmod $DEPMODARGS $KVER
+
+OUTFILE="modules.pcimap-$NAME-extras"
+echo "I: Copying pcimap to '$OUTFILE'"
+cp /lib/modules/*/modules.pcimap $OUTFILE
+

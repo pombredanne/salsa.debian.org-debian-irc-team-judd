@@ -43,6 +43,9 @@ CLEANUP=true
 PCIIDURL="http://pciids.sourceforge.net/v2.2/pci.ids"
 PCIIDFILE="pci.ids"
 
+WIKIMAPURL="http://wiki.debian.org/DeviceDatabase/ModuleToWikipageMap?action=raw"
+WIKIMAPFILE="modules.wikilinks"
+
 # Note that if the architecture being targeted by the script is changed,
 # KERNERLRE will need changing too.
 ARCH="i386"
@@ -145,9 +148,15 @@ TEMPDIR=$(mktemp -t -d piccy_update.XXXXXX)
 trap "if $CLEANUP; then /bin/rm -rf $TEMPDIR ; fi; exit 1" EXIT INT QUIT
 
 # Fetch the PCI-Ids
-wget -q -O $TEMPDIR/pci.ids http://pciids.sourceforge.net/v2.2/pci.ids
-mv $TEMPDIR/pci.ids $TARGET/
+wget -q -O $TEMPDIR/pci.ids $PCIIDURL
+mv $TEMPDIR/pci.ids $TARGET/$PCIIDFILE
 
+# Fetch the wikimap if defined
+if [ -n $WIKIMAPURL ]
+then
+  wget -q -U Supybot $TEMPDIR/wikimap $WIKIMAPURL
+  my $TEMPDIR/wikimap $TARGET/$WIKIMAPFILE
+fi
 
 # Make short replacement for /usr/bin/gpgv to suppress apt's warnings
 # about keys for these repositories. The text of this was generated
