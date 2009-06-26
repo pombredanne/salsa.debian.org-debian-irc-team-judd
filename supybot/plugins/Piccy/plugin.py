@@ -140,6 +140,43 @@ class Piccy(callbacks.Plugin):
     pciid = wrap(pciidHelper, ['something', getopts( { 'release':'something' } ) ] )
 
 
+
+    def pcinameHelper(self, irc, msg, args, name):
+        """<device>
+
+        Output possible full names and PCI-Ids of a device based on a partial
+        name. (Minimum length 4 characters, special characters are not allowed)
+        """
+        min_length = 4       # minimum string length for the search
+
+        origname = " ".join(name)
+
+        # cleanse special characters from the search term
+        name = re.sub(r'[^\s\w\d]', '', origname)
+        # also fix spaces
+        name = re.sub(r' +', r'\s+', name)
+
+        if len(name) < min_length:
+            irc.error("Please give me name to search for that is at least %d characters long containing no special characters." % min_length)
+            return
+
+        devices = self.finddevices(name)
+        if devices is None:
+            irc.error("Error looking up module list.")
+            return
+
+        reply = ""
+        if devices:
+            devicelist = ", ".join(map(lambda d: "[%s:%s] '%s' from '%s'" % (d[0], d[2], d[3], d[1]), devices ))
+            reply = "'%s' matched: %s" % (origname, devicelist)
+        else:
+            reply = "No devices were found that matched '%s'." % origname
+
+        irc.reply(reply)
+
+    pciname = wrap(pcinameHelper, [many('something')] )
+
+
     def kconfigHelper(self, irc, msg, args, pattern, optlist):
         """<config string> [--release <release name>]
 
@@ -350,6 +387,50 @@ class Piccy(callbacks.Plugin):
         modmap.close()
         self.log.debug("Found: [%s:%s] => (%s)", vendor, device, ", ".join(mname))
         return set(mname)
+
+
+    def finddevices(self, name):
+        """
+        look through /usr/share/misc/pci.ids for possible device names
+        """
+        mapfile = self.registryValue('pci_map')
+        path    = self.registryValue('base_path')
+        data    = conf.supybot.directories.data()
+
+        mapfile = os.path.join(data, path, mapfile)
+        try:
+            idmap = open(mapfile, 'r')
+        except IOError, e:
+            self.log.error(str(e))
+            return None, None
+
+        devices = []
+        vid   = ""
+        did   = ""
+        vname = "Unknown vendor"
+        dname = "Unknown device"
+
+        vidre = re.compile(r"^([0-9a-f]{4})\s+(.+)", re.I)
+        didre = re.compile(r"^\s+([0-9a-f]{4})\s+([^\s]*%s.*)" % name, re.I)
+
+        for line in idmap:
+            #print line
+            vendormatch = vidre.match(line)
+            if vendormatch:
+                vid   = vendormatch.groups(1)[0]
+                vname = vendormatch.groups(1)[1]
+                continue
+
+            devicematch = didre.match(line)
+            if devicematch:
+                did   = devicematch.groups(1)[0]
+                dname = devicematch.groups(1)[1]
+                devices.append([vid, vname, did, dname])
+
+        idmap.close()
+
+        self.log.debug("Found: %s", devices)
+        return devices
 
 
     def checkWikiLink(self, modules):

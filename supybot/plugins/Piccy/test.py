@@ -35,7 +35,17 @@ class PiccyPluginTestCase(PluginTestCase):
     
     # prevent supybot-test from deleting all the data
     cleanDataDir = False
-       
+
+    def testPCIname(self):
+        self.assertNotError('pciname 82574L')     # [8086:10d3] 82574L Gigabit Network Connection
+        self.assertError('pciname 825')           # require at least 4 chars in search
+        self.assertNotError('pciname 8257')
+        self.assertError('pciname 8..7')          # will sanitised down to 87 which is then an error
+        self.assertNotError('pciname 82574.*')    # will be trimmed down to 82574
+        self.assertNotError('pciname 82574L Gigabit')    # test spaces
+        self.assertNotError('pciname "82574L  Gigabit"')    # test spaces
+        self.assertNotError('pciname 82574L gigabit')    # test case sensitivity
+
     def testPCImap(self):
         self.assertNotError('pciid "[8086:4222]"')
         self.assertNotError('pciid "[8086:4222]" --release unstable')
