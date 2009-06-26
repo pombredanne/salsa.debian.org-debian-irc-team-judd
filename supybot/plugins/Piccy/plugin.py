@@ -525,18 +525,18 @@ class Piccy(callbacks.Plugin):
         # Cleanse any characters that aren't allowed in the regexp
         pattern = re.sub(r'[^\s\w\d]', '', pattern)
 
-        # format of the config-$uname -r) is:
+        # format of the config-$(uname -r) is:
         # CONFIG_FOO=y
         # CONFIG_GOO=m
         # # CONFIG_HOO is not set
         # where all keys start with CONFIG_, comments start with a # and there are blank lines.
 
-        # generic search term to find matching lines
-        config = re.compile(pattern, re.IGNORECASE)
         if pattern[0:7] == "CONFIG_":
-          searchkey = pattern[7:]
+            searchkey = pattern[7:]
         else:
-          searchkey = ".*" + pattern
+            searchkey = ".*" + pattern
+        # generic search term to find matching lines
+        config = re.compile(r"^CONFIG_%s" % searchkey, re.IGNORECASE)
         # specific term for matching "is not set" comments
         notset = re.compile(r"^#\s+CONFIG_(%s.*)\s+is not set" % searchkey, re.IGNORECASE)
 

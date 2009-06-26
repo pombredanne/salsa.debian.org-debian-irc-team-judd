@@ -69,6 +69,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertError('pciid 001c:123q')   # malformed
 
     def testConfigMap(self):
+        self.assertNotError('kconfig FIRMWARE')    # matches some comments too
         self.assertNotError('kconfig CONFIG_GENERIC_CMOS_UPDATE')    # returns single hit, full module name
         self.assertNotError('kconfig PROC')                  # returns multiple hits, partial module name
         self.assertNotError('kconfig foobar')                        # fails to match
