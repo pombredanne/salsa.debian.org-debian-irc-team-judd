@@ -338,7 +338,7 @@ class Piccy(callbacks.Plugin):
         # vendor and device ids are in hexadecimal format to 8 characters.
         # Since the ids have never been converted to numbers, they can be
         # used here as strings again.
-        r = r'^([^\s]+)\s+0x0000%s\s+0x0000%s\s+' % (vendor, device)
+        r = r'^([^\s]+)\s+0x0000%s\s+0x(0000%s|ffffffff)\s+' % (vendor, device)
         #print r
         module = re.compile(r, re.I)
         for line in modmap:
