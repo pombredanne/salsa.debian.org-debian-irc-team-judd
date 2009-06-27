@@ -145,7 +145,7 @@ fi
 
 TEMPDIR=$(mktemp -t -d piccy_update.XXXXXX)
 
-trap "if $CLEANUP; then /bin/rm -rf $TEMPDIR ; fi; exit 1" EXIT INT QUIT
+trap "if $CLEANUP; then /bin/rm -rf $TEMPDIR ; fi; exit 1" INT QUIT
 
 # Fetch the PCI-Ids
 wget -q -O $TEMPDIR/pci.ids $PCIIDURL
@@ -154,8 +154,8 @@ mv $TEMPDIR/pci.ids $TARGET/$PCIIDFILE
 # Fetch the wikimap if defined
 if [ -n $WIKIMAPURL ]
 then
-  wget -q -U Supybot $TEMPDIR/wikimap $WIKIMAPURL
-  my $TEMPDIR/wikimap $TARGET/$WIKIMAPFILE
+  wget -q -U Supybot -O $TEMPDIR/wikimap $WIKIMAPURL
+  mv $TEMPDIR/wikimap $TARGET/$WIKIMAPFILE
 fi
 
 # Make short replacement for /usr/bin/gpgv to suppress apt's warnings
@@ -227,7 +227,13 @@ do
 
   if [ -z "$KERNEL" ]
   then
-    echo "E: No package matching '$MATCH' could not be found for release $NAME"
+    if expr match "$SRC" ".*updates" > /dev/null
+    then
+      # don't flag errors on security updates; there might not be any
+      echo "I: No package matching '$MATCH' could not be found for release $NAME"
+    else
+      echo "E: No package matching '$MATCH' could not be found for release $NAME"
+    fi
     continue
   fi
 
@@ -236,6 +242,16 @@ do
   KERNELDEB=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*\),\1,p")
   PKGVER=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Version:\s*\([^\s]*\),\1,p")
   VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
+
+  OLDVER=$(awk "{FS=\", \"} /^\s*$NAME\s*/ { print \$2 }" $TARGET/versions)
+  if [ -f $TARGET/modules.pcimap-$NAME -a -f $TARGET/config-$NAME ]
+  then
+    if dpkg --compare-versions "$PKGVER" le-nl "$OLDVER"
+    then
+      #echo "I: using cached data for release"
+      continue
+    fi
+  fi
 
   (cd $WD && aptitude $APTARGS download $KERNEL > /dev/null)
 
@@ -250,7 +266,7 @@ do
   # Unpack the kernel package and create the modules map
   dpkg -x $WD/$KERNELDEB $WD
   # If this is running on a squeeze or later machine, -m is also needed for depmod
-  DEPMODARGS=$(dpkg --compare-versions $(depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m)
+  DEPMODARGS=$(dpkg --compare-versions $(depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m || echo)
   /sbin/depmod $DEPMODARGS -b $WD $VER
 
   # Copy out the map file and kernel config
