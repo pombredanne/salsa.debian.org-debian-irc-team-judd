@@ -79,11 +79,10 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('kconfig proc')      # allow case-insensitive matching
 
     def testVersionList(self):
-        self.assertNotError('kversion')    # returns all versions
-        self.assertNotError('kversion --release etch')  # returns a single release
-        # test alases to the functions:
-        self.assertNotError('kernelversion')    # returns all versions
         self.assertNotError('kernels')    # returns all versions
+        self.assertNotError('kernels --release etch')  # returns a single release
+        # test alases to the functions:
+        self.assertNotError('kernel')    # returns all versions
 
     def testUpdater(self):
         # disable this test for the sake of bandwidth usage

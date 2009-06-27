@@ -56,9 +56,13 @@ import subprocess
 # ignored.
 release_map = { 'trunk'       : 'trunk',
                 'unstable'    : 'sid',
+                'testing1'    : 'squeeze-security',
                 'testing'     : 'squeeze',
+                'stable1'     : 'lenny-security',
                 'stable'      : 'lenny',
-                'oldstable1'  : 'etchnhalf',
+                'oldstable3'  : 'etchnhalf-security',
+                'oldstable2'  : 'etchnhalf',
+                'oldstable1'  : 'etch-security',
                 'oldstable'   : 'etch' }
 
 class Piccy(callbacks.Plugin):
@@ -215,7 +219,7 @@ class Piccy(callbacks.Plugin):
 
 
     def kernelVersionHelper(self, irc, msg, args, optlist):
-        """[--release <etch>]
+        """[--release <lenny>]
 
         Outputs the kernel versions in the archive, optionally restricted to
         one release. Note that semi-major releases like etchnhalf are treated
@@ -243,10 +247,7 @@ class Piccy(callbacks.Plugin):
 
         irc.reply(reply)
 
-    kernelversion = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
-
     # provide convenience aliases for kernel version command
-    kversion      = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
     kernel        = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
     kernels       = wrap(kernelVersionHelper, [ getopts( { 'release':'something' } ) ] )
 
@@ -560,6 +561,8 @@ class Piccy(callbacks.Plugin):
         Search through the list of available kernels for "release".
         If release is None, return all kernels
         """
+        omitoutdated = True
+        updateword = '-security'
 
         versions = []
 
@@ -585,6 +588,8 @@ class Piccy(callbacks.Plugin):
             line = line.strip()
             m = versionre.search(line)
             if not (m is None):
+                if omitoutdated and m.groups(1)[0].find(updateword) >= 0:
+                    keys.pop()
                 keys.append({
                                 "release" : m.groups(1)[0],
                                 "version" : m.groups(1)[1],
