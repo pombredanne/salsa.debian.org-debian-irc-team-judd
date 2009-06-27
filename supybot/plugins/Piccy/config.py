@@ -53,7 +53,7 @@ conf.registerGlobalValue( Piccy, 'extra_module_maps', registry.SpaceSeparatedLis
 conf.registerGlobalValue( Piccy, 'wiki_map', registry.String( "modules.wikilinks", "moin-moin wiki file that maps module names to wiki pages for further information (full path or path relative to base_path)") )
 conf.registerGlobalValue( Piccy, 'wiki_url', registry.String( "http://wiki.debian.org/%s", "link for extra user contributed information about the module; use %s for the module; will not be included in output if set to empty string") )
 conf.registerGlobalValue( Piccy, 'kernel_config', registry.String("config-%s", "kernel config file; use %s for the release name; (full path or path relative to base_path)") )
-conf.registerGlobalValue( Piccy, 'kernel_versions', registry.String( "versions", "list of known kernel versions (full path or path relative to base_path)" ) )
+conf.registerGlobalValue( Piccy, 'kernel_versions', registry.String( "versions", "file containing a list of known kernel versions (full path or path relative to base_path)" ) )
 conf.registerGlobalValue( Piccy, 'default_release', registry.String("lenny", "default release kernel to look at for modules") )
 conf.registerGlobalValue( Piccy, 'fallback_release', registry.String("sid", "fallback release kernel to look at for modules if not found in requested release") )
 conf.registerGlobalValue( Piccy, 'use_bold', registry.Boolean(True, "use bold face in selected places in the output") )
