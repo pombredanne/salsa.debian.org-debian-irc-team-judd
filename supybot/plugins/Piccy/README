@@ -93,7 +93,8 @@ about the modules can be obtained directly from the Debian wiki:
           http://wiki.debian.org/DeviceDatabase/ModuleToWikipageMap?action=raw
 
 and set the config keys "wiki_url" to "http://wiki.debian.org/%s" and
-"wiki_map" to "modules.wikilinks".
+"wiki_map" to "modules.wikilinks". The "refreshdata" script will try to update
+this data file at the same time as the kernels.
 
 
 Example usage

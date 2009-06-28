@@ -69,7 +69,8 @@ Format of kernels.list file should be:
     distname,    deb url release sections,     packageregexp"
 where:
   distname      is 'sid' 'lenny' etc
-  deb url ...   is a valid line for an apt source.list
+  deb url ...   is one or more valid lines for an apt source.list (multiple
+                lines are separated by a # character.
   packageregexp is an aptitude search pattern that will match the desired
                 kernel. Default is '$KERNELRE'
 EOF
@@ -219,28 +220,30 @@ do
 #            -o Aptitude::Debtags-Binary=/bin/true
 
   # Create the sources.list and then grab the Packages file
-  echo "$SRC" > $WD/etc/apt/sources.list
+  # multiple entries in the sources.list are separated by #s
+  echo "$SRC" | tr "#" "\n" > $WD/etc/apt/sources.list
   apt-get $APTARGS update
 
   # Find the latest version of the kernel that matches the regexp
+  # (latest version of the kernel will alphabetically sort to the end)
   KERNEL=$(aptitude $APTARGS search ~n"$MATCH" -F'%p' | tail -1)
 
   if [ -z "$KERNEL" ]
   then
-    if expr match "$SRC" ".*updates" > /dev/null
-    then
+    #if expr match "$SRC" ".*updates" > /dev/null
+    #then
       # don't flag errors on security updates; there might not be any
-      echo "I: No package matching '$MATCH' could not be found for release $NAME"
-    else
+      #echo "I: No package matching '$MATCH' could not be found for release $NAME"
+    #else
       echo "E: No package matching '$MATCH' could not be found for release $NAME"
-    fi
+    #fi
     continue
   fi
 
   # Work out what actual filename of the kernel package will be and the
   # version string of the kernel
-  KERNELDEB=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*\),\1,p")
-  PKGVER=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Version:\s*\([^\s]*\),\1,p")
+  PKGVER=$(apt-cache $APTARGS policy $KERNEL | sed -n "s,.*Candidate:\s*,,p")
+  KERNELDEB=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*_${PKGVER}_${ARCH}\),\1,p")
   VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
 
   OLDVER=$(awk "{FS=\", \"} /^\s*$NAME\s*/ { print \$2 }" $TARGET/versions)
@@ -266,6 +269,8 @@ do
   # Unpack the kernel package and create the modules map
   dpkg -x $WD/$KERNELDEB $WD
   # If this is running on a squeeze or later machine, -m is also needed for depmod
+  # (since this is running under "set -e", make sure the command never has a 
+  # non-zero exit status)
   DEPMODARGS=$(dpkg --compare-versions $(depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m || echo)
   /sbin/depmod $DEPMODARGS -b $WD $VER
 

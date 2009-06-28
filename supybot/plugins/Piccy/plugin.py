@@ -56,13 +56,9 @@ import subprocess
 # ignored.
 release_map = { 'trunk'       : 'trunk',
                 'unstable'    : 'sid',
-                'testing1'    : 'squeeze-security',
                 'testing'     : 'squeeze',
-                'stable1'     : 'lenny-security',
                 'stable'      : 'lenny',
-                'oldstable3'  : 'etchnhalf-security',
-                'oldstable2'  : 'etchnhalf',
-                'oldstable1'  : 'etch-security',
+                'oldstable1'  : 'etchnhalf',
                 'oldstable'   : 'etch' }
 
 class Piccy(callbacks.Plugin):
@@ -561,8 +557,6 @@ class Piccy(callbacks.Plugin):
         Search through the list of available kernels for "release".
         If release is None, return all kernels
         """
-        omitoutdated = True
-        updateword = '-security'
 
         versions = []
 
@@ -588,8 +582,6 @@ class Piccy(callbacks.Plugin):
             line = line.strip()
             m = versionre.search(line)
             if not (m is None):
-                if omitoutdated and m.groups(1)[0].find(updateword) >= 0:
-                    keys.pop()
                 keys.append({
                                 "release" : m.groups(1)[0],
                                 "version" : m.groups(1)[1],

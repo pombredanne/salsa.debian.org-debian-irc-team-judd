@@ -3,14 +3,10 @@
 #
 # Format:
 # releasename,        sources.list line,         package regexp
-#
+# (separate multiple entries in the "sources.list line" section with a '#'.
 trunk,              deb http://kernel-archive.buildserver.net/debian-kernel trunk main,   linux-image-2.6.*trunk.*-686$
 sid,                deb http://ftp.uk.debian.org/debian/ sid main
-squeeze,            deb http://ftp.uk.debian.org/debian/ squeeze main
-squeeze-security,   deb http://security.debian.org/ squeeze/updates main
-lenny,              deb http://ftp.uk.debian.org/debian/ lenny main
-lenny-security,     deb http://security.debian.org/ lenny/updates main
-etchnhalf,          deb http://ftp.uk.debian.org/debian/ etch main,                       linux-image-2.6.*etchnhalf.*-686$
-etchnhalf-security, deb http://security.debian.org/ etch/updates main,                       linux-image-2.6.*etchnhalf.*-686$
-etch,               deb http://ftp.uk.debian.org/debian/ etch main
-etch-security,      deb http://security.debian.org/ etch/updates main
+squeeze,            deb http://ftp.uk.debian.org/debian/ squeeze main  #  deb http://security.debian.org/ squeeze/updates main
+lenny,              deb http://ftp.uk.debian.org/debian/ lenny main    # deb http://security.debian.org/ lenny/updates main
+etchnhalf,          deb http://ftp.uk.debian.org/debian/ etch main     # deb http://security.debian.org/ etch/updates main,                       linux-image-2.6.*etchnhalf.*-686$
+etch,               deb http://ftp.uk.debian.org/debian/ etch main     # deb http://security.debian.org/ etch/updates main
