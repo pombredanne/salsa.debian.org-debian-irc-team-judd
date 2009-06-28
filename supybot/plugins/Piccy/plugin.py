@@ -140,7 +140,6 @@ class Piccy(callbacks.Plugin):
     pciid = wrap(pciidHelper, ['something', getopts( { 'release':'something' } ) ] )
 
 
-
     def pcinameHelper(self, irc, msg, args, name):
         """<device>
 
@@ -175,6 +174,62 @@ class Piccy(callbacks.Plugin):
         irc.reply(reply)
 
     pciname = wrap(pcinameHelper, [many('something')] )
+
+
+
+    def xorgHelper(self, irc, msg, args, pciid, optlist):
+        """<pciid> [--release <release name>]
+
+        Output the name of the xorg driver (if any) that would claim the
+        device, optionally restricted to the specified release.
+        The pciid should be of the form 0000:0000. [ and ] are permitted around
+        the pciid, but Supybot will try to act on those as nested commands unless
+        they are enclosed in double quotes, e.g "[0000:0000]".
+        """
+
+        release = ""
+
+        for (option,arg) in optlist:
+            if option == 'release':
+                release = arg
+
+        release = self.cleanreleasename(release)
+
+        vendor, device = self.splitpciid(pciid)
+
+        if vendor == 0 or device == 0:
+            irc.error("I don't know what you mean by PCI Id '%s'. 0000:0000 is my preferred format where both vendor Id and device Id are are in hexadecimal. You can find the PCI Id in the output of 'lspci -nn'." % pciid)
+            return
+
+        reply = ""
+
+        drivers = self.findxorgdriver(vendor, device, release)
+        if drivers == None:
+            irc.error("Error looking up driver list.")
+            return
+
+        driverlabel = "driver"
+        if drivers:
+            if len(drivers) > 1: driverlabel = "drivers"
+            reply = "In %s, device %s:%s is matched by xorg %s: %s." % \
+                    ( self.bold(release), vendor, device, driverlabel, \
+                      ", ".join(map(lambda d: "'%s'" % self.bold(d), drivers))  \
+                    )
+        else:
+            fallback = self.cleanreleasename(self.registryValue('fallback_release'))
+            drivers = self.findxorgdriver(vendor, device, fallback)
+            if drivers:
+                if len(drivers) > 1: driverlabel = "drivers"
+                reply = "Device %s:%s is not matched by any xorg drivers in %s. In %s, it is matched by xorg %s: %s." % ( vendor, device, self.bold(release), \
+                      self.bold(fallback), driverlabel, \
+                      ", ".join(map(lambda d: "'%s'" % self.bold(d), drivers))  \
+                    )
+            else:
+                reply = "Device %s:%s is not matched by any xorg drivers in %s or %s." % \
+                    (self.bold(release), self.bold(fallback))
+        irc.reply(reply)
+
+    xorg = wrap(xorgHelper, ['something', getopts( { 'release':'something' } ) ] )
 
 
     def kconfigHelper(self, irc, msg, args, pattern, optlist):
@@ -430,6 +485,60 @@ class Piccy(callbacks.Plugin):
         return devices
 
 
+    def findxorgdriver(self, vendor, device, release):
+        """
+        Search through xorg's /usr/share/xserver-xorg/pci/* maps for a 
+        PCI-Id match
+        """
+        mapdir  = self.registryValue('xorg_maps') % release
+        path    = self.registryValue('base_path')
+        data    = conf.supybot.directories.data()
+
+        mapdir = os.path.join(data, path, mapdir)
+
+        drivers = []
+        id = "%s%s" % (vendor, device)
+
+        try:
+            filelist = os.listdir(mapdir)
+        except IOError, e:
+            self.log.error(str(e))
+            return None
+
+        for f in filelist:
+            filename = os.path.join(mapdir, f)
+            if os.path.isdir(filename): continue
+
+            if self.inxorgmap(id, filename):
+                drivers.append(f)
+
+
+        return map(lambda f: f[:-4], drivers)
+
+
+    def inxorgmap(self, id, mapfilename):
+        """
+        Search through a single xorg /usr/share/xserver-xorg/pci/*.ids 
+        map for a PCI-Id match
+        """
+
+        try:
+            mapfile = open(mapfilename, 'r')
+        except IOError, e:
+            self.log.error(str(e))
+            return None
+
+        # format of /usr/share/xserver-xorg/pci/*.ids files is:
+        #    {vendor_id}{device_id}
+        # one per line with no punctuation. Not even the : from the PCI-Id.
+        r = r'%s' % (id)
+        module = re.compile(r, re.I)
+        for line in mapfile:
+            if module.match(line):
+                return True
+        return False
+
+
     def checkWikiLink(self, modules):
         """
         Search through wiki page for links from module name to wiki page
@@ -483,6 +592,7 @@ class Piccy(callbacks.Plugin):
             did = string.lower(m.groups(1)[1])
         self.log.debug("PCI id parsing gives vendor = '%s', device = '%s'", vid, did)
         return vid, did
+
 
     def cleanreleasename(self, release):
         if release_map.has_key(release):

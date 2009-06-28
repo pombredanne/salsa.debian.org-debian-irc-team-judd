@@ -68,6 +68,13 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertError('pciid qwe1:0011')   # malformed
         self.assertError('pciid 001c:123q')   # malformed
 
+    def testXorgMap(self):
+        self.assertNotError('xorg 1002:7145')    # returns radeon
+        self.assertNotError('xorg 1002:7145 --release lenny')    # returns radeon
+        self.assertNotError('xorg 1002:4C45 --release lenny')    # unknown driver in lenny
+        self.assertNotError('xorg 1002:3E54')    # test upper/lower case
+        self.assertNotError('xorg 1002:3e54')    # test upper/lower case
+
     def testConfigMap(self):
         self.assertNotError('kconfig FIRMWARE')    # matches some comments too
         self.assertNotError('kconfig CONFIG_GENERIC_CMOS_UPDATE')    # returns single hit, full module name

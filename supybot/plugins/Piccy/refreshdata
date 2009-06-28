@@ -104,6 +104,105 @@ checkklist() {
   usage
 }
 
+updatekernel() {
+  # Find the latest version of the kernel that matches the regexp
+  # (latest version of the kernel will alphabetically sort to the end)
+  KERNEL=$(aptitude $APTARGS search ~n"$MATCH" -F'%p' | tail -1)
+
+  if [ -z "$KERNEL" ]
+  then
+    #if expr match "$SRC" ".*updates" > /dev/null
+    #then
+      # don't flag errors on security updates; there might not be any
+      #echo "I: No package matching '$MATCH' could not be found for release $NAME"
+    #else
+      echo "E: No package matching '$MATCH' could not be found for release $NAME"
+    #fi
+    return
+  fi
+
+  # Work out what actual filename of the kernel package will be and the
+  # version string of the kernel
+  PKGVER=$(apt-cache $APTARGS policy $KERNEL | sed -n "s,.*Candidate:\s*,,p")
+  KERNELDEB=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*_${PKGVER}_${ARCH}\),\1,p")
+  VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
+
+  OLDVER=$(awk "{FS=\", \"} /^\s*$NAME\s*/ { print \$2 }" $TARGET/versions)
+  if [ -f $TARGET/modules.pcimap-$NAME -a -f $TARGET/config-$NAME ]
+  then
+    if dpkg --compare-versions "$PKGVER" le-nl "$OLDVER"
+    then
+      #echo "I: using cached data for release"
+      return
+    fi
+  fi
+
+  (cd $WD && aptitude $APTARGS download $KERNEL > /dev/null)
+
+  # Because aptitude download is run in a subshell, its failure won't
+  # cause the entire script to die. Note the failure and keep going.
+  if [ ! -f $WD/$KERNELDEB ]
+  then
+    echo "E: Package '$KERNEL' could not be found for release $NAME"
+    return
+  fi
+
+  # Unpack the kernel package and create the modules map
+  dpkg -x $WD/$KERNELDEB $WD
+  # If this is running on a squeeze or later machine, -m is also needed for depmod
+  # (since this is running under "set -e", make sure the command never has a
+  # non-zero exit status)
+  DEPMODARGS=$(dpkg --compare-versions $(depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m || echo)
+  /sbin/depmod $DEPMODARGS -b $WD $VER
+
+  # Copy out the map file and kernel config
+  cp $WD/lib/modules/*/modules.pcimap $TARGET/modules.pcimap-$NAME
+  cp $WD/boot/config-* $TARGET/config-$NAME
+
+  # Record the versions of the kernels that have been obtained in the
+  # file "versions". Create this file first if it doesn't exist.
+  if [ ! -f $TARGET/versions ]
+  then
+    cat <<EOF >$TARGET/versions
+# List of kernel versions found in the archive
+# Format:
+#   release,  package version,  uname -r
+EOF
+  fi
+
+  # If it's a new kernel, add it to the list, otherwise edit the current entry
+  if grep -q "^\s*$NAME\s*," $TARGET/versions
+  then
+    sed -i "s/^\s*$NAME\s*,.*/$NAME, $PKGVER, $VER/" $TARGET/versions
+  else
+    echo "$NAME, $PKGVER, $VER" >> $TARGET/versions
+  fi
+}
+
+updatexorg() {
+  mkdir -p $TARGET/xorg-$NAME
+
+  # obtain a list of all non-virtual, non-debug xorg drivers
+  for DRIVER in $(aptitude $APTARGS search '~nxserver-xorg-video-*!~n-dbg!~v' -F"%p")
+  do
+    echo "xorg driver: $DRIVER"
+    (cd $WD && aptitude $APTARGS download $DRIVER > /dev/null)
+
+    # Because aptitude download is run in a subshell, its failure won't
+    # cause the entire script to die. Note the failure and keep going.
+    if [ ! -f $WD/$DRIVER_*.deb ]
+    then
+      echo "E: Package '$DRIVER' could not be found for release $NAME"
+      continue
+    fi
+
+    # Unpack the driver package
+    echo "downloaded" $WD/$DRIVER_*.deb
+    dpkg -x $WD/$DRIVER_*.deb $WD
+  done
+  cp $WD/usr/share/xserver-xorg/pci/*.ids $TARGET/xorg-$NAME/
+}
+
 if [ $# -eq 2 ]
 then
   KLIST="$1"
@@ -224,78 +323,8 @@ do
   echo "$SRC" | tr "#" "\n" > $WD/etc/apt/sources.list
   apt-get $APTARGS update
 
-  # Find the latest version of the kernel that matches the regexp
-  # (latest version of the kernel will alphabetically sort to the end)
-  KERNEL=$(aptitude $APTARGS search ~n"$MATCH" -F'%p' | tail -1)
-
-  if [ -z "$KERNEL" ]
-  then
-    #if expr match "$SRC" ".*updates" > /dev/null
-    #then
-      # don't flag errors on security updates; there might not be any
-      #echo "I: No package matching '$MATCH' could not be found for release $NAME"
-    #else
-      echo "E: No package matching '$MATCH' could not be found for release $NAME"
-    #fi
-    continue
-  fi
-
-  # Work out what actual filename of the kernel package will be and the
-  # version string of the kernel
-  PKGVER=$(apt-cache $APTARGS policy $KERNEL | sed -n "s,.*Candidate:\s*,,p")
-  KERNELDEB=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*_${PKGVER}_${ARCH}\),\1,p")
-  VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
-
-  OLDVER=$(awk "{FS=\", \"} /^\s*$NAME\s*/ { print \$2 }" $TARGET/versions)
-  if [ -f $TARGET/modules.pcimap-$NAME -a -f $TARGET/config-$NAME ]
-  then
-    if dpkg --compare-versions "$PKGVER" le-nl "$OLDVER"
-    then
-      #echo "I: using cached data for release"
-      continue
-    fi
-  fi
-
-  (cd $WD && aptitude $APTARGS download $KERNEL > /dev/null)
-
-  # Because aptitude download is run in a subshell, its failure won't
-  # cause the entire script to die. Note the failure and keep going.
-  if [ ! -f $WD/$KERNELDEB ]
-  then
-    echo "E: Package '$KERNEL' could not be found for release $NAME"
-    continue
-  fi
-
-  # Unpack the kernel package and create the modules map
-  dpkg -x $WD/$KERNELDEB $WD
-  # If this is running on a squeeze or later machine, -m is also needed for depmod
-  # (since this is running under "set -e", make sure the command never has a 
-  # non-zero exit status)
-  DEPMODARGS=$(dpkg --compare-versions $(depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m || echo)
-  /sbin/depmod $DEPMODARGS -b $WD $VER
-
-  # Copy out the map file and kernel config
-  cp $WD/lib/modules/*/modules.pcimap $TARGET/modules.pcimap-$NAME
-  cp $WD/boot/config-* $TARGET/config-$NAME
-
-  # Record the versions of the kernels that have been obtained in the
-  # file "versions". Create this file first if it doesn't exist.
-  if [ ! -f $TARGET/versions ]
-  then
-    cat <<EOF >$TARGET/versions
-# List of kernel versions found in the archive
-# Format:
-#   release,  package version,  uname -r
-EOF
-  fi
-
-  # If it's a new kernel, add it to the list, otherwise edit the current entry
-  if grep -q "^\s*$NAME\s*," $TARGET/versions
-  then
-    sed -i "s/^\s*$NAME\s*,.*/$NAME, $PKGVER, $VER/" $TARGET/versions
-  else
-    echo "$NAME, $PKGVER, $VER" >> $TARGET/versions
-  fi
+  updatekernel
+  updatexorg
 
   # Clean up the downloads so far to reduce disk usage during multiple updates
   rm -rf $WD
