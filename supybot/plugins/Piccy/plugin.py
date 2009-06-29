@@ -210,18 +210,16 @@ class Piccy(callbacks.Plugin):
 
         driverlabel = "driver"
         if drivers:
-            if len(drivers) > 1: driverlabel = "drivers"
             reply = "In %s, device %s:%s is matched by xorg %s: %s." % \
-                    ( self.bold(release), vendor, device, driverlabel, \
+                    ( self.bold(release), vendor, device, ("driver", "drivers")[len(drivers)!=1], \
                       ", ".join(map(lambda d: "'%s'" % self.bold(d), drivers))  \
                     )
         else:
             fallback = self.cleanreleasename(self.registryValue('fallback_release'))
             drivers = self.findxorgdriver(vendor, device, fallback)
             if drivers:
-                if len(drivers) > 1: driverlabel = "drivers"
                 reply = "Device %s:%s is not matched by any xorg drivers in %s. In %s, it is matched by xorg %s: %s." % ( vendor, device, self.bold(release), \
-                      self.bold(fallback), driverlabel, \
+                      self.bold(fallback), ("driver", "drivers")[len(drivers)!=1], \
                       ", ".join(map(lambda d: "'%s'" % self.bold(d), drivers))  \
                     )
             else:
