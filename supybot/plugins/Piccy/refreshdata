@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Refresh the data for the Piccy supybot plugin.
 #
@@ -40,6 +40,9 @@ set -e
 CLEANUP=true
 # CLEANUP=false
 
+NOISY=false
+# NOISY=true
+
 PCIIDURL="http://pciids.sourceforge.net/v2.2/pci.ids"
 PCIIDFILE="pci.ids"
 
@@ -77,6 +80,13 @@ EOF
   exit 1
 }
 
+debug() {
+  if $NOISY
+  then
+    echo "$@"
+  fi
+}
+
 checktarget() {
   if [ -f "pci.ids" -a -f "versions" ]
   then
@@ -111,15 +121,11 @@ updatekernel() {
 
   if [ -z "$KERNEL" ]
   then
-    #if expr match "$SRC" ".*updates" > /dev/null
-    #then
-      # don't flag errors on security updates; there might not be any
-      #echo "I: No package matching '$MATCH' could not be found for release $NAME"
-    #else
-      echo "E: No package matching '$MATCH' could not be found for release $NAME"
-    #fi
+    echo "E: No package matching '$MATCH' could not be found for release $NAME"
     return
   fi
+
+  debug "I: Found kernel package '$MATCH'."
 
   # Work out what actual filename of the kernel package will be and the
   # version string of the kernel
@@ -132,10 +138,12 @@ updatekernel() {
   then
     if dpkg --compare-versions "$PKGVER" le-nl "$OLDVER"
     then
-      #echo "I: using cached data for release"
+      debug "I: Using cached data for kernel version for release '$NAME'."
       return
     fi
   fi
+
+  debug "I: Downloading kernel version $PKGVER ($KERNELDEB)."
 
   (cd $WD && aptitude $APTARGS download $KERNEL > /dev/null)
 
@@ -147,6 +155,7 @@ updatekernel() {
     return
   fi
 
+  debug "I: Unpacking kernel package."
   # Unpack the kernel package and create the modules map
   dpkg -x $WD/$KERNELDEB $WD
   # If this is running on a squeeze or later machine, -m is also needed for depmod
@@ -180,27 +189,30 @@ EOF
 }
 
 updatexorg() {
+  if [[ $OPTS != *xorg* ]]
+  then
+    debug "I: Skipping xorg driver packages as directed."
+    return
+  fi
+
+  debug "I: Looking for xorg drivers."
+
   mkdir -p $TARGET/xorg-$NAME
 
-  # obtain a list of all non-virtual, non-debug xorg drivers
-  for DRIVER in $(aptitude $APTARGS search '~nxserver-xorg-video-*!~n-dbg!~v' -F"%p")
+  (cd $WD && aptitude $APTARGS download '~nxserver-xorg-video-*!~n-dbg!~v' -F"%p" > /dev/null)
+
+  debug "I: Unpacking video drivers."
+  for i in $WD/*.deb
   do
-    echo "xorg driver: $DRIVER"
-    (cd $WD && aptitude $APTARGS download $DRIVER > /dev/null)
-
-    # Because aptitude download is run in a subshell, its failure won't
-    # cause the entire script to die. Note the failure and keep going.
-    if [ ! -f $WD/$DRIVER_*.deb ]
-    then
-      echo "E: Package '$DRIVER' could not be found for release $NAME"
-      continue
-    fi
-
-    # Unpack the driver package
-    echo "downloaded" $WD/$DRIVER_*.deb
-    dpkg -x $WD/$DRIVER_*.deb $WD
+    dpkg -x $i $WD
   done
-  cp $WD/usr/share/xserver-xorg/pci/*.ids $TARGET/xorg-$NAME/
+
+  if [ $(ls -1 $WD/usr/share/xserver-xorg/pci/*.ids 2>/dev/null | wc -l) -gt 1 ]
+  then
+    cp $WD/usr/share/xserver-xorg/pci/*.ids $TARGET/xorg-$NAME/
+  else
+    echo "I: No xorg modules found for release '$NAME'."
+  fi
 }
 
 if [ $# -eq 2 ]
@@ -244,16 +256,19 @@ then
 fi
 
 TEMPDIR=$(mktemp -t -d piccy_update.XXXXXX)
+debug "I: Working in temporary directory '$TEMPDIR'."
 
-trap "if $CLEANUP; then /bin/rm -rf $TEMPDIR ; fi; exit 1" INT QUIT
+trap "if $CLEANUP; then debug 'I: cleaning up.'; /bin/rm -rf $TEMPDIR ; fi; exit 1" INT QUIT
 
 # Fetch the PCI-Ids
+debug "I: Fetching latest pci.ids file."
 wget -q -O $TEMPDIR/pci.ids $PCIIDURL
 mv $TEMPDIR/pci.ids $TARGET/$PCIIDFILE
 
 # Fetch the wikimap if defined
 if [ -n $WIKIMAPURL ]
 then
+  debug "I: Fetching latest wikimap file."
   wget -q -U Supybot -O $TEMPDIR/wikimap $WIKIMAPURL
   mv $TEMPDIR/wikimap $TARGET/$WIKIMAPFILE
 fi
@@ -284,9 +299,10 @@ while read line    # read from kernels.list config file
 do
   echo "========================================================================"
   #echo $line
-  NAME=$(echo "$line" | awk -F, '{print $1}' | awk '{$1=$1;print}')
-  SRC=$(echo "$line" | awk -F, '{print $2}' | awk '{$1=$1;print}')
+  NAME=$( echo "$line" | awk -F, '{print $1}' | awk '{$1=$1;print}')
+  SRC=$(  echo "$line" | awk -F, '{print $2}' | awk '{$1=$1;print}')
   MATCH=$(echo "$line" | awk -F, '{print $3}' | awk '{$1=$1;print}')
+  OPTS=$( echo "$line" | awk -F, '{print $4}' | awk '{$1=$1;print}')
 
   MATCH=${MATCH:-$KERNELRE}
 
@@ -327,12 +343,16 @@ do
   updatexorg
 
   # Clean up the downloads so far to reduce disk usage during multiple updates
-  rm -rf $WD
+  if $CLEANUP
+  then
+    rm -rf $WD
+  fi
 done
 
 # Clean up the tempdir before exit
 if $CLEANUP
-then 
+then
+  debug "I: Cleaning up '$TEMPDIR'."
   /bin/rm -rf $TEMPDIR
 fi
 
