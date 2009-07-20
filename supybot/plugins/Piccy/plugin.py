@@ -54,12 +54,13 @@ import subprocess
 # a second entry such as "stable1". This map is also used for the input
 # sanitisation of the release argument -- if it's not in this map, it is
 # ignored.
-release_map = { 'trunk'       : 'trunk',
-                'unstable'    : 'sid',
-                'testing'     : 'squeeze',
-                'stable'      : 'lenny',
-                'oldstable1'  : 'etchnhalf',
-                'oldstable'   : 'etch' }
+release_map = { 'trunk'             : 'trunk',
+                'unstable'          : 'sid',
+                'testing'           : 'squeeze',
+                'stable-backports'  : 'lenny-backports',
+                'stable'            : 'lenny',
+                'oldstable1'        : 'etchnhalf',
+                'oldstable'         : 'etch' }
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
