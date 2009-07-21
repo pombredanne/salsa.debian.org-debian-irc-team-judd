@@ -225,7 +225,7 @@ class Piccy(callbacks.Plugin):
                     )
             else:
                 reply = "Device %s:%s is not matched by any xorg drivers in %s or %s." % \
-                    (self.bold(release), self.bold(fallback))
+                    (vendor, device, self.bold(release), self.bold(fallback))
         irc.reply(reply)
 
     xorg = wrap(xorgHelper, ['something', getopts( { 'release':'something' } ) ] )

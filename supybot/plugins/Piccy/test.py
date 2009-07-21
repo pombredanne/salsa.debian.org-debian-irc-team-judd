@@ -74,6 +74,8 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('xorg 1002:4C45 --release lenny')    # unknown driver in lenny
         self.assertNotError('xorg 1002:3E54')    # test upper/lower case
         self.assertNotError('xorg 1002:3e54')    # test upper/lower case
+        self.assertNotError('xorg 1002:9442')    # test no matches at all
+        self.assertNotError('xorg 1106:1122')    # matches in sid not in lenny
 
     def testConfigMap(self):
         self.assertNotError('kconfig FIRMWARE')    # matches some comments too
