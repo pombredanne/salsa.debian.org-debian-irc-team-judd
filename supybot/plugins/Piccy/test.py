@@ -45,6 +45,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('pciname 82574L Gigabit')    # test spaces
         self.assertNotError('pciname "82574L  Gigabit"')    # test spaces
         self.assertNotError('pciname 82574L gigabit')    # test case sensitivity
+        self.assertNotError('pciname centaur')    # multple matches
 
     def testPCImap(self):
         self.assertNotError('pciid "[8086:4222]"')

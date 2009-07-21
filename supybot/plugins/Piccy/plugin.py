@@ -151,14 +151,17 @@ class Piccy(callbacks.Plugin):
 
         origname = " ".join(name)
 
-        # cleanse special characters from the search term
+        # cleanse special characters from the search term to see how long it is
         name = re.sub(r'[^\s\w\d]', '', origname)
-        # also fix spaces
-        name = re.sub(r' +', r'\s+', name)
 
         if len(name) < min_length:
             irc.error("Please give me name to search for that is at least %d characters long containing no special characters." % min_length)
             return
+
+        # Clean up the expression
+        name = re.sub(r' +', ' ', origname)     # allow multiple spaces
+        name = re.escape(name)
+        name = re.sub(r'\\ ', r'\s+', name)     # allow multiple spaces
 
         devices = self.finddevices(name)
         if devices is None:
@@ -167,7 +170,12 @@ class Piccy(callbacks.Plugin):
 
         reply = ""
         if devices:
-            devicelist = ", ".join(map(lambda d: "[%s:%s] '%s' from '%s'" % (d[0], d[2], d[3], d[1]), devices ))
+            devicelist = ", ".join(
+                    map(lambda d: 
+                      "%s '%s' from '%s'" % 
+                            (  self.bold("[%s:%s]" % (d[0], d[2])), 
+                               d[3], d[1]  ), 
+                      devices ))
             reply = "'%s' matched: %s" % (origname, devicelist)
         else:
             reply = "No devices were found that matched '%s'." % origname
@@ -462,7 +470,7 @@ class Piccy(callbacks.Plugin):
         dname = "Unknown device"
 
         vidre = re.compile(r"^([0-9a-f]{4})\s+(.+)", re.I)
-        didre = re.compile(r"^\s+([0-9a-f]{4})\s+([^\s]*%s.*)" % name, re.I)
+        didre = re.compile(r"^\s+([0-9a-f]{4})\s+(.*%s.*)" % name, re.I)
 
         for line in idmap:
             #print line
