@@ -561,10 +561,10 @@ class Piccy(callbacks.Plugin):
         # format of the wiki page is:
         # * iwl3945 [[iwlwifi]]
         # * iwl4965 [[iwlwifi]], [[iwlagn]]
-        r = r'^\s*\*\s*(%s) (.*)' % "|".join(modules)
+        r = r'^\s*\*\s*(%s)\s*(.*)' % "|".join(modules)
         modulere = re.compile(r, re.I)
         p = r'\[\[([a-z0-9\-_]+)\]\]'
-        linere = re.compile(p)
+        linere = re.compile(p, re.I)
         for line in wikimap:
             linematches = modulere.match(line)
             if not (linematches is None):
@@ -574,7 +574,7 @@ class Piccy(callbacks.Plugin):
                         wikipages.append(pagelist.groups(1)[0])
 
         wikimap.close()
-        self.log.debug("Found: [%s] => (%s)", ", ".join(modules), ", ".join(wikipages))
+        self.log.debug("Found wiki match: [%s] => (%s)", ", ".join(modules), ", ".join(wikipages))
         return set(wikipages)
 
 
