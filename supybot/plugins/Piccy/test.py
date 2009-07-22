@@ -58,6 +58,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('pciid 8086:27b9')                      # multiple module matches
         self.assertNotError('pciid 8086:4229')                      # multiple wikifaq matches
         self.assertNotError('pciid 10de:1234')                      # nvidia device with PCI_ID_ANY in map
+        self.assertNotError('pciid 1904:8139 --release etch')      # no match in etch, match in sid
         self.assertNotError('pciid "[001c:0001]"')
         self.assertNotError('pciid ffff:0001')  # illegal vendor ID
         self.assertNotError('pciid 0069:0001')  # unknown vendor ID
