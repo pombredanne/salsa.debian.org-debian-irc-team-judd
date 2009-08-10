@@ -45,6 +45,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('pciname 82574L Gigabit')    # test spaces
         self.assertNotError('pciname "82574L  Gigabit"')    # test spaces
         self.assertNotError('pciname 82574L gigabit')    # test case sensitivity
+        self.assertNotError('pciname centaur')    # multple matches
 
     def testPCImap(self):
         self.assertNotError('pciid "[8086:4222]"')
@@ -57,6 +58,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('pciid 8086:27b9')                      # multiple module matches
         self.assertNotError('pciid 8086:4229')                      # multiple wikifaq matches
         self.assertNotError('pciid 10de:1234')                      # nvidia device with PCI_ID_ANY in map
+        self.assertNotError('pciid 1904:8139 --release etch')      # no match in etch, match in sid
         self.assertNotError('pciid "[001c:0001]"')
         self.assertNotError('pciid ffff:0001')  # illegal vendor ID
         self.assertNotError('pciid 0069:0001')  # unknown vendor ID
@@ -74,6 +76,8 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('xorg 1002:4C45 --release lenny')    # unknown driver in lenny
         self.assertNotError('xorg 1002:3E54')    # test upper/lower case
         self.assertNotError('xorg 1002:3e54')    # test upper/lower case
+        self.assertNotError('xorg 1002:9442')    # test no matches at all
+        self.assertNotError('xorg 1106:1122')    # matches in sid not in lenny
 
     def testConfigMap(self):
         self.assertNotError('kconfig FIRMWARE')    # matches some comments too

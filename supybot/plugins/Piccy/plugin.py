@@ -113,14 +113,16 @@ class Piccy(callbacks.Plugin):
                 elif not len(module):
                     modulefalltext = " or in %s" % fallback
                 else:
-                    modulefalltext = " but has kernel module '%s' in %s" % (self.bold(module), self.bold(fallback))
+                    modulefalltext = " but has kernel module %s in %s" % (self.boldCommaList(module), self.bold(fallback))
             moduletext = "with no known kernel module in %s%s." % (release, modulefalltext)
         else:
             if len(module) > 1:
                 modlist = map(lambda m: "'%s'" % self.bold(m), module)
-                moduletext = "with kernel modules %s in %s." % (", ".join(modlist), self.bold(release))
+                moduletext = "with kernel modules %s in %s." % \
+                              (self.boldCommaList(module), self.bold(release))
             else:
-                moduletext = "with kernel module '%s' in %s." % (self.bold("".join(module)), self.bold(release))
+                moduletext = "with kernel module %s in %s." % \
+                              (self.boldCommaList(module), self.bold(release))
 
         extras = set([])
         extramodules = ""
@@ -128,13 +130,17 @@ class Piccy(callbacks.Plugin):
             extraslist = self.findmodule(vendor, device, label)
             if extraslist: extras = extras.union(extraslist)
         if len(extras):
-            extramodules = " and the out-of-tree %s module." % ", ".join(map(lambda m: "'%s'" % self.bold(m), extras))
+            extramodules = " and the out-of-tree %s module." % \
+                    self.boldCommaList(extras)
 
         hcllink = [ self.registryValue('hcl_url') % ( "%s:%s" % (vendor, device)) ]
 
         map(lambda page: hcllink.append(self.registryValue('wiki_url') % page), self.checkWikiLink(extras.union(module)))
 
-        reply = "[%s:%s] is '%s' from '%s' %s See also %s%s" % (vendor, device, dname, vname, moduletext, " ".join(hcllink), extramodules)
+        reply = "[%s:%s] is '%s' from '%s' %s See also %s%s" % \
+                ( vendor, device, dname, vname, 
+                  moduletext, 
+                  " ".join(hcllink), extramodules )
 
         irc.reply(reply)
 
@@ -151,14 +157,17 @@ class Piccy(callbacks.Plugin):
 
         origname = " ".join(name)
 
-        # cleanse special characters from the search term
+        # cleanse special characters from the search term to see how long it is
         name = re.sub(r'[^\s\w\d]', '', origname)
-        # also fix spaces
-        name = re.sub(r' +', r'\s+', name)
 
         if len(name) < min_length:
             irc.error("Please give me name to search for that is at least %d characters long containing no special characters." % min_length)
             return
+
+        # Clean up the expression
+        name = re.sub(r' +', ' ', origname)     # allow multiple spaces
+        name = re.escape(name)
+        name = re.sub(r'\\ ', r'\s+', name)     # allow multiple spaces
 
         devices = self.finddevices(name)
         if devices is None:
@@ -167,7 +176,12 @@ class Piccy(callbacks.Plugin):
 
         reply = ""
         if devices:
-            devicelist = ", ".join(map(lambda d: "[%s:%s] '%s' from '%s'" % (d[0], d[2], d[3], d[1]), devices ))
+            devicelist = ", ".join(
+                    map(lambda d: 
+                      "%s '%s' from '%s'" % 
+                            (  self.bold("[%s:%s]" % (d[0], d[2])), 
+                               d[3], d[1]  ), 
+                      devices ))
             reply = "'%s' matched: %s" % (origname, devicelist)
         else:
             reply = "No devices were found that matched '%s'." % origname
@@ -212,20 +226,20 @@ class Piccy(callbacks.Plugin):
         driverlabel = "driver"
         if drivers:
             reply = "In %s, device %s:%s is matched by xorg %s: %s." % \
-                    ( self.bold(release), vendor, device, ("driver", "drivers")[len(drivers)!=1], \
-                      ", ".join(map(lambda d: "'%s'" % self.bold(d), drivers))  \
+                    ( self.bold(release), vendor, device, ("driver", "drivers")[len(drivers)!=1],
+                      self.boldCommaList(drivers)
                     )
         else:
             fallback = self.cleanreleasename(self.registryValue('fallback_release'))
             drivers = self.findxorgdriver(vendor, device, fallback)
             if drivers:
-                reply = "Device %s:%s is not matched by any xorg drivers in %s. In %s, it is matched by xorg %s: %s." % ( vendor, device, self.bold(release), \
-                      self.bold(fallback), ("driver", "drivers")[len(drivers)!=1], \
-                      ", ".join(map(lambda d: "'%s'" % self.bold(d), drivers))  \
+                reply = "Device %s:%s is not matched by any xorg drivers in %s. In %s, it is matched by xorg %s: %s." % ( vendor, device, self.bold(release),
+                      self.bold(fallback), ("driver", "drivers")[len(drivers)!=1],
+                      self.boldCommaList(drivers)
                     )
             else:
                 reply = "Device %s:%s is not matched by any xorg drivers in %s or %s." % \
-                    (self.bold(release), self.bold(fallback))
+                    (vendor, device, self.bold(release), self.bold(fallback))
         irc.reply(reply)
 
     xorg = wrap(xorgHelper, ['something', getopts( { 'release':'something' } ) ] )
@@ -462,7 +476,7 @@ class Piccy(callbacks.Plugin):
         dname = "Unknown device"
 
         vidre = re.compile(r"^([0-9a-f]{4})\s+(.+)", re.I)
-        didre = re.compile(r"^\s+([0-9a-f]{4})\s+([^\s]*%s.*)" % name, re.I)
+        didre = re.compile(r"^\s+([0-9a-f]{4})\s+(.*%s.*)" % name, re.I)
 
         for line in idmap:
             #print line
@@ -561,10 +575,10 @@ class Piccy(callbacks.Plugin):
         # format of the wiki page is:
         # * iwl3945 [[iwlwifi]]
         # * iwl4965 [[iwlwifi]], [[iwlagn]]
-        r = r'^\s*\*\s*(%s) (.*)' % "|".join(modules)
+        r = r'^\s*\*\s*(%s)\s*(.*)' % "|".join(modules)
         modulere = re.compile(r, re.I)
         p = r'\[\[([a-z0-9\-_]+)\]\]'
-        linere = re.compile(p)
+        linere = re.compile(p, re.I)
         for line in wikimap:
             linematches = modulere.match(line)
             if not (linematches is None):
@@ -574,7 +588,7 @@ class Piccy(callbacks.Plugin):
                         wikipages.append(pagelist.groups(1)[0])
 
         wikimap.close()
-        self.log.debug("Found: [%s] => (%s)", ", ".join(modules), ", ".join(wikipages))
+        self.log.debug("Found wiki match: [%s] => (%s)", ", ".join(modules), ", ".join(wikipages))
         return set(wikipages)
 
 
@@ -704,6 +718,15 @@ class Piccy(callbacks.Plugin):
             return ircutils.bold(s)
         else:
             return s
+
+
+    def boldCommaList(self, listing, format="'%s'"):
+        """
+        Return the list comma separated, with each term in bold
+        """
+        return ", ".join(
+                map(lambda m: format % self.bold(m), listing)
+              )
 
 
 Class = Piccy
