@@ -64,6 +64,12 @@ def parse_standard_options( optlist, args=None ):
     if release_map.has_key( release ):
         release = release_map[ release ]
 
+    if not release in releases:
+        release=None
+
+    if not arch in arches:
+        arch=None
+
     return release, arch
 
 class Judd(callbacks.Plugin):
@@ -81,6 +87,7 @@ class Judd(callbacks.Plugin):
                                         self.registryValue('db_username') ),
                                       )
 
+        self.psql.set_isolation_level(0)
 
 
     def versions(self, irc, msg, args, package, optlist, something ):
@@ -251,7 +258,32 @@ class Judd(callbacks.Plugin):
             irc.reply( "%s -- Source: %s" % ( package, row[0]) )
 
         
-    source = wrap(source, ['something', getopts( { 'release':'something' } ),
+    src = wrap(source, ['something', getopts( { 'release':'something' } ),
+                           optional( 'something' ) ] );
+
+    def binaries( self, irc, msg, args, package, optlist, something ):
+        """
+        Show Source: of a given package.
+        Usage: "source packagename [--release etch]"
+        """
+        release,arch = parse_standard_options( optlist, something )
+
+        c = self.psql.cursor()
+        c.execute( "SELECT distinct package FROM packages WHERE source=%(package)s AND release=%(release)s", 
+                   dict( package=package, 
+                         arch=arch,
+                         release=release) );
+
+        row = c.fetchone()
+        if row:
+            reply = "%s -- Binaries:" % package
+            while row:
+                reply += " %s" % ( row[0] )
+                row = c.fetchone()
+
+            irc.reply( reply )
+        
+    binaries = wrap(binaries, ['something', getopts( { 'release':'something' } ),
                            optional( 'something' ) ] );
 
     def builddep( self, irc, msg, args, package, optlist, something ):
