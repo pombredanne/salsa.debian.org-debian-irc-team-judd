@@ -223,7 +223,6 @@ class Piccy(callbacks.Plugin):
             irc.error("Error looking up driver list.")
             return
 
-        driverlabel = "driver"
         if drivers:
             reply = "In %s, device %s:%s is matched by xorg %s: %s." % \
                     ( self.bold(release), vendor, device, ("driver", "drivers")[len(drivers)!=1],
@@ -231,15 +230,20 @@ class Piccy(callbacks.Plugin):
                     )
         else:
             fallback = self.cleanreleasename(self.registryValue('fallback_release'))
-            drivers = self.findxorgdriver(vendor, device, fallback)
-            if drivers:
-                reply = "Device %s:%s is not matched by any xorg drivers in %s. In %s, it is matched by xorg %s: %s." % ( vendor, device, self.bold(release),
-                      self.bold(fallback), ("driver", "drivers")[len(drivers)!=1],
-                      self.boldCommaList(drivers)
-                    )
+            if release != fallback:
+                drivers = self.findxorgdriver(vendor, device, fallback)
+                if drivers:
+                    reply = "Device %s:%s is not matched by any xorg drivers in %s. In %s, it is matched by xorg %s: %s." % ( vendor, device, self.bold(release),
+                          self.bold(fallback), ("driver", "drivers")[len(drivers)!=1],
+                          self.boldCommaList(drivers)
+                        )
+                else:
+                    reply = "Device %s:%s is not matched by any xorg drivers in %s or %s." % \
+                        (vendor, device, self.bold(release), self.bold(fallback))
             else:
-                reply = "Device %s:%s is not matched by any xorg drivers in %s or %s." % \
-                    (vendor, device, self.bold(release), self.bold(fallback))
+                reply = "Device %s:%s is not matched by any xorg drivers in %s." % \
+                    (vendor, device, self.bold(release))
+
         irc.reply(reply)
 
     xorg = wrap(xorgHelper, ['something', getopts( { 'release':'something' } ) ] )
