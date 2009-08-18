@@ -1,0 +1,23 @@
+#! /bin/sh
+
+# start or stop the bot using the proxy script
+# 
+# sudo should be configured to allow the script to be run as the bot user
+# rather than requiring root privileges. e.g.:
+#
+#    User_Alias      BOTOWNERS =  you, me, theotherone
+#    BOTOWNERS ALL = (supybot) NOPASSWD : /etc/init.d/supybot
+
+STARTSCRIPT=/etc/init.d/supybot
+
+[ -r /etc/default/supybot ] && . /etc/default/supybot
+
+if [ ! $BOTUSER -o ! -x $STARTSCRIPT ]
+then
+  echo "Error controlling bot: not configured or start script not found" >&2
+  exit 1
+fi
+
+
+sudo -u $BOTUSER $STARTSCRIPT "$@"
+

@@ -1,0 +1,80 @@
+Supybot control scripts
+=======================
+
+The init scripts for the supybot are composed of three files:
+
+  supybot-init
+      an LSB-compliant init script for supybot designed to be installed as
+      /etc/init.d/supybot and be included in the machine's startup scripts to
+      start the supybot on boot.
+
+      The init script understands the "start" "stop" and "restart" commands.
+
+  supybot-default
+      a settings file for the above init script that is sourced by it to set
+      parameters such as the location of bot and the name for the config file.
+      The file is intended to be installed as /etc/default/supybot.
+
+  supybotctl
+      a control script (think apache2ctl) that runs /etc/init.d/supybot to
+      start ans top the bot. The script uses sudo to change user to the bot's
+      dedicated user; it's solely designed to ease the burden of running the
+      bot through the init script but without having to have root privileges
+      in order to change uid later.
+
+Notes
+=====
+
+Supybot likes to own all its own files. It's not feasible to have the config
+file owned by another user as supybot will try to chmod it during startup (and
+will crash when that fails).
+
+The init script tells supybot to daemonise and thus requires supybot to write
+its own PID file. To do that, the supybot.pidFile config key must be set to the
+appropriate location. (A sensible place is logs/botname.pid).
+
+A user for the supybot needs to be created and sudo needs to be configured
+to allow bot-wranglers to be able to use supybotctl to start/stop the bot.
+
+
+Installation summary
+====================
+
+Install the scripts:
+
+      cd /path/to/supybot/init-scripts
+      ln -s $PWD/supybot-init /etc/init.d/supybot
+      cp $PWD/supybot-default /etc/default/supybot
+      ln -s $PWD/supybotctl /usr/local/bin/
+
+Add the startup script to the runlevels
+
+      update-rc.d supybot defaults 30
+
+Set BOTUSER and CONFFILE in /etc/default/supybot
+
+Make sure supybot is going to write the PID file.
+
+      cd $BOTDIR
+      sed -i "s,supybot.pidFile:,supybot.pidFile: $PWD/logs/$BOTNAME.pid," $CONFFILE
+
+Create a dedicated user for the bot and set file ownerships/permissions
+
+      adduser $BOTUSER
+      addgroup each_bot_admin $BOTUSER
+
+      chown -R $BOTUSER: .
+      chmod g+w -R .
+
+Configure sudo to permit the bot wranglers to manage the bot.
+
+      [use visudo to add the following]
+
+          User_Alias      BOTOWNERS =  you, me, theotherone
+          BOTOWNERS ALL = ($BOTUSER) NOPASSWD : /etc/init.d/supybot
+
+Start the bot up and check that it's working.
+
+        invoke-rc.d supybot start
+        tail -f logs/messages.log
+

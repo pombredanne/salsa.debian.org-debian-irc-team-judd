@@ -1,0 +1,24 @@
+# Supybot init script options
+#
+# For the bot to be started, ENABLED, BOTUSER and CONFFILE must be set.
+# Everything else should be calculated from those settings; override them
+# here if needs be, however.
+#
+# set ENABLED to Y to allow the bot to start
+ENABLED=N
+
+# local user that the daemon should run as
+BOTUSER=supybot
+
+# Config file for the supybot (absolute path or relative to ~$BOTUSER)
+CONFFILE=supybot.conf
+
+# File to store the PID 
+# (cannot be in /var/run if non-root is allowed to start/stop this bot)
+#PIDFILE=~$BOTUSER/logs/supybot.pid
+
+# Options provided to the supybot process
+#DAEMON_ARGS="--daemon $CONFFILE"
+
+# Force the output from the initscript to be verbose
+#export VERBOSE=true

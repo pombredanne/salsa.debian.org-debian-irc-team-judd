@@ -1,0 +1,205 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          supybot
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/stop supybot IRC bot
+# Description:       Controls an instance of the supybot IRC bot
+### END INIT INFO
+
+# Author: Stuart Prescott <stuart+debian@nanonanonano.net>
+#
+# This script is available under the same terms as supybot itself.
+# (i.e. three clause BSD-style licence).
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Supybot IRC bot"
+NAME=supybot
+DAEMON=/usr/bin/$NAME
+SCRIPTNAME=/etc/init.d/$NAME
+
+ENABLED=0
+BOTUSER=supybot
+CONFFILE=/does/not/exist
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+#set -u
+#set -x
+
+# Check that the service really should be run. Configure this in /etc/default/supybot
+case "$ENABLED" in
+	true|Y*|y*|1)
+		true ;;
+	*)
+		log_warning_msg "Starting supybot is disabled in /etc/default/$NAME"
+		exit 1
+esac
+
+
+#
+# Check that the configuration options at least look sane
+#
+do_configcheck()
+{
+	local conf_user runas_user
+	
+	# check that the dedicated user exists on the system
+	runas_user=$(getent passwd $BOTUSER)
+	if [ ! "$runas_user" ]
+	then
+		log_failure_msg "Supybot is supposed to be run as user '$BOTUSER' but that user doesn't seem to exist on the system."
+		exit 1
+	fi
+	
+	# set the CONFFILE location correctly
+	case "$CONFFILE" in
+		/*) 
+			true ;;
+		*) 
+			CONFFILE=$(getent passwd $BOTUSER | cut -f6 -d: )"/$CONFFILE" ;;
+	esac
+	
+	# check that the config file exists
+	if [ ! -f "$CONFFILE" ]
+	then
+		log_failure_msg "Config file for bot '$CONFFILE' could not be found. Please set it in /etc/default/$NAME"
+		exit 1
+	fi
+	
+	# check that the config file is owned by the right user
+	conf_user=$(stat -c"%U" "$CONFFILE")
+	if [ "$conf_user" != "$BOTUSER" ]
+	then
+		log_failure_msg "Config files not owned by supybot user '$BOTUSER'."
+		exit 1
+	fi
+	
+	# check that the PIDFILE is correctly set somewhere
+	PIDFILE=${PIDFILE:-$(sed -ne 's/^supybot.pidFile:[^/]*//p' "$CONFFILE")}
+	if [ ! "$PIDFILE" ]
+	then
+		log_failure_msg "Supybot is not configured to use create a PID file. Set 'supybot.pidFile' in $CONFFILE."
+		exit 1
+	fi
+	
+	DAEMON_ARGS=${DAEMON_ARGS:- --daemon $CONFFILE}
+}
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+	# Return
+	#   0 if daemon has been started
+	#   1 if daemon was already running
+	#   2 if daemon could not be started
+	start-stop-daemon --start --quiet \
+		--pidfile $PIDFILE \
+		--exec $DAEMON \
+		--user $BOTUSER --test > /dev/null \
+		|| return 1
+	start-stop-daemon --start --quiet \
+		--pidfile $PIDFILE \
+		--exec $DAEMON \
+		--chuid $BOTUSER \
+		-- \
+		$DAEMON_ARGS >& /dev/null \
+		|| return 2
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+	# Return
+	#   0 if daemon has been stopped
+	#   1 if daemon was already stopped
+	#   2 if daemon could not be stopped
+	#   other if a failure occurred
+	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 \
+		--pidfile $PIDFILE --name $NAME --user $BOTUSER
+	RETVAL="$?"
+	[ "$RETVAL" = 2 ] && return 2
+	#sleep 10s
+	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 \
+		--exec $DAEMON --user $BOTUSER
+	[ "$?" = 2 ] && return 2
+	# Many daemons don't delete their pidfiles when they exit.
+	rm -f $PIDFILE
+	return "$RETVAL"
+}
+
+
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	do_configcheck
+	do_start
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  stop)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+	do_configcheck
+	do_stop
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  #reload|force-reload)
+	#
+	# If do_reload() is not implemented then leave this commented out
+	# and leave 'force-reload' as an alias for 'restart'.
+	#
+	#log_daemon_msg "Reloading $DESC" "$NAME"
+	#do_reload
+	#log_end_msg $?
+	#;;
+  restart|force-reload)
+	#
+	# If the "reload" option is implemented then remove the
+	# 'force-reload' alias
+	#
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_end_msg 0 ;;
+			1) log_end_msg 1 ;; # Old process is still running
+			*) log_end_msg 1 ;; # Failed to start
+		esac
+		;;
+	  *)
+	  	# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  *)
+	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+	echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+	exit 3
+	;;
+esac
