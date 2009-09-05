@@ -133,7 +133,7 @@ updatekernel() {
   KERNELDEB=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*_${PKGVER}_${ARCH}\),\1,p")
   VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
 
-  OLDVER=$(awk "{FS=\", \"} /^\s*$NAME\s*/ { print \$2 }" $TARGET/versions)
+  OLDVER=$(awk "{FS=\", \"} /^\s*$NAME\s*,/ { print \$2 }" $TARGET/versions)
   if [ -f $TARGET/modules.pcimap-$NAME -a -f $TARGET/config-$NAME ]
   then
     if dpkg --compare-versions "$PKGVER" le-nl "$OLDVER"
