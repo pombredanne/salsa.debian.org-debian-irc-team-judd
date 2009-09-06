@@ -1,0 +1,197 @@
+#!/usr/bin/perl -w
+#
+# Live test of the Piccy supybot plugin using konversation
+#
+# Run "livetest --help" for usage information.
+#
+###
+# Copyright (c) 2009 Stuart Prescott
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   * Redistributions of source code must retain the above copyright notice,
+#     this list of conditions, and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright notice,
+#     this list of conditions, and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of the author of this software nor the name of
+#     contributors to this software may be used to endorse or promote products
+#     derived from this software without specific prior written consent.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+###
+
+use strict;
+use DCOP::Konversation;
+use File::Basename;
+use Getopt::Long;
+
+##########################################################################
+my $testfile = lookfortestpy();  # test.py file to read in
+my $target   = "konversation";   # name of the dcop application interface
+my $server   = "0";              # dcop server number
+my $bot      = "judd";           # name of the bot to /msg in the tests
+my $channel  = $bot;             # the channel or bot to talk to
+my $sleep    = 4;                # break between tests so the bot doesn't flood
+my $noact    = 0;                # don't act
+my $verbose  = 0;                # verbosity
+my $help     = 0;
+
+
+GetOptions(
+             'testfile=s'     => \$testfile,
+             'target=s'       => \$target,
+             'server=s'       => \$server,
+             'channel=s'      => \$channel,
+             'bot=s'          => \$bot,
+             'sleep=s'        => \$sleep,
+             'noact'          => \$noact,
+             'verbose'        => \$verbose,
+             'help'           => \$help,
+          );
+
+if (! -f $testfile) {
+  usage();
+  print STDERR <<"EOF";
+  No test.py file could be found.
+EOF
+  exit 1;
+}
+if ($help) {
+  usage();
+  exit 1;
+}
+
+$DCOP::DEBUG=$verbose;
+
+##########################################################################
+
+# make the IPC connection for running the tests
+my $k;
+if ($target ne "" && $server ne "") {
+  $k = new DCOP::Konversation(target => $target, server => $server, channel => $channel);
+} else {
+  print STDERR "ERROR: No client or server defined\n";
+  exit 1;
+}
+
+print "Using '$testfile' as source of tests\n" if ($verbose);
+
+# find the tests in the test.py
+open(TESTS, $testfile) || die "Couldn't open test.py: $!";
+my @TESTS;
+my $line;
+while ($line = <TESTS>) {
+  if ($line =~ /^[^#]*self.(assert\w*Error)\s*\('(.+)'\)\s*#\s*(.+)\s*;\s*(.+)\s*$/) {
+    push @TESTS, { test => $2, info=> $3, result => $4, error => ($1 eq 'assertError')};
+  } else {
+    # print "Skipping line: $line";
+  }
+}
+close(TESTS);
+
+# run the tests
+foreach my $t (@TESTS) {
+  #print "t=$t\n";
+  if ($t->{test} !~ /^update/) {
+    dotest($t);
+    sleep($sleep);
+  }
+}
+
+##########################################################################
+# run an individual test, showing the user what is going to be done
+#    dotest($test)
+# where $test is a hashref with the keys:
+#    test:      string to be sent to the bot in a /msg
+#    info:      short description of the test to be displayed
+#    result:    information about what the output should be
+#    error:     true if the test should result in an error condition
+sub dotest {
+  my $test = shift;
+  $test->{info} =~ s/\s*$//g;
+  my $testdata = sprintf("%-40s [%s]", $test->{test}, $test->{info});
+  print "TEST: $testdata\n";
+  if (! $noact) {
+    $k->info($testdata);
+    if ($test->{error}) {
+      $k->info("E: " . $test->{result});
+    } else {
+      $k->info("I: " . $test->{result});
+    }
+    $k->msg($bot, $test->{test});
+  }
+}
+
+##########################################################################
+# try to find a test.py file automatically
+sub lookfortestpy {
+  if (-f "./test.py") {
+    return "./test.py";
+  }
+  my $scriptdir = dirname($0);
+  if (-f "$scriptdir/test.py") {
+    return "$scriptdir/test.py";
+  }
+  return "";
+}
+
+##########################################################################
+# display usage information
+sub usage {
+  print STDERR <<"EOF";
+Use IPC to run a series of tests supybot tests through an IRC client.
+
+The only IPC method currently implemented is a set of DCOP calls to
+konversation.
+
+Usage:
+  $0 [options]
+
+No options are required.
+
+  --testfile=/path/to/test.py
+      If not specified, "test.py" will be searched for in the current working
+      directory or the directory containing this script.
+
+  --target=dcop_target
+  --server=dcop_servername
+  --channel=channel_name
+      The dcop target application (default, 'konversation') and enumerated
+      server (default '0') with which to have the dcop conversation.
+
+  --bot=bot_name
+      Nick of the bot that will run the tests. Default is 'judd'.
+
+  --sleep=sleep_time
+      Number of seconds delay between tests. Default 4. Should be sufficiently
+      long that the bot has executed the test prior to starting the next one
+      to keep the output in order, but sufficiently fast as to stop you getting
+      bored.
+
+  --noact
+      Don't actually perform the IPC, just write the test details to STDOUT.
+
+  --help
+      Print this message and exit.
+
+Notes:
+  test.py should be structured such that each test looks like:
+
+    self.assertNotError('test command')  # short test description ; test result
+
+  with each test and the comment-metadata being all on one line.
+EOF
+}

@@ -28,6 +28,13 @@
 
 ###
 
+# Note that the comments for each test are structured as:
+#
+#    self.assertNotError('test command')  # short test description ; test result
+#
+# this is designed to allow the tests to be run semi-interactively through 
+# some RPC interaction with an IRC client.
+
 from supybot.test import *
 
 class PiccyPluginTestCase(PluginTestCase):
@@ -37,63 +44,56 @@ class PiccyPluginTestCase(PluginTestCase):
     cleanDataDir = False
 
     def testPCIname(self):
-        self.assertNotError('pciname 82574L')     # [8086:10d3] 82574L Gigabit Network Connection
-        self.assertError('pciname 825')           # require at least 4 chars in search
-        self.assertNotError('pciname 8257')
-        self.assertError('pciname 8..7')          # will sanitised down to 87 which is then an error
-        self.assertNotError('pciname 82574.*')    # will be trimmed down to 82574
-        self.assertNotError('pciname 82574L Gigabit')    # test spaces
-        self.assertNotError('pciname "82574L  Gigabit"')    # test spaces
-        self.assertNotError('pciname 82574L gigabit')    # test case sensitivity
-        self.assertNotError('pciname centaur')    # multple matches
+        self.assertNotError('pciname 82574L')     # single hit; matches [8086:10d3] 82574L Gigabit Network Connection
+        self.assertNotError('pciname 8257')       # multiple hits; matches [8086:105e] '82571EB Gigabit Ethernet Controller' and a lot of other devices
+        self.assertNotError('pciname centaur')    # match not at start of devname; [13d1:ab02] 'ADMtek Centaur-C rev 17 [D-Link DFE-680TX] CardBus Fast Ethernet Adapter' and three others
+        self.assertError('pciname 825')           # minimum search string length; at least 4 chars in required in search
+        self.assertError('pciname 8..7')          # minimum search string length; at least 4 chars in required in search (will sanitised down to 87 which is then an error)
+        self.assertNotError('pciname 82574.*')    # escape bad characters ; No matches
+        self.assertNotError('pciname 82574L Gigabit')    # single space in arguments; matches [8086:10d3] '82574L Gigabit Network Connection' amongst others.
+        self.assertNotError('pciname "82574L  Gigabit"') # multiple spaces in arguments; matches [8086:10d3] '82574L Gigabit Network Connection' amongst others.
+        self.assertNotError('pciname 82574L gigabit')    # case sensitivity; [8086:10d3] '82574L Gigabit Network Connection' amongst others
 
     def testPCImap(self):
-        self.assertNotError('pciid "[8086:4222]"')
-        self.assertNotError('pciid "[8086:4222]" --release unstable')
-        self.assertNotError('pciid "[1002:7145]"')                     # ATI card (fglrx)
-        self.assertNotError('pciid "[1002:7145]" --release unstable')
-        self.assertNotError('pciid 14e4:170c')
-        self.assertNotError('pciid 14e4:170c --release unstable')
-        self.assertNotError('pciid 168C:001B')                      # upper case
-        self.assertNotError('pciid 8086:27b9')                      # multiple module matches
-        self.assertNotError('pciid 8086:4229')                      # multiple wikifaq matches
-        self.assertNotError('pciid 10de:1234')                      # nvidia device with PCI_ID_ANY in map
-        self.assertNotError('pciid 1904:8139 --release etch')      # no match in etch, match in sid
-        self.assertNotError('pciid "[001c:0001]"')
-        self.assertNotError('pciid ffff:0001')  # illegal vendor ID
-        self.assertNotError('pciid 0069:0001')  # unknown vendor ID
-        self.assertNotError('pciid 0070:0002')  # unknown device ID (start)
-        self.assertNotError('pciid 0070:7445')  # unknown device ID (middle)
-        self.assertNotError('pciid 0070:f000')  # unknown device ID (end)
-        self.assertError('pciid 1:0011')      # malformed
-        self.assertError('pciid 123:0011')    # malformed
-        self.assertError('pciid qwe1:0011')   # malformed
-        self.assertError('pciid 001c:123q')   # malformed
+        self.assertNotError('pciid 14e4:170c')        # simple test ; 'BCM4401-B0 100Base-TX' to b44 module with no wiki link
+        self.assertNotError('pciid 14e4:170c --release unstable') # different release ; 'BCM4401-B0 100Base-TX' to b44 module with no wiki link
+        self.assertNotError('pciid 168C:001B')        # case sensitivity ; 'AR5413 802.11abg NIC' ath5k
+        self.assertNotError('pciid 8086:27b9')        # multiple module matches ; intel-rng and iTCO_wdt
+        self.assertNotError('pciid 8086:4229')        # multiple wikifaq matches ; wikifaq: iwlwifi iwlagn
+        self.assertNotError('pciid 10de:1234')        # PCI_ID_ANY module ; nvidia device with PCI_ID_ANY in map for out-of-tree nvidia driver
+        self.assertNotError('pciid 1904:8139 --release etch')      # fallthru to sid ; RTL8139D has no match in etch, matches sc92031 in sid
+        self.assertNotError('pciid "[8086:4222]"')    # pciid wrapped in brackets ; 'PRO/Wireless 3945ABG [Golan] Network Connection'. Should include wikilink for iwlwifi.
+        self.assertNotError('pciid "[8086:4222]" --release unstable') # check driver in sid ; 'PRO/Wireless 3945ABG [Golan] Network Connection'. Should include wikilink for iwlwifi.
+        self.assertNotError('pciid "[1002:7145]"')    # non-free driver ; 'Radeon Mobility X1400' with in kernel ati-agp module and out-of-tree fglrx and wikilink for fglrx
+        self.assertNotError('pciid "001c:0001"')      # no matches ; no matches in any distro
+        self.assertNotError('pciid ffff:0001')        # illegal vendor ID ; unknown device from illegal vendor id
+        self.assertNotError('pciid 0069:0001')  # unknown vendor ID ; 'Unknown device' from 'Unknown vendor'
+        self.assertNotError('pciid 0070:0002')  # unknown device ID (start) ; 'Unknown device'
+        self.assertNotError('pciid 0070:7445')  # unknown device ID (middle) ; 'Unknown device'
+        self.assertNotError('pciid 0070:f000')  # unknown device ID (end) ; 'Unknown device'
+        self.assertError('pciid 1:0011')        # malformed pciid ; vendor id too short
+        self.assertError('pciid 123:0011')      # malformed pciid ; vendor id too short
+        self.assertError('pciid qwe1:0011')     # malformed pciid ; vendor id bad characters
+        self.assertError('pciid 001c:123q')     # malformed pciid ; device id bad characters
 
     def testXorgMap(self):
-        self.assertNotError('xorg 1002:7145')    # returns radeon
-        self.assertNotError('xorg 1002:7145 --release lenny')    # returns radeon
-        self.assertNotError('xorg 1002:4C45 --release lenny')    # unknown driver in lenny
-        self.assertNotError('xorg 1002:3E54')    # test upper/lower case
-        self.assertNotError('xorg 1002:3e54')    # test upper/lower case
-        self.assertNotError('xorg 1002:9442')    # test no matches at all
-        self.assertNotError('xorg 1106:1122')    # matches in sid not in lenny
+        self.assertNotError('xorg 1002:7145')    # single match ; radeon and radeonhd
+        self.assertNotError('xorg 1002:9442')    # no matches ; no matches in either lenny or sid
+        self.assertNotError('xorg 1106:1122')    # fallthru ; no match in lenny, matches openchrome in sid 
 
     def testConfigMap(self):
-        self.assertNotError('kconfig FIRMWARE')    # matches some comments too
-        self.assertNotError('kconfig CONFIG_GENERIC_CMOS_UPDATE')    # returns single hit, full module name
-        self.assertNotError('kconfig PROC')                  # returns multiple hits, partial module name
-        self.assertNotError('kconfig foobar')                        # fails to match
-        self.assertNotError('kconfig CONFIG_SMB_FS --release etch')       # is set in etch
-        self.assertNotError('kconfig CONFIG_SMB_FS --release lenny')    # fails to match (is not set)
-        self.assertNotError('kconfig SMB --release lenny')      # fails to match (is not set)
-        self.assertNotError('kconfig proc')      # allow case-insensitive matching
+        self.assertNotError('kconfig CONFIG_GENERIC_CMOS_UPDATE')    # single hit ; returns single hit, full module name
+        self.assertNotError('kconfig PROC')      # multiple hits ; several partial matches
+        self.assertNotError('kconfig proc')      # case sensitive ; case-insensitive matching, several partial matches
+        self.assertNotError('kconfig FIRMWARE')  # avoid comments ; shoudn't return comments with firmware
+        self.assertNotError('kconfig foobar')    # no match ; fails to match
+        self.assertNotError('kconfig CONFIG_SMB_FS --release etch')  # match in release ; only set in etch
+        self.assertNotError('kconfig CONFIG_SMB_FS --release lenny') # match in release ; not set in lenny
 
     def testVersionList(self):
-        self.assertNotError('kernels')    # returns all versions
-        self.assertNotError('kernels --release etch')  # returns a single release
-        # test alases to the functions:
-        self.assertNotError('kernel')    # returns all versions
+        self.assertNotError('kernels')    # kernel versions ; returns all versions from oldstable to trunk
+        self.assertNotError('kernels --release lenny')  # single release ; returns a single release
+        self.assertNotError('kernel')     # kernels alias ; returns all versions
 
     def testUpdater(self):
         # disable this test for the sake of bandwidth usage
@@ -101,6 +101,6 @@ class PiccyPluginTestCase(PluginTestCase):
         True
 
     def testLastUpdate(self):
-        self.assertNotError('lastupdate')
+        self.assertNotError('lastupdate')  # last update ; print date and time of last update
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
