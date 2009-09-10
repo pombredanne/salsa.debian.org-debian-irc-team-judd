@@ -349,6 +349,9 @@ do
   fi
 done
 
+# record that the update ran (even if there were no changes made)
+touch $TARGET/versions
+
 # Clean up the tempdir before exit
 if $CLEANUP
 then
