@@ -480,7 +480,7 @@ class Piccy(callbacks.Plugin):
         dname = "Unknown device"
 
         vidre = re.compile(r"^([0-9a-f]{4})\s+(.+)", re.I)
-        didre = re.compile(r"^\s+([0-9a-f]{4})\s+(.*%s.*)" % name, re.I)
+        didre = re.compile(r"^\t([0-9a-f]{4})\s+(.*%s.*)" % name, re.I)
 
         for line in idmap:
             #print line
