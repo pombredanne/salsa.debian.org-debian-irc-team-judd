@@ -161,7 +161,7 @@ updatekernel() {
   # If this is running on a squeeze or later machine, -m is also needed for depmod
   # (since this is running under "set -e", make sure the command never has a
   # non-zero exit status)
-  DEPMODARGS=$(dpkg --compare-versions $(depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m || echo)
+  DEPMODARGS=$(dpkg --compare-versions $(/sbin/depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m || echo)
   /sbin/depmod $DEPMODARGS -b $WD $VER
 
   # Copy out the map file and kernel config

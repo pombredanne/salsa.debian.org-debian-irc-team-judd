@@ -7,9 +7,9 @@
 #    * valid options are:
 #               - xorg : look for xorg pciid matches
 #
-trunk,              deb http://kernel-archive.buildserver.net/debian-kernel trunk main,   linux-image-2.6.*-686$
+#trunk,              deb http://kernel-archive.buildserver.net/debian-kernel trunk main,   linux-image-2.6.*-686$
 #
-sid,                deb http://ftp.uk.debian.org/debian/ sid main            ,  , xorg
+sid,                deb http://ftp.uk.debian.org/debian/ sid main            ,  linux-image-2.6.*-686$, xorg
 #
 squeeze,            deb http://ftp.uk.debian.org/debian/ squeeze main  #  deb http://security.debian.org/ squeeze/updates main           , , xorg
 #
