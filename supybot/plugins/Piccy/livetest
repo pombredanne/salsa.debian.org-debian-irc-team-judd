@@ -43,7 +43,7 @@ my $testfile = lookfortestpy();  # test.py file to read in
 my $target   = "konversation";   # name of the dcop application interface
 my $server   = "0";              # dcop server number
 my $bot      = "judd";           # name of the bot to /msg in the tests
-my $channel  = $bot;             # the channel or bot to talk to
+my $channel  = "";               # the channel or bot to talk to
 my $sleep    = 4;                # break between tests so the bot doesn't flood
 my $noact    = 0;                # don't act
 my $verbose  = 0;                # verbosity
@@ -131,7 +131,11 @@ sub dotest {
     } else {
       $k->info("I: " . $test->{result});
     }
-    $k->msg($bot, $test->{test});
+    if ($channel ne "") {
+      $k->say("$bot:", $test->{test});
+    } else {
+      $k->msg($bot, $test->{test});
+    }
   }
 }
 
@@ -170,7 +174,10 @@ No options are required.
   --server=dcop_servername
   --channel=channel_name
       The dcop target application (default, 'konversation') and enumerated
-      server (default '0') with which to have the dcop conversation.
+      server (default '0') with which to have the dcop conversation. If channel
+      is specified and non-zero-length then the testing will occur in the
+      specified channel. Otherwise, it will occur by private message with
+      the bot.
 
   --bot=bot_name
       Nick of the bot that will run the tests. Default is 'judd'.
