@@ -110,16 +110,18 @@ cp /lib/modules/*/modules.pcimap $OUTFILE
 # Extra step to get the nvidia driver's xorg pci-id map
 aptitude -o quiet=1000 download nvidia-glx > /dev/null
 dpkg -x nvidia-glx*.deb /
+# zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
+#     awk '/^Appendix H/,EOF' | 
+#     awk '/^Appendix A/,EOF' | 
+#     awk '//{print}; /^Below are the legacy/{exit}' | 
+#     sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia.ids
 zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
-    awk '/^Appendix H/,EOF' | 
-    awk '/^Appendix A/,EOF' | 
-    awk '//{print}; /^Below are the legacy/{exit}' | 
+    awk '/^Appendix H/ {body=1;next}
+         body!=1 {next}
+         /^Appendix A/,/^Below are the legacy/' | 
     sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia.ids
 
 zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
-    awk '/^Appendix H/,EOF' | 
-    awk '/^Appendix A/,EOF' | 
-    awk '/^Below are the legacy/,EOF' | 
-    awk '//{print}; /^____/{exit}' | 
+    awk '/^Below are the legacy/,/^____/' | 
     sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia-legacy.ids
 

@@ -69,13 +69,15 @@ If data_directory is not specified, cwd will be used if there is existing data
 in that directory already (e.g. pci.ids file and a versions file).
 
 Format of kernels.list file should be:
-    distname,    deb url release sections,     packageregexp"
+    distname,    deb url release sections,     packageregexp,     options
 where:
   distname      is 'sid' 'lenny' etc
   deb url ...   is one or more valid lines for an apt source.list (multiple
                 lines are separated by a # character.
   packageregexp is an aptitude search pattern that will match the desired
                 kernel. Default is '$KERNELRE'
+  options       is a space-separated list of options to control what is updated
+                from this source. Valid options are: xorg.
 EOF
   exit 1
 }
