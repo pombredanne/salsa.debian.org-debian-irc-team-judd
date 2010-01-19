@@ -52,7 +52,8 @@ esac
 
 
 #
-# Check that the configuration options at least look sane
+# Check that the configuration options at least look sane and load values
+# into the script from the config file.
 #
 do_configcheck()
 {
@@ -181,6 +182,7 @@ case "$1" in
 	# 'force-reload' alias
 	#
 	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_configcheck
 	do_stop
 	case "$?" in
 	  0|1)
