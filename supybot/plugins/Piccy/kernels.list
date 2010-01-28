@@ -9,14 +9,14 @@
 #
 #trunk,              deb http://kernel-archive.buildserver.net/debian-kernel trunk main,   linux-image-2.6.*-686$
 #
-sid,                deb http://ftp.uk.debian.org/debian/ sid main            ,  linux-image-2\.6\.[0-9]+-~(trunk~|[0-9]+~)-686$, xorg
+sid,                deb http://ftp.de.debian.org/debian/ sid main            ,  linux-image-2\.6\.[0-9]+-~(trunk~|[0-9]+~)-686$, xorg
 #
-squeeze,            deb http://ftp.uk.debian.org/debian/ squeeze main  #  deb http://security.debian.org/ squeeze/updates main           , , xorg
+squeeze,            deb http://ftp.de.debian.org/debian/ squeeze main  #  deb http://ftp.de.debian.org/debian-security/ squeeze/updates main           , , xorg
 #
-lenny,              deb http://ftp.uk.debian.org/debian/ lenny main    # deb http://security.debian.org/ lenny/updates main             , , xorg
+lenny,              deb http://ftp.de.debian.org/debian/ lenny main    # deb http://ftp.de.debian.org/debian-security/ lenny/updates main             , , xorg
 #
 lenny-backports,    deb http://www.backports.org/debian/ lenny-backports main,                       linux-image-2.6.*-bpo.*-686$
 #
-etchnhalf,          deb http://ftp.uk.debian.org/debian/ etch main     # deb http://security.debian.org/ etch/updates main,                       linux-image-2.6.*etchnhalf.*-686$
+etchnhalf,          deb http://ftp.de.debian.org/debian/ etch main     # deb http://ftp.de.debian.org/debian-security/ etch/updates main,                       linux-image-2.6.*etchnhalf.*-686$
 #
-etch,               deb http://ftp.uk.debian.org/debian/ etch main     # deb http://security.debian.org/ etch/updates main
+etch,               deb http://ftp.de.debian.org/debian/ etch main     # deb http://ftp.de.debian.org/debian-security/ etch/updates main
