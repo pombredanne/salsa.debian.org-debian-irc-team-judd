@@ -91,10 +91,12 @@ class Judd(callbacks.Plugin):
 
 
     def versions(self, irc, msg, args, package, optlist, something ):
-        """
-        Output available versions of a package.
-        Usage: "versions pattern [--arch i386] [--release etch]"
-        pattern will treat * and ? as wildcards
+        """<pattern> [--arch <i386>] [--release <lenny>]
+
+        Show the available versions of a package in the specified release and 
+        for the given architecture.
+        The current stable release and i386 are searched by default.
+        The characters * and ? can be used as wildcards in the pattern.
         """
         release = None
         arch='i386'
@@ -183,9 +185,11 @@ class Judd(callbacks.Plugin):
     versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
     
     def info(self, irc, msg, args, package, optlist, something ):
-        """
-        Output brief info about a package.
-        Usage: "info packagename [--arch i386] [--release etch]"
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the short description and some other brief details about a package
+        in the specified release and architecture. By default, the current 
+        stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
@@ -210,9 +214,10 @@ class Judd(callbacks.Plugin):
                                               'release':'something' } ), optional( 'something' ) ] )
 
     def depends( self, irc, msg, args, package, optlist, something ):
-        """
-        Show Depends: of a given package.
-        Usage: "depends packagename [--arch i386] [--release etch]"
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the packages that are listed as 'Depends' for a given package.
+        By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
@@ -241,9 +246,11 @@ class Judd(callbacks.Plugin):
     danke = wrap( danke, [] )
 
     def source( self, irc, msg, args, package, optlist, something ):
-        """
-        Show Source: of a given package.
-        Usage: "source packagename [--release etch]"
+        """<packagename> [--release <lenny>]
+
+        Show the name of the source package from which a given binary package
+        is derived.
+        By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
@@ -262,9 +269,11 @@ class Judd(callbacks.Plugin):
                            optional( 'something' ) ] );
 
     def binaries( self, irc, msg, args, package, optlist, something ):
-        """
-        Show Source: of a given package.
-        Usage: "source packagename [--release etch]"
+        """<packagename> [--release <lenny>]
+
+        Show the name of the binary package(s) that are derived from a given 
+        source package.
+        By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
@@ -287,9 +296,11 @@ class Judd(callbacks.Plugin):
                            optional( 'something' ) ] );
 
     def builddep( self, irc, msg, args, package, optlist, something ):
-        """
-        Show BuildDepends: of a given package.
-        Usage: "buliddep packagename [--arch i386] [--release etch]"
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the name of the binary packages on which a given source package
+        build-depends.
+        By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
@@ -318,9 +329,11 @@ class Judd(callbacks.Plugin):
     builddep = wrap(builddep, ['something', getopts( { 'release':'something' } ), optional( 'something' )] );
         
     def conflicts( self, irc, msg, args, package, optlist, something ):
-        """
-        Show Conflicts: of a given package.
-        Usage: "conflicts packagename [--arch i386] [--release etch]"
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the binary packages listed as conflicting with a given binary
+        package.
+        By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
@@ -340,9 +353,10 @@ class Judd(callbacks.Plugin):
                                  optional( 'something' )] );
 
     def recommends( self, irc, msg, args, package, optlist, something ):
-        """
-        Show Recommends: of a given package.
-        Usage: "recommends packagename [--arch i386] [--release etch]"
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the packages that are listed as 'Recommends' for a given package.
+        By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
@@ -362,9 +376,10 @@ class Judd(callbacks.Plugin):
                                    optional( 'something' )] );
 
     def suggests( self, irc, msg, args, package, optlist, something ):
-        """
-        Show Suggests: of a given package.
-        Usage: "suggests packagename [--arch i386] [--release etch]"
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the packages that are listed as 'Suggests' for a given package.
+        By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
@@ -403,9 +418,10 @@ class Judd(callbacks.Plugin):
     bug = wrap(bug, ['int'] )
 
     def popcon( self, irc, msg, args, package ):
-        """
-        Return the popcon data  of the given package. 
-        Usage: "popcon packagename"
+        """<packagename>
+
+        Show the popcon (popularity contents) data for a given binary package.
+        http://popcon.debian.org/FAQ
         """
         c = self.psql.cursor()
 
