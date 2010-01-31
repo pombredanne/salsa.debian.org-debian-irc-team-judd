@@ -52,7 +52,7 @@ WIKIMAPFILE="modules.wikilinks"
 # Note that if the architecture being targeted by the script is changed,
 # KERNERLRE will need changing too.
 ARCH="i386"
-KERNELRE='linux-image-2.6.[0-9]+-[0-9]-686$'
+KERNELRE='linux-image-2\.6\.[0-9]+-~(trunk~|[0-9]+~)-686$'
 # ARCH="amd64"
 # KERNELRE='linux-image-2.6.[0-9]+-[0-9]-amd64$'
 
