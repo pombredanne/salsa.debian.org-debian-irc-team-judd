@@ -115,13 +115,16 @@ dpkg -x nvidia-glx*.deb /
 #     awk '/^Appendix A/,EOF' | 
 #     awk '//{print}; /^Below are the legacy/{exit}' | 
 #     sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia.ids
+# zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
+#     awk '/^Appendix H/ {body=1;next}
+#          body!=1 {next}
+#          /^Appendix A/,/^Below are the legacy/' | 
+#     sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia.ids
 zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
-    awk '/^Appendix H/ {body=1;next}
-         body!=1 {next}
-         /^Appendix A/,/^Below are the legacy/' | 
-    sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia.ids
+    awk '/^A1/,/^Below are the legacy/' | 
+    sed -n 's/.*0x\(....\).*/10DE\1/p' > nvidia.ids
 
 zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
     awk '/^Below are the legacy/,/^____/' | 
-    sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia-legacy.ids
+    sed -n 's/.*0x\(....\).*/10DE\1/p' > nvidia-legacy.ids
 
