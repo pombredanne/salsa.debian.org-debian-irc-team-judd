@@ -86,6 +86,16 @@ devices that they support.
 
 and add "fglrx" to the space-separated "extra_module_maps" config key.
 
+The script "refreshdata-extramodules" will attempt to build out-of-tree
+modules and harvest the PCI-Id matches they generate into a file
+modules.pcimap-$release-extras that can be added as "$release-extras" to the
+"extra_module_maps" config key. The script must be provided with a list of
+modules to build and the appropriate kernel version to feed module-assistant
+to do the building. It's recommended that this script be run inside a chroot
+(e.g. a cowbuilder/pbuilder chroot) of the appropriate release to make
+cleaning up afterwards as easy as possible as it will pollute the filesystem
+and performs potentially unsafe operations on the package management system.
+
 The list of URLs that Piccy should use for providing extra information for
 about the modules can be obtained directly from the Debian wiki:
 
