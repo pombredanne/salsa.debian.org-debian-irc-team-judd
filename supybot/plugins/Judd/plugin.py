@@ -443,7 +443,7 @@ class Judd(callbacks.Plugin):
         """
         c = self.psql.cursor()
 
-        c.execute( "SELECT key_id FROM upload_history where package=%(package)s and version=%(version)s", dict( package=package, version=version ) )
+        c.execute( "SELECT key_id FROM upload_history where source=%(package)s and version=%(version)s", dict( package=package, version=version ) )
 
         row = c.fetchone()
         if row:
