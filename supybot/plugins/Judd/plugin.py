@@ -310,9 +310,17 @@ class Judd(callbacks.Plugin):
                    dict( package=package, 
                          release=release) );
 
+        def bdformat(package, bd, bdi):
+            reply = []
+            if bd:
+                reply.append("Build-Depends: %s" % bd)
+            if bdi:
+                reply.append("Build-Depends-Indep: %s" % bdi)
+            return "%s -- %s." % ( package, "; ".join(reply))
+        
         row = c.fetchone()
         if row:
-            irc.reply( "%s -- Build-Depends-(Indep): %s" % ( package, ", ".join(row)) )
+            irc.reply(bdformat(package, row[0], row[1]))
         else:
             c.execute( """SELECT sources.source,build_depends,build_depends_indep FROM sources 
                         INNER JOIN packages on packages.source = sources.source
@@ -321,7 +329,7 @@ class Judd(callbacks.Plugin):
                              release=release) );
             row = c.fetchone()
             if row:
-                irc.reply( "%s -- Build-Depends-(Indep): %s" % ( row[0], ", ".join(row[1:2])) )
+                irc.reply(bdformat(row[0], row[1], row[2]))
             else:
                 irc.reply( "Sorry, there is no record of the %s package in %s." %(package, release) )
         
