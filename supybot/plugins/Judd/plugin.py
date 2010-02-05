@@ -118,7 +118,7 @@ class Judd(callbacks.Plugin):
 
         c = self.psql.cursor()
         if package.find( '*' ) == -1 and package.find( '?' ) == -1:
-            sql = "SELECT distinct release,version,component FROM packages WHERE package=%(package)s AND (architecture=%(arch)s or architecture='all')"
+            sql = "SELECT DISTINCT release,version,component FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all')"
             if release:
                 sql += " AND release=%(release)s"
 
@@ -136,7 +136,7 @@ class Judd(callbacks.Plugin):
 
             reply = "%s --" % package
             for row in pkgs:
-		atleaseone=True
+		atleastone=True
                 if( row[2] == 'main' ):
                     reply += " %s: %s" % (row[0], row[1])
                 else:
@@ -145,7 +145,7 @@ class Judd(callbacks.Plugin):
         else:
             package = package.replace( "*", "%" )
             package = package.replace( "?", "_" )
-            sql = "SELECT distinct release,version,package,component FROM packages WHERE package like %(package)s AND (architecture=%(arch)s or architecture='all')"
+            sql = "SELECT DISTINCT release,version,package,component FROM packages WHERE package LIKE %(package)s AND (architecture=%(arch)s OR architecture='all')"
             if release:
                 sql += " AND release=%(release)s"
 
@@ -153,35 +153,35 @@ class Judd(callbacks.Plugin):
                        dict( package=package, 
                              arch=arch,
                              release=release ) );
-    
             pkgs=[]
             for row in c.fetchall():
-                atleaseone=True
-                pkgs.append( [row[0], row[1], row[2]] )
+                atleastone=True
+                pkgs.append( [row[0], row[1], row[2], row[3]] )
 
+            
             if release:
                 reply = "%s in %s:" % (package,release)
             else:
                 reply = "%s" % package
 
             pkgs.sort( lambda a,b: debian_support.version_compare( a[1], b[1] ) )
+            print pkgs
             for row in pkgs:
                 if release:
-                    if( row[2] == 'main' ):
+                    if( row[3] == 'main' ):
                         reply += " %s %s" % (row[2], row[1] )
                     else:
                         reply += " %s: %s %s" % (row[0], row[2], row[1] )
                 else:
-                    if( row[2] == 'main' ):
+                    if( row[3] == 'main' ):
                         reply += " %s: %s %s" % (row[0], row[2], row[1])
-#                    else:
-#                        reply += " %s %s (%s/%s)" % (row[2], row[1], row[0], row[3])
+                    else:
+                        reply += " %s %s (%s/%s)" % (row[2], row[1], row[0], row[3])
 
-#fixme should be checking atleastone
-        if True:
+        if atleastone:
             irc.reply( reply )
         else:
-            irc.reply( "No package named %s found" % package )
+            irc.reply( "Sorry, no package named '%s' found." % package )
         
     versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
     
