@@ -297,34 +297,33 @@ class Judd(callbacks.Plugin):
                            optional( 'something' ) ] );
 
     def builddep( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--release <lenny>]
 
         Show the name of the binary packages on which a given source package
         build-depends.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release is used.
         """
         release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
-        c.execute( "SELECT build_depends FROM sources WHERE source=%(package)s AND release=%(release)s limit 1", 
+        c.execute( "SELECT build_depends,build_depends_indep FROM sources WHERE source=%(package)s AND release=%(release)s limit 1", 
                    dict( package=package, 
-                         arch=arch,
                          release=release) );
 
         row = c.fetchone()
         if row:
-            irc.reply( "%s -- BuildDepends: %s" % ( package, row[0]) )
+            irc.reply( "%s -- Build-Depends-(Indep): %s" % ( package, ", ".join(row)) )
         else:
-            c.execute( """SELECT sources.source,build_depends FROM sources 
+            c.execute( """SELECT sources.source,build_depends,build_depends_indep FROM sources 
                         INNER JOIN packages on packages.source = sources.source
                         WHERE packages.package=%(package)s AND packages.release=%(release)s limit 1""", 
                        dict( package=package, 
-                             arch=arch,
                              release=release) );
             row = c.fetchone()
             if row:
-                irc.reply( "%s -- BuildDepends: %s" % ( row[0], row[1]) )
-
+                irc.reply( "%s -- Build-Depends-(Indep): %s" % ( row[0], ", ".join(row[1:2])) )
+            else:
+                irc.reply( "Sorry, there is no record of the %s package in %s." %(package, release) )
         
         
     builddep = wrap(builddep, ['something', getopts( { 'release':'something' } ), optional( 'something' )] );
