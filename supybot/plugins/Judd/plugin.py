@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2007,2008, Mike O'Connor
+# Copyright (c) 2010,      Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -435,78 +436,38 @@ class Judd(callbacks.Plugin):
 
     popcon = wrap(popcon, ['something'] )
         
-    def uploader( self, irc, msg, args, package, version ):
-        """
-        Return the gpg keyid of the uploader of the given package version. 
-        Usage: "uploader package [version]"
-        If version is omitted, the most recent upload is used.
-        """
-        c = self.psql.cursor()
+    def uploaderHelper( self, irc, msg, args, package, version ):
+        """<packagename> [<version>]
 
-        c.execute( "SELECT key_id FROM upload_history where source=%(package)s and version=%(version)s", dict( package=package, version=version ) )
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "Uploader of %s %s: %s" % (package, version, row[0]) )
-        else:
-            irc.reply( "no record of %s %s" % (package,version) )
-
-    uploader = wrap(uploader, ['something', optional( 'something' )] )
-        
-    def changer( self, irc, msg, args, package, version ):
-        """
-        Return the person listed as the changer in the uploaded .changes file.
-        Usage: "changer package [version]" -- 
-        If version is omitted, the most recently changed version is used.
-        """
-        c = self.psql.cursor()
-
-        if( version ):
-            c.execute( "SELECT changed_by, version FROM upload_history where package=%(package)s and version=%(version)s", dict( package=package, version=version ) )
-        else:
-            c.execute( "SELECT changed_by, version FROM upload_history where package=%(package)s order by date desc", dict( package=package, version=version ) )
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s %s was changed by: %s" % (package, row[1], row[0]) )
-        else:
-            if( version ):
-                irc.reply( "no record of %s %s" % (package,version) )
-            else:
-                irc.reply( "no record of %s" % (package) )
-
-    changer = wrap(changer, ['something', optional( 'something' )] )
-        
-
-# TODO: this should use package.gz data (instead of?  as well as?)
-    def maintainer( self,irc,msg,args,package,version ):
-        """
-        Return the listed maintainer of a package.
-        Usage: "{maintainer,maint} package [version]"
-        If version is omitted, the most recent upload is used.
+        Return the names of the person who uploaded the package, the person who
+        changed the package prior to upload and the maintainer of the specified
+        source package. If version is omitted, the most recent upload is used.
         """
         c = self.psql.cursor()
 
         if version:
-            c.execute( "SELECT maintainer FROM upload_history where package=%(package)s and version=%(version)s", dict( package=package, version=version ) )
-            row = c.fetchone()
-            if row:
-                irc.reply( "%s is listed as maintainer of %s %s" % (row[0], package, version ) )
-            else:
-                irc.reply( "no record of %s %s" % (package,version) )
+            c.execute( "SELECT signed_by_name, changed_by_name, maintainer_name, nmu, version FROM upload_history WHERE source=%(package)s and version=%(version)s", dict( package=package, version=version ) )
         else:
-            c.execute( "SELECT maintainer,version FROM upload_history where package=%(package)s order by date desc limit 1", dict( package=package, version=version ) )
-            row = c.fetchone()
-            if row:
-                irc.reply( "%s is listed as maintainer of %s %s" % (row[0], package, row[1] ) )
+            c.execute( "SELECT signed_by_name, changed_by_name, maintainer_name, nmu, version FROM upload_history WHERE source=%(package)s  ORDER BY date DESC LIMIT 1", dict( package=package) )
+
+        row = c.fetchone()
+        if row:
+            reply = "Package %s version %s was uploaded by %s, last changed by %s and maintained by %s." % (package, row[4], row[0], row[1], row[2])
+            if row[3]:
+                reply += " (non-maintainer upload)"
+
+            irc.reply( reply )
+        else:
+            if version:
+                irc.reply( "Sorry, there is no record of '%s', version '%s'." % (package,version) )
             else:
-                irc.reply( "no record of %s" % (package) )
+                irc.reply( "Sorry, there is no record of '%s'." % package )
 
+    uploader   = wrap(uploaderHelper, ['something', optional( 'something' )] )
+    changer    = wrap(uploaderHelper, ['something', optional( 'something' )] )
+    maint      = wrap(uploaderHelper, ['something', optional( 'something' )] )
+    maintainer = wrap(uploaderHelper, ['something', optional( 'something' )] )
 
-    maint = wrap(maintainer, ['something', optional( 'something' )] )
-    maintainer = wrap(maintainer, ['something', optional( 'something' )] )
-        
-        
     def rcbugs( self, irc, msg, args, package ):
         """
         Return the release critical bugs for a given package.
