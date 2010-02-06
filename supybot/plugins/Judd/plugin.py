@@ -94,10 +94,9 @@ class Judd(callbacks.Plugin):
     def versions(self, irc, msg, args, package, optlist, something ):
         """<pattern> [--arch <i386>] [--release <lenny>]
 
-        Show the available versions of a package in the specified release and 
-        for the given architecture.
-        The current stable release and i386 are searched by default.
-        The characters * and ? can be used as wildcards in the pattern.
+        Show the available versions of a package in the optionally specified 
+        release and for the given architecture.
+        All current releases and i386 are searched by default.
         """
         release = None
         arch='i386'
@@ -117,74 +116,76 @@ class Judd(callbacks.Plugin):
             release = release_map[ release ]
 
         c = self.psql.cursor()
-        if package.find( '*' ) == -1 and package.find( '?' ) == -1:
-            sql = "SELECT DISTINCT release,version,component FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all')"
-            if release:
-                sql += " AND release=%(release)s"
+        sql = "SELECT DISTINCT release,version,component FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all')"
+        if release:
+            sql += " AND release=%(release)s"
 
-            c.execute( sql,
-                       dict( package=package,
-                             arch=arch,
-                             release=release ) );
+        c.execute( sql,
+                    dict( package=package,
+                          arch=arch,
+                          release=release ) );
 
-            pkgs=[]
-            for row in c.fetchall():
-                pkgs.append( [row[0], row[1], row[2]] )
+        pkgs=[]
+        for row in c.fetchall():
+            pkgs.append( [row[0], row[1], row[2]] )
 
 
-            pkgs.sort( lambda a,b: debian_support.version_compare( a[1], b[1] ) )
+        pkgs.sort( lambda a,b: debian_support.version_compare( a[1], b[1] ) )
 
-            reply = "%s --" % package
-            for row in pkgs:
-		atleastone=True
-                if( row[2] == 'main' ):
-                    reply += " %s: %s" % (row[0], row[1])
-                else:
-                    reply += " %s/%s: %s" % (row[0], row[2], row[1])
-
-        else:
-            package = package.replace( "*", "%" )
-            package = package.replace( "?", "_" )
-            sql = "SELECT DISTINCT release,version,package,component FROM packages WHERE package LIKE %(package)s AND (architecture=%(arch)s OR architecture='all')"
-            if release:
-                sql += " AND release=%(release)s"
-
-            c.execute( sql,
-                       dict( package=package, 
-                             arch=arch,
-                             release=release ) );
-            pkgs=[]
-            for row in c.fetchall():
-                atleastone=True
-                pkgs.append( [row[0], row[1], row[2], row[3]] )
-
-            
-            if release:
-                reply = "%s in %s:" % (package,release)
+        reply = "%s --" % package
+        for row in pkgs:
+            atleastone=True
+            if( row[2] == 'main' ):
+                reply += " %s: %s" % (row[0], row[1])
             else:
-                reply = "%s" % package
-
-            pkgs.sort( lambda a,b: debian_support.version_compare( a[1], b[1] ) )
-            print pkgs
-            for row in pkgs:
-                if release:
-                    if( row[3] == 'main' ):
-                        reply += " %s %s" % (row[2], row[1] )
-                    else:
-                        reply += " %s: %s %s" % (row[0], row[2], row[1] )
-                else:
-                    if( row[3] == 'main' ):
-                        reply += " %s: %s %s" % (row[0], row[2], row[1])
-                    else:
-                        reply += " %s %s (%s/%s)" % (row[2], row[1], row[0], row[3])
+                reply += " %s/%s: %s" % (row[0], row[2], row[1])
 
         if atleastone:
             irc.reply( reply )
         else:
-            irc.reply( "Sorry, no package named '%s' found." % package )
-        
+            irc.reply( "Sorry, no package named '%s' was found." % package )
+
     versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
     
+    def names(self, irc, msg, args, package, optlist, something ):
+        """<pattern> [--arch <i386>] [--release <lenny>]
+
+        Search package names with * and ? as wildcards.
+        The current stable release and i386 are searched by default.
+        """
+        release,arch = parse_standard_options( optlist, something )
+
+        c = self.psql.cursor()
+
+        packagesql = package.replace( "*", "%" )
+        packagesql = packagesql.replace( "?", "_" )
+        sql = "SELECT DISTINCT version,package,component FROM packages WHERE package LIKE %(package)s AND (architecture=%(arch)s OR architecture='all') AND release=%(release)s ORDER BY package"
+
+        c.execute( sql,
+                    dict( package=packagesql, 
+                          arch=arch,
+                          release=release ) );
+        pkgs=[]
+        for row in c.fetchall():
+            pkgs.append( [row[0], row[1], row[2]] )
+
+        if not pkgs:
+            irc.reply( "Sorry, no package matching '%s' were found." % package )
+            return
+
+        reply = "%s in %s, %s:" % (package,release,arch)
+
+        replies=[]
+        for row in pkgs:
+            if( row[2] == 'main' ):
+                replies.append("%s %s" % (row[1], row[0]) )
+            else:
+                replies.append("%s %s (%s)" % (row[1], row[0], row[2]) )
+
+        irc.reply( "%s %s" % (reply, "; ".join(replies)) )
+
+    names = wrap(names, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
+
     def info(self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
 
