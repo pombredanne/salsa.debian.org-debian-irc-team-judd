@@ -220,7 +220,7 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        print( "release: %s arch: %s" % (release, arch) )
+        #print( "release: %s arch: %s" % (release, arch) )
         c = self.psql.cursor()
         c.execute( "SELECT depends FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s", 
                    dict( package=package, 
