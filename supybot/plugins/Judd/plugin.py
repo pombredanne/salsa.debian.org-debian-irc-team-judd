@@ -129,21 +129,20 @@ class Judd(callbacks.Plugin):
         for row in c.fetchall():
             pkgs.append( [row[0], row[1], row[2]] )
 
+        if not pkgs:
+            irc.reply( "Sorry, no package named '%s' was found." % package )
+            return
 
         pkgs.sort( lambda a,b: debian_support.version_compare( a[1], b[1] ) )
 
-        reply = "%s --" % package
+        replies = []
         for row in pkgs:
-            atleastone=True
             if( row[2] == 'main' ):
-                reply += " %s: %s" % (row[0], row[1])
+                replies.append("%s: %s" % (row[0], row[1]))
             else:
-                reply += " %s/%s: %s" % (row[0], row[2], row[1])
+                replies.append("%s/%s: %s" % (row[0], row[2], row[1]))
 
-        if atleastone:
-            irc.reply( reply )
-        else:
-            irc.reply( "Sorry, no package named '%s' was found." % package )
+        irc.reply( "%s -- %s" % (package, "; ".join(replies)) )
 
     versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
     
@@ -173,8 +172,6 @@ class Judd(callbacks.Plugin):
             irc.reply( "Sorry, no package matching '%s' were found." % package )
             return
 
-        reply = "%s in %s, %s:" % (package,release,arch)
-
         replies=[]
         for row in pkgs:
             if( row[2] == 'main' ):
@@ -182,7 +179,7 @@ class Judd(callbacks.Plugin):
             else:
                 replies.append("%s %s (%s)" % (row[1], row[0], row[2]) )
 
-        irc.reply( "%s %s" % (reply, "; ".join(replies)) )
+        irc.reply( "%s in %s, %s: %s" % (package, release, arch, "; ".join(replies)) )
 
     names = wrap(names, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
 
