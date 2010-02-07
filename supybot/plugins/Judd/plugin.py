@@ -38,6 +38,7 @@ import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
 from debian_bundle import debian_support
 
+import re
 import psycopg2
 
 release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny' }
@@ -262,6 +263,37 @@ class Judd(callbacks.Plugin):
 
         
     depends = wrap(depends, ['something', getopts( { 'arch':'something',
+                                                     'release':'something' } ), 
+                             optional( 'something' ) ] );
+
+    def provides( self, irc, msg, args, package, optlist, something ):
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the packages that 'Provide' the specified virtual package.
+        By default, the current stable release and i386 are used.
+        """
+        release,arch = parse_standard_options( optlist, something )
+
+        # remove all characters from the package name not in a-z0-9-.
+        # \m is start word boundary, \M is finish word boundary
+        # http://www.postgresql.org/docs/8.3/static/functions-matching.html
+        packagere = r"\m%s\M" % re.sub(r'[^\w\d\-.]', '', package)
+        c = self.psql.cursor()
+        c.execute( "SELECT package FROM packages WHERE provides ~ %(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s", 
+                   dict( package=packagere,
+                         arch=arch,
+                         release=release) );
+
+        pkgs=[]
+        for row in c.fetchall():
+            pkgs.append( row[0] )
+
+        if pkgs:
+            irc.reply( "%s in %s, %s is provided by: %s." % ( package, release, arch, ", ".join(pkgs) ) )
+        else:
+            irc.reply( "Sorry, there don't seem to be any packages providing '%s' in %s, %s." % (package, release, arch) )
+
+    provides = wrap(provides, ['something', getopts( { 'arch':'something',
                                                      'release':'something' } ), 
                              optional( 'something' ) ] );
 
