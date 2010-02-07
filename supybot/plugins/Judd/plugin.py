@@ -169,7 +169,7 @@ class Judd(callbacks.Plugin):
             pkgs.append( [row[0], row[1], row[2]] )
 
         if not pkgs:
-            irc.reply( "Sorry, no package matching '%s' were found." % package )
+            irc.reply( "Sorry, no packages matching '%s' were found." % package )
             return
 
         replies=[]
@@ -211,6 +211,35 @@ class Judd(callbacks.Plugin):
         
     info = wrap(info, ['something', getopts( { 'arch':'something',
                                               'release':'something' } ), optional( 'something' ) ] )
+
+    def archHelper(self, irc, msg, args, package, optlist, something ):
+        """<packagename> [--release <lenny>]
+
+        Show for what architectures a package is available. By default, the current 
+        stable release is used.
+        """
+        release,arch = parse_standard_options( optlist, something )
+
+        c = self.psql.cursor()
+        c.execute( "SELECT architecture, version FROM packages WHERE package=%(package)s AND release=%(release)s", 
+                   dict( package=package,
+                         release=release) );
+        pkgs=[]
+        for row in c.fetchall():
+            pkgs.append( [row[0], row[1]] )
+
+        if not pkgs:
+            irc.reply( "Sorry, no package named '%s' was found." % package )
+            return
+
+        replies=[]
+        for row in pkgs:
+            replies.append("%s (%s)" % (row[0], row[1]) )
+
+        irc.reply( "%s in %s: %s" % (package, release, "; ".join(replies)) )
+
+    arches = wrap(archHelper, ['something', getopts({ 'release':'something' } ), optional( 'something' ) ] )
+    archs  = wrap(archHelper, ['something', getopts({ 'release':'something' } ), optional( 'something' ) ] )
 
     def depends( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
