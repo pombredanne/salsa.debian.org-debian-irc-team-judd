@@ -180,7 +180,7 @@ class Judd(callbacks.Plugin):
             else:
                 replies.append("%s %s (%s)" % (row[1], row[0], row[2]) )
 
-        irc.reply( "%s in %s, %s: %s" % (package, release, arch, "; ".join(replies)) )
+        irc.reply( "%s in %s/%s: %s" % (package, release, arch, "; ".join(replies)) )
 
     names = wrap(names, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
 
@@ -274,12 +274,17 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        # remove all characters from the package name not in a-z0-9-.
+        # remove all characters from the package name that aren't legal in a
+        # package name i.e. not in:
+        #    a-z0-9-.+
+        # see s5.6.1 of Debian Policy "Source" for details.
+        # http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Source
+        #
         # \m is start word boundary, \M is finish word boundary
         # http://www.postgresql.org/docs/8.3/static/functions-matching.html
-        packagere = r"\m%s\M" % re.sub(r'[^\w\d\-.]', '', package)
+        packagere = r"\m%s\M" % re.sub(r'[^a-z\d\-+.]', '', package)
         c = self.psql.cursor()
-        c.execute( "SELECT package FROM packages WHERE provides ~ %(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s", 
+        c.execute( "SELECT package FROM packages WHERE provides ~ %(package)s AND (architecture='all' OR architecture=%(arch)s) AND release=%(release)s", 
                    dict( package=packagere,
                          arch=arch,
                          release=release) );
@@ -288,10 +293,26 @@ class Judd(callbacks.Plugin):
         for row in c.fetchall():
             pkgs.append( row[0] )
 
+        r = self.psql.cursor()
+        r.execute( "SELECT package FROM packages WHERE package=%(package)s AND (architecture='all' OR architecture=%(arch)s) AND release=%(release)s",
+                   dict( package=package,
+                         arch=arch,
+                         release=release) );
+        realpackage = r.fetchone()
+
         if pkgs:
-            irc.reply( "%s in %s, %s is provided by: %s." % ( package, release, arch, ", ".join(pkgs) ) )
+            reply = "%s in %s/%s is provided by: %s." % \
+                    ( package, release, arch, ", ".join(pkgs) )
+            if realpackage:
+                reply += " %s is also a real package." % package
         else:
-            irc.reply( "Sorry, there don't seem to be any packages providing '%s' in %s, %s." % (package, release, arch) )
+            if realpackage:
+                reply = "In %s/%s, %s is a real package." % (release, arch, package)
+            else:
+                reply = "Sorry, no packages provide '%s' in %s/%s." %\
+                                                (package, release, arch)
+
+        irc.reply(reply)
 
     provides = wrap(provides, ['something', getopts( { 'arch':'something',
                                                      'release':'something' } ), 
