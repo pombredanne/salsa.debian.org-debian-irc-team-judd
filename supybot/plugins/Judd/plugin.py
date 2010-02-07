@@ -40,6 +40,7 @@ from debian_bundle import debian_support
 
 import re
 import psycopg2
+import psycopg2.extras
 
 release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny' }
 releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'lenny-backports', 'lenny-volatile', 'squeeze', 'squeeze-security', 'squeeze-multimedia', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
@@ -193,23 +194,41 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        c = self.psql.cursor()
-        c.execute( "SELECT section, priority, version, size, installed_size, description FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all') AND release=%(release)s", 
+        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        #c.execute( "SELECT section, priority, version, size, installed_size, description, homepage FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all') AND release=%(release)s", 
+        c.execute(r"""SELECT p.section, p.priority, p.version,
+                      p.size, p.installed_size, p.description,
+                      p.homepage, s.screenshot_url
+                    FROM packages as p
+                      LEFT JOIN screenshots as s ON p.package=s.package
+                    WHERE p.package=%(package)s AND
+                      (p.architecture=%(arch)s OR p.architecture='all') AND
+                      p.release=%(release)s""",
                    dict( package=package, 
                          arch=arch,
                          release=release) );
 
         row = c.fetchone()
+
         if row:
-            ds = row[5].splitlines()
+            ds = row['description'].splitlines()
             if ds:
                 d = ds[0]
             else:
                 d=""
-            irc.reply( "%s (%s): is %s; Version: %s; Size: %0.1fk; Installed: %dk -- %s" % (
-                package, row[0], row[1], row[2], row[3]/1024.0, row[4], d ) )
+            reply = "%s (%s, %s): %s. Version: %s; Size: %0.1fk; Installed: %dk" % \
+                      ( package, row['section'], row['priority'], d,
+                        row['version'], row['size']/1024.0, row['installed_size'] )
+            if row[6]:    # homepage field
+                reply += "; Homepage: %s" % row['homepage']
+            if row[7]:    # screenshot url from screenshots.debian.net
+                reply += "; Screenshot: %s" % row['screenshot_url']
 
-        
+            irc.reply(reply)
+        else:
+            irc.reply( "No record of package '%s' in %s/%s." % \
+                                    (package, release, arch) )
+
     info = wrap(info, ['something', getopts( { 'arch':'something',
                                               'release':'something' } ), optional( 'something' ) ] )
 
