@@ -292,7 +292,7 @@ class Judd(callbacks.Plugin):
                                                      'release':'something' } ), 
                              optional( 'something' ) ] );
 
-    def rprovides( self, irc, msg, args, package, optlist, something ):
+    def rprovidesHelper( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
 
         Show the packages that 'Provide' the specified virtual package
@@ -343,8 +343,11 @@ class Judd(callbacks.Plugin):
 
         irc.reply(reply)
 
-    rprovides = wrap(rprovides, ['something', getopts( { 'arch':'something',
-                                                     'release':'something' } ), 
+    rprovides = wrap(rprovidesHelper, ['something', getopts( { 'arch':'something',
+                                                    'release':'something' } ), 
+                             optional( 'something' ) ] );
+    whatprovides = wrap(rprovidesHelper, ['something', getopts( { 'arch':'something',
+                                                    'release':'something' } ), 
                              optional( 'something' ) ] );
 
     def provides(self, irc, msg, args, package, optlist, something ):
