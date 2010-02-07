@@ -266,10 +266,11 @@ class Judd(callbacks.Plugin):
                                                      'release':'something' } ), 
                              optional( 'something' ) ] );
 
-    def provides( self, irc, msg, args, package, optlist, something ):
+    def rprovides( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
 
-        Show the packages that 'Provide' the specified virtual package.
+        Show the packages that 'Provide' the specified virtual package
+        ('reverse provides').
         By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
@@ -281,8 +282,11 @@ class Judd(callbacks.Plugin):
         # http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Source
         #
         # \m is start word boundary, \M is finish word boundary
+        # (but - in package name is a word boundary)
+        # \A is start string,        \Z is finish string
         # http://www.postgresql.org/docs/8.3/static/functions-matching.html
-        packagere = r"\m%s\M" % re.sub(r'[^a-z\d\-+.]', '', package)
+        packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % re.sub(r"[^a-z\d\-+.]", "", package)
+        print packagere
         c = self.psql.cursor()
         c.execute( "SELECT package FROM packages WHERE provides ~ %(package)s AND (architecture='all' OR architecture=%(arch)s) AND release=%(release)s", 
                    dict( package=packagere,
@@ -293,12 +297,11 @@ class Judd(callbacks.Plugin):
         for row in c.fetchall():
             pkgs.append( row[0] )
 
-        r = self.psql.cursor()
-        r.execute( "SELECT package FROM packages WHERE package=%(package)s AND (architecture='all' OR architecture=%(arch)s) AND release=%(release)s",
+        c.execute( "SELECT package FROM packages WHERE package=%(package)s AND (architecture='all' OR architecture=%(arch)s) AND release=%(release)s",
                    dict( package=package,
                          arch=arch,
                          release=release) );
-        realpackage = r.fetchone()
+        realpackage = c.fetchone()
 
         if pkgs:
             reply = "%s in %s/%s is provided by: %s." % \
@@ -314,9 +317,39 @@ class Judd(callbacks.Plugin):
 
         irc.reply(reply)
 
-    provides = wrap(provides, ['something', getopts( { 'arch':'something',
+    rprovides = wrap(rprovides, ['something', getopts( { 'arch':'something',
                                                      'release':'something' } ), 
                              optional( 'something' ) ] );
+
+    def provides(self, irc, msg, args, package, optlist, something ):
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the list of "provided" packages for the specified binary package
+        in the given release and architecture. By default, the current
+        stable release and i386 are used.
+        """
+        release,arch = parse_standard_options( optlist, something )
+
+        c = self.psql.cursor()
+        c.execute( "SELECT provides FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all') AND release=%(release)s", 
+                   dict( package=package,
+                         arch=arch,
+                         release=release) );
+
+        row = c.fetchone()
+        if row:
+            if row[0]:
+                irc.reply("%s in %s/%s provides: %s." % \
+                            (package, release, arch, row[0]) )
+            else:
+                irc.reply("%s in %s/%s provides no additional packages." % \
+                            (package, release, arch) )
+        else:
+            irc.reply("Cannot find the package %s in %s/%s." % \
+                            (package, release, arch) )
+
+    provides = wrap(provides, ['something', getopts( { 'arch':'something',
+                                              'release':'something' } ), optional( 'something' ) ] )
 
     def danke( self, irc, msg, args ):
         """
