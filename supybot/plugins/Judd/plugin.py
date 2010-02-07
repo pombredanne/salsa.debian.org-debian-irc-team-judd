@@ -117,8 +117,11 @@ class Judd(callbacks.Plugin):
         if release_map.has_key( release ):
             release = release_map[ release ]
 
-        c = self.psql.cursor()
-        sql = "SELECT DISTINCT release,version,component FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all')"
+        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        sql = r"""SELECT DISTINCT release,version,component
+                  FROM packages
+                  WHERE package=%(package)s AND
+                    (architecture=%(arch)s OR architecture='all')"""
         if release:
             sql += " AND release=%(release)s"
 
@@ -129,20 +132,20 @@ class Judd(callbacks.Plugin):
 
         pkgs=[]
         for row in c.fetchall():
-            pkgs.append( [row[0], row[1], row[2]] )
+            pkgs.append( row )
 
         if not pkgs:
             irc.reply( "Sorry, no package named '%s' was found." % package )
             return
 
-        pkgs.sort( lambda a,b: debian_support.version_compare( a[1], b[1] ) )
+        pkgs.sort( lambda a,b: debian_support.version_compare( a['version'], b['version'] ) )
 
         replies = []
         for row in pkgs:
-            if( row[2] == 'main' ):
-                replies.append("%s: %s" % (row[0], row[1]))
+            if( row['component'] == 'main' ):
+                replies.append("%s: %s" % (row['release'], row['version']))
             else:
-                replies.append("%s/%s: %s" % (row[0], row[2], row[1]))
+                replies.append("%s/%s: %s" % (row['release'], row['component'], row['version']))
 
         irc.reply( "%s -- %s" % (package, "; ".join(replies)) )
 
@@ -156,19 +159,23 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        c = self.psql.cursor()
+        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         packagesql = package.replace( "*", "%" )
         packagesql = packagesql.replace( "?", "_" )
-        sql = "SELECT DISTINCT version,package,component FROM packages WHERE package LIKE %(package)s AND (architecture=%(arch)s OR architecture='all') AND release=%(release)s ORDER BY package"
 
-        c.execute( sql,
-                    dict( package=packagesql, 
+        c.execute(r"""SELECT DISTINCT version,package,component
+                      FROM packages
+                      WHERE package LIKE %(package)s AND
+                        (architecture=%(arch)s OR architecture='all') AND
+                        release=%(release)s 
+                      ORDER BY package""",
+                  dict( package=packagesql,
                           arch=arch,
                           release=release ) );
         pkgs=[]
         for row in c.fetchall():
-            pkgs.append( [row[0], row[1], row[2]] )
+            pkgs.append( row )
 
         if not pkgs:
             irc.reply( "Sorry, no packages matching '%s' were found." % package )
@@ -176,10 +183,10 @@ class Judd(callbacks.Plugin):
 
         replies=[]
         for row in pkgs:
-            if( row[2] == 'main' ):
-                replies.append("%s %s" % (row[1], row[0]) )
+            if( row['component'] == 'main' ):
+                replies.append("%s %s" % (row['package'], row['version']) )
             else:
-                replies.append("%s %s (%s)" % (row[1], row[0], row[2]) )
+                replies.append("%s %s (%s)" % (row['package'], row['version'], row['component']) )
 
         irc.reply( "%s in %s/%s: %s" % (package, release, arch, "; ".join(replies)) )
 
