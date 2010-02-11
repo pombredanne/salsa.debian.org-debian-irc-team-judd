@@ -98,7 +98,9 @@ class Judd(callbacks.Plugin):
 
         Show the available versions of a package in the optionally specified 
         release and for the given architecture.
-        All current releases and i386 are searched by default.
+        All current releases and i386 are searched by default. By default, binary
+        packages are searched; prefix the packagename with "src:" to search
+        source packages.
         """
         release = None
         arch='i386'
@@ -118,15 +120,24 @@ class Judd(callbacks.Plugin):
             release = release_map[ release ]
 
         c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        sql = r"""SELECT DISTINCT release,version,component
-                  FROM packages
-                  WHERE package=%(package)s AND
-                    (architecture=%(arch)s OR architecture='all')"""
-        if release:
-            sql += " AND release=%(release)s"
+        if package.startswith('src:'):
+            packagename = package[4:]
+            sql = r"""SELECT DISTINCT release,version,component
+                      FROM sources
+                      WHERE source=%(package)s"""
+            if release:
+                sql += " AND release=%(release)s"
+        else:
+            packagename = package
+            sql = r"""SELECT DISTINCT release,version,component
+                      FROM packages
+                      WHERE package=%(package)s AND
+                        (architecture=%(arch)s OR architecture='all')"""
+            if release:
+                sql += " AND release=%(release)s"
 
         c.execute( sql,
-                    dict( package=package,
+                    dict( package=packagename,
                           arch=arch,
                           release=release ) );
 
@@ -164,12 +175,24 @@ class Judd(callbacks.Plugin):
         packagesql = package.replace( "*", "%" )
         packagesql = packagesql.replace( "?", "_" )
 
-        c.execute(r"""SELECT DISTINCT version,package,component
+        if package.startswith('src:'):
+            searchsource = True
+            packagesql = packagesql[4:]
+            sql = r"""SELECT DISTINCT version, source AS package, component
+                      FROM sources
+                      WHERE source LIKE %(package)s AND
+                        release=%(release)s
+                      ORDER BY source"""
+        else:
+            searchsource = False
+            sql = r"""SELECT DISTINCT version, package, component
                       FROM packages
                       WHERE package LIKE %(package)s AND
                         (architecture=%(arch)s OR architecture='all') AND
-                        release=%(release)s 
-                      ORDER BY package""",
+                        release=%(release)s
+                      ORDER BY package"""
+
+        c.execute( sql,
                   dict( package=packagesql,
                           arch=arch,
                           release=release ) );
@@ -397,19 +420,29 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
+        p = self.bin2src(package, release, arch)
+        if p:
+            irc.reply( "%s -- Source: %s" % ( package, row[0]) )
+        else:
+            irc.reply( "Sorry, there is no record of a source package for the binary package '%s' in %s/%s." % \
+                  ( package, release, architecture) )
+
+        
+    src = wrap(source, ['something', getopts( { 'release':'something' } ),
+                           optional( 'something' ) ] );
+
+    def bin2src( self, package, release, arch ):
+        """Returns the source package for a given binary package"""
         c = self.psql.cursor()
         c.execute( "SELECT source FROM packages WHERE package=%(package)s AND release=%(release)s limit 1", 
                    dict( package=package, 
                          arch=arch,
                          release=release) );
-
         row = c.fetchone()
         if row:
-            irc.reply( "%s -- Source: %s" % ( package, row[0]) )
-
-        
-    src = wrap(source, ['something', getopts( { 'release':'something' } ),
-                           optional( 'something' ) ] );
+            return row[0]
+        else:
+            return
 
     def binaries( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>]
@@ -442,7 +475,7 @@ class Judd(callbacks.Plugin):
         """<packagename> [--release <lenny>]
 
         Show the name of the binary packages on which a given source package
-        build-depends.
+        or binary package build-depends.
         By default, the current stable release is used.
         """
         release,arch = parse_standard_options( optlist, something )
@@ -564,7 +597,6 @@ class Judd(callbacks.Plugin):
                 d=""
             irc.reply( "Bug #%d (%s) %s -- %s; Severity: %s; Last Modified: %s" % ( bugno, row[1], row[0], d, row[2], row[4]) )
 
-        
     bug = wrap(bug, ['int'] )
 
     def popcon( self, irc, msg, args, package ):
