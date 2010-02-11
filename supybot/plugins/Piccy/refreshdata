@@ -118,8 +118,8 @@ checkklist() {
 
 updatekernel() {
   # Find the latest version of the kernel that matches the regexp
-  # (latest version of the kernel will alphabetically sort to the end)
-  KERNEL=$(aptitude $APTARGS search ~n"$MATCH" -F'%p' | tail -1)
+  # (latest version of the kernel will be sorted to the end)
+  KERNEL=$(aptitude $APTARGS search ~n"$MATCH" -F'%p' -Oversion | tail -1)
 
   if [ -z "$KERNEL" ]
   then
