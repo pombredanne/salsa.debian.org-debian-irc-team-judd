@@ -422,7 +422,7 @@ class Judd(callbacks.Plugin):
 
         p = self.bin2src(package, release, arch)
         if p:
-            irc.reply( "%s -- Source: %s" % ( package, row[0]) )
+            irc.reply( "%s -- Source: %s" % ( package, p ) )
         else:
             irc.reply( "Sorry, there is no record of a source package for the binary package '%s' in %s/%s." % \
                   ( package, release, architecture) )
