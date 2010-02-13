@@ -31,6 +31,7 @@
 
 #TODO: add build-dep - (should work with binary package name too)
 
+import supybot.conf as conf
 import supybot.utils as utils
 from supybot.commands import *
 import supybot.plugins as plugins
@@ -41,6 +42,15 @@ from debian_bundle import debian_support
 import re
 import psycopg2
 import psycopg2.extras
+
+import os
+#import gzip
+#import time
+#import popen2
+import fnmatch
+import subprocess
+#from supybot.utils.iter import all, imap, ifilter
+from PackageFileList import PackageFileList
 
 release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny' }
 releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'lenny-backports', 'lenny-volatile', 'squeeze', 'squeeze-security', 'squeeze-multimedia', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
@@ -77,6 +87,7 @@ def parse_standard_options( optlist, args=None ):
 
 class Judd(callbacks.Plugin):
     """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
+    threaded = True
 
     def __init__(self, irc):
         self.__parent = super(Judd, self)
@@ -670,6 +681,112 @@ class Judd(callbacks.Plugin):
         irc.reply( reply )
         
     rcbugs = wrap(rcbugs, ['something'] )
+
+    def file(self, irc, msg, args, glob, optlist, something):
+        """<pattern> [--arch <i386>] [--release <lenny>] [--regex | --exact]
+
+        Returns packages that include files matching <pattern> which, by
+        default, is interpreted as a glob (see glob(7)).
+        If --regex is given, the pattern is treated as a regex (see regex(7)).
+        If --exact is given, the exact filename is required.
+        The current stable release and i386 are searched by default.
+        """
+        release,arch = parse_standard_options( optlist )
+
+        mode = 'glob'
+        print optlist
+        for (option, arg) in optlist:
+            if option == 'exact':
+                mode = 'exact'
+            elif option == 'regex' or option == 'regexp':
+                mode = 'regex'
+
+        # Make sure it's anchored, make sure it doesn't have a leading slash
+        # (the filenames don't have leading slashes, and people may not know
+        # that).
+        regexp = glob
+        if mode == 'glob':
+            regexp = fnmatch.translate(regexp)
+            #print regexp
+            if regexp.startswith(r'\/'):
+                regexp = '^' + regexp[2:]
+            elif not regexp.startswith(r'.*'):
+                regexp = '.*' + regexp
+            if regexp.endswith(r'$'):
+                regexp = regexp[:-1] + r'[[:space:]]'
+        elif mode == 'regex':
+            if regexp.startswith(r'/'):
+                regexp = '^' + regexp[1:]
+            if regexp.endswith(r'$'):
+                regexp = regexp[:-1] + r'[[:space:]]'
+        else:
+            regexp = regexp =  r'^%s[[:space:]]' % re.escape(regexp.lstrip(r'/'))
+
+        self.log.debug("RE=%s" % regexp)
+
+        packages = self.getContents(irc, release, arch, regexp)
+
+        if len(packages) == 0:
+            irc.reply('No packages were found with that file.')
+        else:
+            s = packages.toString(self.bold)
+            irc.reply("%s in %s/%s: %s" % (glob, release, arch, s))
+
+    file = wrap(file, [optional('something'),
+                        getopts({'arch':'something',
+                                'release':'something',
+                                'regex':'',
+                                'regexp':'',
+                                'exact':''
+                                }),
+                       optional('something')
+                       ])
+
+    def getContents(self, irc, release, arch, regexp):
+        """
+        Find the packages that provide files matching a particular regexp.
+        """
+        # Abstracted out to permit substitution with a db etc
+
+        path     = self.registryValue('base_path')
+        data     = conf.supybot.directories.data()
+        filename = '%s/Contents-%s.gz' % (release, arch)
+        contents = os.path.join(data, path, filename)
+
+        try:
+            re_obj = re.compile(regexp, re.I)
+        except re.error, e:
+            irc.error(format('Error in regexp: %s', e), Raise=True)
+
+        try:
+            #print "Trying: zgrep -ie '%s' '%s'" % (regexp, contents)
+            output = subprocess.Popen(['zgrep', '-ie', regexp, contents],
+                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True).communicate()[0]
+        except TypeError:
+            irc.error(r"Sorry, couldn't look up the file list.", Raise=True)
+
+        packages = PackageFileList()
+        try:
+            for line in output.split("\n"):
+                if len(data) > 100:
+                    irc.error('There were more than 100 files matching your search, '
+                              'please narrow your search.', Raise=True)
+                try:
+                    (filename, pkg_list) = line.split()
+                    if filename == 'FILE':
+                        # This is the last line before the actual files.
+                        continue
+                except ValueError: # Unpack list of wrong size.
+                    continue       # We've not gotten to the files yet.
+                packages.add(filename, pkg_list.split(','))
+        finally:
+            pass
+        return packages
+
+    def bold(self, s):
+        if self.registryValue('bold', dynamic.channel):
+            return ircutils.bold(s)
+        return s
 
 Class = Judd
 
