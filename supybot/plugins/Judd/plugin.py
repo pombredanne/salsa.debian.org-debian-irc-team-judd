@@ -691,6 +691,8 @@ class Judd(callbacks.Plugin):
         If --exact is given, the exact filename is required.
         The current stable release and i386 are searched by default.
         """
+        # Based on the file command in the Debian plugin by James Vega
+
         release,arch = parse_standard_options( optlist )
 
         mode = 'glob'
@@ -701,9 +703,9 @@ class Judd(callbacks.Plugin):
             elif option == 'regex' or option == 'regexp':
                 mode = 'regex'
 
-        # Make sure it's anchored, make sure it doesn't have a leading slash
-        # (the filenames don't have leading slashes, and people may not know
-        # that).
+        # Convert the glob/re/fixed string to a regexp.
+        # Strip leading / since they're not in the index anyway.
+        # Contents file is whitespace delimited.
         regexp = glob
         if mode == 'glob':
             regexp = fnmatch.translate(regexp)
