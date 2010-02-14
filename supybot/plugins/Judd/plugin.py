@@ -696,7 +696,6 @@ class Judd(callbacks.Plugin):
         release,arch = parse_standard_options( optlist )
 
         mode = 'glob'
-        print optlist
         for (option, arg) in optlist:
             if option == 'exact':
                 mode = 'exact'
@@ -752,13 +751,16 @@ class Judd(callbacks.Plugin):
 
         path     = self.registryValue('base_path')
         data     = conf.supybot.directories.data()
-        filename = '%s/Contents-%s.gz' % (release, arch)
+        filename = 'debian-%s/Contents-%s.gz' % (release, arch)
         contents = os.path.join(data, path, filename)
 
         try:
             re_obj = re.compile(regexp, re.I)
         except re.error, e:
             irc.error(format('Error in regexp: %s', e), Raise=True)
+
+        if not os.path.isfile(contents):
+            irc.error("Sorry, couldn't look up file list.", Raise=True)
 
         try:
             #print "Trying: zgrep -ie '%s' '%s'" % (regexp, contents)
