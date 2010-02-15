@@ -436,7 +436,7 @@ class Judd(callbacks.Plugin):
             irc.reply( "%s -- Source: %s" % ( package, p ) )
         else:
             irc.reply( "Sorry, there is no record of a source package for the binary package '%s' in %s/%s." % \
-                  ( package, release, architecture) )
+                  ( package, release, arch ) )
 
         
     src = wrap(source, ['something', getopts( { 'release':'something' } ),
