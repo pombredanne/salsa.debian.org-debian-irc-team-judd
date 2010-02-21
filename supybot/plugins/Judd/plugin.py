@@ -303,32 +303,6 @@ class Judd(callbacks.Plugin):
     arches = wrap(archHelper, ['something', getopts({ 'release':'something' } ), optional( 'something' ) ] )
     archs  = wrap(archHelper, ['something', getopts({ 'release':'something' } ), optional( 'something' ) ] )
 
-    def depends( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
-
-        Show the packages that are listed as 'Depends' for a given package.
-        By default, the current stable release and i386 are used.
-        """
-        release,arch = parse_standard_options( optlist, something )
-
-        #print( "release: %s arch: %s" % (release, arch) )
-        c = self.psql.cursor()
-        c.execute( "SELECT depends FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Depends: %s" % ( package, row[0]) )
-        else:
-            irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
-                                (package, release, arch) )
-
-    depends = wrap(depends, ['something', getopts( { 'arch':'something',
-                                                     'release':'something' } ), 
-                             optional( 'something' ) ] );
-
     def rprovidesHelper( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
 
@@ -527,6 +501,44 @@ class Judd(callbacks.Plugin):
 
     builddep = wrap(builddep, ['something', getopts( { 'release':'something' } ), optional( 'something' )] );
 
+    def relationshipHelper( self, irc, msg, args, package, optlist, something, relation ):
+        """Does the dirty work for each of the functions that show
+        "conflicts", "depends", "recommends", "suggests", "enhances".
+
+        The standard usage for each of these functions is accepted:
+            relationship <packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the packages that are listed as 'Depends' for a given package.
+        By default, the current stable release and i386 are used.
+        """
+        knownRelations = [ 'conflicts',
+                           'depends',
+                           'recommends',
+                           'suggests',
+                           'enhances' ]
+
+        if not relation in knownRelations:
+            irc.error("Sorry, unknown error determining package relationships.")
+
+        release,arch = parse_standard_options( optlist, something )
+
+        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c.execute(r"""SELECT conflicts, depends, recommends, suggests, enhances
+                      FROM packages
+                      WHERE package=%(package)s
+                        AND (architecture='all' OR architecture=%(arch)s)
+                        AND release=%(release)s""",
+                   dict( package=package,
+                         arch=arch,
+                         release=release) );
+
+        row = c.fetchone()
+        if row:
+            irc.reply( "%s -- %s: %s" % ( package, relation, row[relation]) )
+        else:
+            irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
+                                (package, release, arch) )
+
     def conflicts( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
 
@@ -534,22 +546,21 @@ class Judd(callbacks.Plugin):
         package.
         By default, the current stable release and i386 are used.
         """
-        release,arch = parse_standard_options( optlist, something )
-
-        c = self.psql.cursor()
-        c.execute( "SELECT conflicts FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s limit 1", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Conflicts: %s" % ( package, row[0]) )
-        else:
-            irc.reply("Cannot find the package %s in %s/%s." % \
-                            (package, release, arch) )
+        self.relationshipHelper(irc, msg, args, package, optlist, something, 'conflicts')
 
     conflicts = wrap(conflicts, ['something', getopts( { 'arch':'something',
+                                                         'release':'something' } ),
+                                 optional( 'something' )] );
+
+    def depends( self, irc, msg, args, package, optlist, something ):
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the packages that are listed as 'Depends' for a given package.
+        By default, the current stable release and i386 are used.
+        """
+        self.relationshipHelper(irc, msg, args, package, optlist, something, 'depends')
+
+    depends = wrap(depends, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
                                  optional( 'something' )] );
 
@@ -559,19 +570,8 @@ class Judd(callbacks.Plugin):
         Show the packages that are listed as 'Recommends' for a given package.
         By default, the current stable release and i386 are used.
         """
-        release,arch = parse_standard_options( optlist, something )
+        self.relationshipHelper(irc, msg, args, package, optlist, something, 'recommends')
 
-        c = self.psql.cursor()
-        c.execute( "SELECT recommends FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s limit 1", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Recommends: %s" % ( package, row[0]) )
-
-        
     recommends = wrap(recommends, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
                                    optional( 'something' )] );
@@ -582,22 +582,24 @@ class Judd(callbacks.Plugin):
         Show the packages that are listed as 'Suggests' for a given package.
         By default, the current stable release and i386 are used.
         """
-        release,arch = parse_standard_options( optlist, something )
+        self.relationshipHelper(irc, msg, args, package, optlist, something, 'suggests')
 
-        c = self.psql.cursor()
-        c.execute( "SELECT suggests FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s limit 1", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Suggests: %s" % ( package, row[0]) )
-
-        
     suggests = wrap(suggests, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
                                optional( 'something' ) ] );
+
+    def enhances( self, irc, msg, args, package, optlist, something ):
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Show the packages that are listed as 'Enhances' for a given package.
+        By default, the current stable release and i386 are used.
+        """
+        self.relationshipHelper(irc, msg, args, package, optlist, something, 'enhances')
+
+    enhances = wrap(enhances, ['something', getopts( { 'arch':'something',
+                                                         'release':'something' } ),
+                               optional( 'something' ) ] );
+
     def bug( self, irc, msg, args, bugno ):
         """ 
         Show information about a bug in a given pacage.  
@@ -634,7 +636,7 @@ class Judd(callbacks.Plugin):
             irc.reply( "no popcon data for %s" % (package) )
 
     popcon = wrap(popcon, ['something'] )
-        
+
     def uploaderHelper( self, irc, msg, args, package, version ):
         """<packagename> [<version>]
 

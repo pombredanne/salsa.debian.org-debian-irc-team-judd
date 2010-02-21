@@ -51,6 +51,11 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('arches python')                    # arch:all package; all
         self.assertNotError('arches nosuchpackage')             # package not found; no such package in the archive
 
+    def testConflicts(self):
+        self.assertNotError('conflicts python')                  # some conflicts; several packages
+        self.assertNotError('conflicts texlive')                 # no conflicts; no packages conflict
+        self.assertNotError('conflicts nosuchpackage')           # package not found; no such package in the archive
+
     def testDepends(self):
         self.assertNotError('depends texlive')                  # depends; some packages
         self.assertNotError('depends dpkg')                     # depends; no packages
@@ -65,11 +70,6 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('suggests texlive')                 # suggests; a package
         self.assertNotError('suggests locales')                 # suggests; no packages
         self.assertNotError('suggests nosuchpackage')           # package not found; no such package in the archive
-
-    def testConflicts(self):
-        self.assertNotError('conflicts python')                  # some conflicts; several packages
-        self.assertNotError('conflicts texlive')                 # no conflicts; no packages conflict
-        self.assertNotError('conflicts nosuchpackage')           # package not found; no such package in the archive
 
     def testProvides(self):
         self.assertNotError('provides postfix')                 # provided packages; m-t-a
