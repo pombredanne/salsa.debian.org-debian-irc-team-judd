@@ -58,6 +58,7 @@ releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch
 arches = [ 'alpha', 'amd64', 'arm', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
 
 def parse_standard_options( optlist, args=None ):
+    # FIXME: should this default to lenny/i386 if the args are out of bounds?
     if not args:
         args=[]
     release='lenny'
@@ -320,8 +321,10 @@ class Judd(callbacks.Plugin):
         row = c.fetchone()
         if row:
             irc.reply( "%s -- Depends: %s" % ( package, row[0]) )
+        else:
+            irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
+                                (package, release, arch) )
 
-        
     depends = wrap(depends, ['something', getopts( { 'arch':'something',
                                                      'release':'something' } ), 
                              optional( 'something' ) ] );
@@ -478,7 +481,10 @@ class Judd(callbacks.Plugin):
                 row = c.fetchone()
 
             irc.reply( reply )
-        
+        else:
+            irc.reply("Cannot find the package %s in %s/%s." % \
+                            (package, release, arch) )
+
     binaries = wrap(binaries, ['something', getopts( { 'release':'something' } ),
                            optional( 'something' ) ] );
 
@@ -518,10 +524,9 @@ class Judd(callbacks.Plugin):
                 irc.reply(bdformat(row[0], row[1], row[2]))
             else:
                 irc.reply( "Sorry, there is no record of the %s package in %s." %(package, release) )
-        
-        
+
     builddep = wrap(builddep, ['something', getopts( { 'release':'something' } ), optional( 'something' )] );
-        
+
     def conflicts( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
 
@@ -540,8 +545,10 @@ class Judd(callbacks.Plugin):
         row = c.fetchone()
         if row:
             irc.reply( "%s -- Conflicts: %s" % ( package, row[0]) )
+        else:
+            irc.reply("Cannot find the package %s in %s/%s." % \
+                            (package, release, arch) )
 
-        
     conflicts = wrap(conflicts, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
                                  optional( 'something' )] );
