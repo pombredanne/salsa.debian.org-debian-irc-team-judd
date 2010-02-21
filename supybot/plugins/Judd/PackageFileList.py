@@ -46,7 +46,12 @@ class PackageFileList:
     def toString(self, boldfn):
         s = []
         for p in self.packages.keys():
-            section,name = p.split('/')
+            #section,name = p.split('/')
+            info = p.split('/')
+            if len(info) == 2:
+                name = info[1]
+            elif len(info) == 3:
+                name = info[2]
             s.append("%s: %s" % (boldfn(name), ", ".join(self.packages[p])))
         return "; ".join(s)
 

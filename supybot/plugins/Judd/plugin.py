@@ -29,7 +29,7 @@
 
 ###
 
-#TODO: add build-dep - (should work with binary package name too)
+#TODO:
 
 import supybot.conf as conf
 import supybot.utils as utils
@@ -346,7 +346,7 @@ class Judd(callbacks.Plugin):
         # \A is start string,        \Z is finish string
         # http://www.postgresql.org/docs/8.3/static/functions-matching.html
         packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % re.sub(r"[^a-z\d\-+.]", "", package)
-        print packagere
+        #print packagere
         c = self.psql.cursor()
         c.execute( "SELECT package FROM packages WHERE provides ~ %(package)s AND (architecture='all' OR architecture=%(arch)s) AND release=%(release)s", 
                    dict( package=packagere,
