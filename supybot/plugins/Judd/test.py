@@ -77,6 +77,8 @@ class DebianTestCase(PluginTestCase):
 
     def testRprovides(self):
         self.assertNotError('rprovides mail-transport-agent')   # find rproviders; several packages provide m-t-a
+        self.assertNotError('rprovides imagemagick')            # find rproviders real package; a real package as well as being "provided"
+        self.assertNotError('rprovides libc6')                  # real package only; a real package only, not provided by anything
         self.assertNotError('rprovides nosuchpackage')          # no rproviders; no packages provide this
 
     def testSource(self):
