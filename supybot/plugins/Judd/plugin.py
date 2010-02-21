@@ -108,7 +108,7 @@ class Judd(callbacks.Plugin):
     def versions(self, irc, msg, args, package, optlist, something ):
         """<pattern> [--arch <i386>] [--release <lenny>]
 
-        Show the available versions of a package in the optionally specified 
+        Show the available versions of a package in the optionally specified
         release and for the given architecture.
         All current releases and i386 are searched by default. By default, binary
         packages are searched; prefix the packagename with "src:" to search
@@ -166,14 +166,17 @@ class Judd(callbacks.Plugin):
         replies = []
         for row in pkgs:
             if( row['component'] == 'main' ):
-                replies.append("%s: %s" % (row['release'], row['version']))
+                replies.append("%s: %s" % \
+                                (self.bold(row['release']), row['version']))
             else:
-                replies.append("%s/%s: %s" % (row['release'], row['component'], row['version']))
+                replies.append("%s/%s: %s" % \
+                                (self.bold(row['release']), row['component'],
+                                  row['version']))
 
         irc.reply( "%s -- %s" % (package, "; ".join(replies)) )
 
     versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
-    
+
     def names(self, irc, msg, args, package, optlist, something ):
         """<pattern> [--arch <i386>] [--release <lenny>]
 
@@ -219,9 +222,12 @@ class Judd(callbacks.Plugin):
         replies=[]
         for row in pkgs:
             if( row['component'] == 'main' ):
-                replies.append("%s %s" % (row['package'], row['version']) )
+                replies.append("%s %s" % \
+                                (self.bold(row['package']), row['version']) )
             else:
-                replies.append("%s %s (%s)" % (row['package'], row['version'], row['component']) )
+                replies.append("%s %s (%s)" % z
+                                (self.bold(row['package']), row['version'],
+                                  row['component']) )
 
         irc.reply( "%s in %s/%s: %s" % (package, release, arch, "; ".join(replies)) )
 
@@ -231,13 +237,12 @@ class Judd(callbacks.Plugin):
         """<packagename> [--arch <i386>] [--release <lenny>]
 
         Show the short description and some other brief details about a package
-        in the specified release and architecture. By default, the current 
+        in the specified release and architecture. By default, the current
         stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        #c.execute( "SELECT section, priority, version, size, installed_size, description, homepage FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all') AND release=%(release)s", 
         c.execute(r"""SELECT p.section, p.priority, p.version,
                       p.size, p.installed_size, p.description,
                       p.homepage, s.screenshot_url
@@ -246,7 +251,7 @@ class Judd(callbacks.Plugin):
                     WHERE p.package=%(package)s AND
                       (p.architecture=%(arch)s OR p.architecture='all') AND
                       p.release=%(release)s""",
-                   dict( package=package, 
+                   dict( package=package,
                          arch=arch,
                          release=release) );
 
@@ -277,13 +282,16 @@ class Judd(callbacks.Plugin):
     def archHelper(self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>]
 
-        Show for what architectures a package is available. By default, the current 
+        Show for what architectures a package is available. By default, the current
         stable release is used.
         """
         release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
-        c.execute( "SELECT architecture, version FROM packages WHERE package=%(package)s AND release=%(release)s", 
+        c.execute(r"""SELECT architecture, version
+                      FROM packages
+                      WHERE package=%(package)s
+                        AND release=%(release)s""",
                    dict( package=package,
                          release=release) );
         pkgs=[]
@@ -325,7 +333,11 @@ class Judd(callbacks.Plugin):
         packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % re.sub(r"[^a-z\d\-+.]", "", package)
         #print packagere
         c = self.psql.cursor()
-        c.execute( "SELECT package FROM packages WHERE provides ~ %(package)s AND (architecture='all' OR architecture=%(arch)s) AND release=%(release)s", 
+        c.execute(r"""SELECT package
+                      FROM packages
+                      WHERE provides ~ %(package)s
+                        AND (architecture='all' OR architecture=%(arch)s)
+                        AND release=%(release)s""",
                    dict( package=packagere,
                          arch=arch,
                          release=release) );
@@ -334,7 +346,11 @@ class Judd(callbacks.Plugin):
         for row in c.fetchall():
             pkgs.append( row[0] )
 
-        c.execute( "SELECT package FROM packages WHERE package=%(package)s AND (architecture='all' OR architecture=%(arch)s) AND release=%(release)s",
+        c.execute(r"""SELECT package
+                      FROM packages
+                      WHERE package=%(package)s
+                        AND (architecture='all' OR architecture=%(arch)s)
+                        AND release=%(release)s""",
                    dict( package=package,
                          arch=arch,
                          release=release) );
@@ -355,10 +371,10 @@ class Judd(callbacks.Plugin):
         irc.reply(reply)
 
     rprovides = wrap(rprovidesHelper, ['something', getopts( { 'arch':'something',
-                                                    'release':'something' } ), 
+                                                    'release':'something' } ),
                              optional( 'something' ) ] );
     whatprovides = wrap(rprovidesHelper, ['something', getopts( { 'arch':'something',
-                                                    'release':'something' } ), 
+                                                    'release':'something' } ),
                              optional( 'something' ) ] );
 
     def provides(self, irc, msg, args, package, optlist, something ):
@@ -371,7 +387,11 @@ class Judd(callbacks.Plugin):
         release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
-        c.execute( "SELECT provides FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all') AND release=%(release)s", 
+        c.execute(r"""SELECT provides
+                      FROM packages
+                      WHERE package=%(package)s
+                        AND (architecture=%(arch)s OR architecture='all')
+                        AND release=%(release)s""",
                    dict( package=package,
                          arch=arch,
                          release=release) );
@@ -415,15 +435,17 @@ class Judd(callbacks.Plugin):
             irc.reply( "Sorry, there is no record of a source package for the binary package '%s' in %s/%s." % \
                   ( package, release, arch ) )
 
-        
     src = wrap(source, ['something', getopts( { 'release':'something' } ),
                            optional( 'something' ) ] );
 
     def bin2src( self, package, release, arch ):
         """Returns the source package for a given binary package"""
         c = self.psql.cursor()
-        c.execute( "SELECT source FROM packages WHERE package=%(package)s AND release=%(release)s limit 1", 
-                   dict( package=package, 
+        c.execute(r"""SELECT source
+                      FROM packages
+                      WHERE package=%(package)s
+                        AND release=%(release)s LIMIT 1""",
+                   dict( package=package,
                          arch=arch,
                          release=release) );
         row = c.fetchone()
@@ -435,15 +457,17 @@ class Judd(callbacks.Plugin):
     def binaries( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>]
 
-        Show the name of the binary package(s) that are derived from a given 
+        Show the name of the binary package(s) that are derived from a given
         source package.
         By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
-        c.execute( "SELECT distinct package FROM packages WHERE source=%(package)s AND release=%(release)s", 
-                   dict( package=package, 
+        c.execute(r"""SELECT DISTINCT package
+                      FROM packages
+                      WHERE source=%(package)s AND release=%(release)s""",
+                   dict( package=package,
                          arch=arch,
                          release=release) );
 
@@ -472,8 +496,10 @@ class Judd(callbacks.Plugin):
         release,arch = parse_standard_options( optlist, something )
 
         c = self.psql.cursor()
-        c.execute( "SELECT build_depends,build_depends_indep FROM sources WHERE source=%(package)s AND release=%(release)s limit 1", 
-                   dict( package=package, 
+        c.execute(r"""SELECT build_depends, build_depends_indep
+                      FROM sources
+                      WHERE source=%(package)s AND release=%(release)s LIMIT 1""",
+                   dict( package=package,
                          release=release) );
 
         def bdformat(package, bd, bdi):
@@ -483,15 +509,18 @@ class Judd(callbacks.Plugin):
             if bdi:
                 reply.append("Build-Depends-Indep: %s" % bdi)
             return "%s -- %s." % ( package, "; ".join(reply))
-        
+
         row = c.fetchone()
         if row:
             irc.reply(bdformat(package, row[0], row[1]))
         else:
-            c.execute( """SELECT sources.source,build_depends,build_depends_indep FROM sources 
-                        INNER JOIN packages on packages.source = sources.source
-                        WHERE packages.package=%(package)s AND packages.release=%(release)s limit 1""", 
-                       dict( package=package, 
+            c.execute(r"""SELECT sources.source, build_depends, build_depends_indep
+                          FROM sources
+                            INNER JOIN packages
+                            ON packages.source = sources.source
+                          WHERE packages.package=%(package)s
+                            AND packages.release=%(release)s LIMIT 1""",
+                       dict( package=package,
                              release=release) );
             row = c.fetchone()
             if row:
@@ -534,7 +563,7 @@ class Judd(callbacks.Plugin):
 
         row = c.fetchone()
         if row:
-            irc.reply( "%s -- %s: %s" % ( package, relation, row[relation]) )
+            irc.reply( "%s -- %s: %s." % ( package, relation, row[relation]) )
         else:
             irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
                                 (package, release, arch) )
@@ -601,7 +630,7 @@ class Judd(callbacks.Plugin):
                                optional( 'something' ) ] );
 
     def bug( self, irc, msg, args, bugno ):
-        """ 
+        """
         Show information about a bug in a given pacage.  
         Usage: "conflicts packagename"
         """
@@ -647,9 +676,18 @@ class Judd(callbacks.Plugin):
         c = self.psql.cursor()
 
         if version:
-            c.execute( "SELECT signed_by_name, changed_by_name, maintainer_name, nmu, version FROM upload_history WHERE source=%(package)s and version=%(version)s", dict( package=package, version=version ) )
+            c.execute(r"""SELECT signed_by_name, changed_by_name,
+                            maintainer_name, nmu, version
+                          FROM upload_history
+                          WHERE source=%(package)s AND version=%(version)s""",
+                      dict(package=package, version=version) )
         else:
-            c.execute( "SELECT signed_by_name, changed_by_name, maintainer_name, nmu, version FROM upload_history WHERE source=%(package)s  ORDER BY date DESC LIMIT 1", dict( package=package) )
+            c.execute(r"""SELECT signed_by_name, changed_by_name,
+                            maintainer_name, nmu, version
+                          FROM upload_history
+                          WHERE source=%(package)s
+                          ORDER BY date DESC LIMIT 1""",
+                      dict(package=package) )
 
         row = c.fetchone()
         if row:
@@ -688,7 +726,7 @@ class Judd(callbacks.Plugin):
             reply += " %d" % row[0]
 
         irc.reply( reply )
-        
+
     rcbugs = wrap(rcbugs, ['something'] )
 
     def file(self, irc, msg, args, glob, optlist, something):
