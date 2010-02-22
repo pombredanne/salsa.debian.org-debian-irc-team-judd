@@ -428,7 +428,7 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        p = self.bin2src(package, release, arch)
+        p = self.bin2src(package, release)
         if p:
             irc.reply( "%s -- Source: %s" % ( package, p ) )
         else:
@@ -438,7 +438,7 @@ class Judd(callbacks.Plugin):
     src = wrap(source, ['something', getopts( { 'release':'something' } ),
                            optional( 'something' ) ] );
 
-    def bin2src( self, package, release, arch ):
+    def bin2src(self, package, release):
         """Returns the source package for a given binary package"""
         c = self.psql.cursor()
         c.execute(r"""SELECT source
@@ -446,7 +446,6 @@ class Judd(callbacks.Plugin):
                       WHERE package=%(package)s
                         AND release=%(release)s LIMIT 1""",
                    dict( package=package,
-                         arch=arch,
                          release=release) );
         row = c.fetchone()
         if row:
@@ -697,7 +696,10 @@ class Judd(callbacks.Plugin):
 
             irc.reply( reply )
         else:
-            if version:
+            source = self.bin2src(package, 'sid')
+            if package:
+                return self.uploaderHelper(irc, msg, args, source, version)
+            elif version:
                 irc.reply( "Sorry, there is no record of '%s', version '%s'." % (package,version) )
             else:
                 irc.reply( "Sorry, there is no record of '%s'." % package )
@@ -706,6 +708,33 @@ class Judd(callbacks.Plugin):
     changer    = wrap(uploaderHelper, ['something', optional( 'something' )] )
     maint      = wrap(uploaderHelper, ['something', optional( 'something' )] )
     maintainer = wrap(uploaderHelper, ['something', optional( 'something' )] )
+
+    def recentHelper( self, irc, msg, args, package, version ):
+        """<packagename>
+
+        Return the dates and versions of recent uploads of the specified source
+        or binary package.
+        """
+        c = self.psql.cursor()
+
+        c.execute(r"""SELECT version, date
+                      FROM upload_history
+                      WHERE source=%(package)s
+                      ORDER BY date DESC LIMIT 10""",
+                  dict(package=package) )
+
+        uploads = map(lambda u: "%s %s" % (self.bold(u[0]), u[1].date()), c.fetchall())
+        if uploads:
+            reply = "Package %s recent uploads: %s." % \
+                        (package, ", ".join(uploads))
+            irc.reply( reply )
+        else:
+            source = self.bin2src(package, 'sid')
+            if package:
+                return self.recentHelper(irc, msg, args, source, version)
+            irc.reply( "Sorry, there is no record of source package '%s'." % package )
+
+    recent   = wrap(recentHelper, ['something', optional( 'something' )] )
 
     def rcbugs( self, irc, msg, args, package ):
         """
