@@ -697,7 +697,7 @@ class Judd(callbacks.Plugin):
             irc.reply( reply )
         else:
             source = self.bin2src(package, 'sid')
-            if package:
+            if source:
                 return self.uploaderHelper(irc, msg, args, source, version)
             elif version:
                 irc.reply( "Sorry, there is no record of '%s', version '%s'." % (package,version) )
@@ -730,7 +730,7 @@ class Judd(callbacks.Plugin):
             irc.reply( reply )
         else:
             source = self.bin2src(package, 'sid')
-            if package:
+            if source:
                 return self.recentHelper(irc, msg, args, source, version)
             irc.reply( "Sorry, there is no record of source package '%s'." % package )
 
