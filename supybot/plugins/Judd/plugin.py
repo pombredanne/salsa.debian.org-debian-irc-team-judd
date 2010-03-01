@@ -631,7 +631,7 @@ class Judd(callbacks.Plugin):
     def bug( self, irc, msg, args, bugno ):
         """
         Show information about a bug in a given pacage.  
-        Usage: "conflicts packagename"
+        Usage: "bug bugnumber"
         """
         c = self.psql.cursor()
         c.execute( "SELECT package, status, severity, title, last_modified FROM bugs WHERE id=%(bugno)s limit 1", dict( bugno=bugno ) )
