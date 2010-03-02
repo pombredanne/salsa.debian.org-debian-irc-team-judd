@@ -86,6 +86,52 @@ def parse_standard_options( optlist, args=None ):
 
     return release, arch
 
+class Release:
+    def __init__(self, dbconn, arch="i386", release="lenny", **kwargs):
+        self.dbconn = dbconn
+        self.arch = arch
+        self.release = release
+
+class Package:
+    fields = ['package']
+    data = ''
+    arch = ''
+    def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
+        if not package:
+            raise ValueError("Package name not specified")
+        self.dbconn = dbconn
+        self.arch = arch
+        self.release = release
+        self.package = package
+        self._Fetch()
+
+    def _Fetch(self):
+        c = self.dbconn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        f = ','.join(self.fields)
+        c.execute(r"""SELECT """ + f + """
+                      FROM packages
+                      WHERE package=%(package)s
+                        AND (architecture='all' OR architecture=%(arch)s)
+                        AND release=%(release)s""",
+                   dict( package=self.package,
+                         arch=self.arch,
+                         release=self.release) );
+        self.data = c.fetchone()
+
+    def Found(self):
+        return len(self.data)
+
+class PackageRelations(Package):
+    def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
+        self.fields = ['conflicts', 'depends', 'recommends', 'suggests', 'enhances']
+        Package.__init__(self, dbconn, arch, release, package)
+
+    def RelationEntry(self, relation):
+        return self.data[relation]
+
+    def RelationsEntryList(self, relation):
+        return re.split(r"\s*,\s*", self.data[relation])
+
 class Judd(callbacks.Plugin):
     """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
     threaded = True
@@ -550,19 +596,10 @@ class Judd(callbacks.Plugin):
 
         release,arch = parse_standard_options( optlist, something )
 
-        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        c.execute(r"""SELECT conflicts, depends, recommends, suggests, enhances
-                      FROM packages
-                      WHERE package=%(package)s
-                        AND (architecture='all' OR architecture=%(arch)s)
-                        AND release=%(release)s""",
-                   dict( package=package,
-                         arch=arch,
-                         release=release) );
+        relations = PackageRelations(self.psql, arch=arch, release=release, package=package)
 
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- %s: %s." % ( package, relation, row[relation]) )
+        if relations.Found():
+            irc.reply( "%s -- %s: %s." % ( package, relation, relations.RelationEntry(relation)) )
         else:
             irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
                                 (package, release, arch) )
@@ -869,6 +906,5 @@ class Judd(callbacks.Plugin):
         return s
 
 Class = Judd
-
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
