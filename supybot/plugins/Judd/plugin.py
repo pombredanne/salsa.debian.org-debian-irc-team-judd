@@ -87,15 +87,81 @@ def parse_standard_options( optlist, args=None ):
     return release, arch
 
 class Release:
+    cache = {}
     def __init__(self, dbconn, arch="i386", release="lenny", **kwargs):
         self.dbconn = dbconn
         self.arch = arch
         self.release = release
 
+class ReleaseRelations(Release):
+  
+    def CheckRelations(self, package, relation='depends', recursive=False):
+        self._loadOrCache(package)
+        p = self.cache[package]
+
+        bad = []
+        for r in p.RelationsEntryList(relation):
+            opts = self._SplitOptions(r)
+            satisfied = False
+            while not satisfied and len(opts):
+                item = opts.pop(0)
+                p, o, v = self._ParseRelation(item)
+                satisfied = self.RelationSatisfied(p, o, v)
+            if not satisfied:
+                bad.append(r)
+            #elif recursive:
+            #    bad.extend(self.CheckRelations(p)
+        return bad
+
+    def _SplitOptions(self, item):
+        return item.split(r"\s*|\s*")
+
+    def _ParseRelation(self, item):
+        #print "checking item %s" % item
+        m = re.match(r"""(?x)
+                  (?P<package>[\w\d.+-]+)
+                  (?:
+                    \s*
+                    \(\s*
+                      (?P<rel>\>\>|\>=|=|\<\<|\<=)\s*(?P<version>[^\s]+)
+                    \s*\)
+                  )?""", item)
+        return m.group('package'), m.group('rel'), m.group('version')
+
+    def _loadOrCache(self, package):
+        if self.cache.has_key(package): return
+        self.cache[package] = PackageRelations(self.dbconn, arch=self.arch, release=self.release, package=package)
+
+    def RelationSatisfied(self, package, operator=None, depversion=None):
+        #print "Checking relationship for '%s', '%s', '%s'" % (package, operator, depversion)
+        self._loadOrCache(package)
+        if not self.cache.has_key(package) or not self.cache[package].Found():
+            return False
+
+        version = self.cache[package].data['version']
+        # see policy s7.1
+        # http://www.debian.org/doc/debian-policy/ch-relationships.html
+        if operator:
+            depver = debian_support.Version(depversion)   # version from dep line
+            relver = debian_support.Version(version)      # version in archive
+            print "versions comparison %s %s %s %s" % (package, relver, operator, depver)
+            if operator == ">>": # strictly greater than
+                return relver > depver
+            if operator == ">=": # greater than or equal to
+                return relver >= depver
+            if operator == "=": # equal to
+                return relver == depver
+            if operator == "<=": # less than or equal to
+                return relver >= depver
+            if operator == "<<": # strictly less than
+                return relver < depver
+            raise ValueError("Odd relation found for dependency %s: %s %s %s" % \
+                                (package, relversion, operator, depversion))
+        else:
+            return True
+
 class Package:
     fields = ['package']
-    data = ''
-    arch = ''
     def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
         if not package:
             raise ValueError("Package name not specified")
@@ -119,11 +185,12 @@ class Package:
         self.data = c.fetchone()
 
     def Found(self):
-        return len(self.data)
+        #print "############# Package %s: %s " % (self.package, self.data)
+        return self.data != None
 
 class PackageRelations(Package):
     def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
-        self.fields = ['conflicts', 'depends', 'recommends', 'suggests', 'enhances']
+        self.fields = ['conflicts', 'depends', 'recommends', 'suggests', 'enhances', 'version']
         Package.__init__(self, dbconn, arch, release, package)
 
     def RelationEntry(self, relation):
@@ -131,6 +198,7 @@ class PackageRelations(Package):
 
     def RelationsEntryList(self, relation):
         return re.split(r"\s*,\s*", self.data[relation])
+
 
 class Judd(callbacks.Plugin):
     """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
@@ -662,6 +730,28 @@ class Judd(callbacks.Plugin):
         self.relationshipHelper(irc, msg, args, package, optlist, something, 'enhances')
 
     enhances = wrap(enhances, ['something', getopts( { 'arch':'something',
+                                                         'release':'something' } ),
+                               optional( 'something' ) ] );
+
+    def checkdeps( self, irc, msg, args, package, optlist, something ):
+        """<packagename> [--arch <i386>] [--release <lenny>]
+
+        Check that the dependencies listed by a package are satisfiable for the
+        specified release and architecture.
+        By default, the current stable release and i386 are used.
+        """
+        release,arch = parse_standard_options( optlist, something )
+
+        r = ReleaseRelations(self.psql, arch=arch, release=release)
+        bad = r.CheckRelations(package)
+        if bad:
+            irc.reply( "%s in %s/%s unsatisfiable dependencies: %s." % \
+                        ( package, release, arch, ", ".join(bad) ) )
+        else:
+            irc.reply( "%s in %s/%s: all dependencies satisfied." % \
+                        ( package, release, arch) )
+
+    checkdeps = wrap(checkdeps, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
                                optional( 'something' ) ] );
 
