@@ -94,39 +94,29 @@ class Release:
         self.release = release
 
 class ReleaseRelations(Release):
-  
-    def CheckRelations(self, package, relation='depends', recursive=False):
+    def CheckRelations(self, package, relation='depends'):
         self._loadOrCache(package)
         p = self.cache[package]
 
+        if not p.Found():
+            return None, None
+
         bad = []
-        for r in p.RelationsEntryList(relation):
-            opts = self._SplitOptions(r)
+        good = []
+        for opts in p.RelationsEntryList(relation):
             satisfied = False
             while not satisfied and len(opts):
                 item = opts.pop(0)
-                p, o, v = self._ParseRelation(item)
-                satisfied = self.RelationSatisfied(p, o, v)
-            if not satisfied:
-                bad.append(r)
+                satisfied = self.RelationSatisfied(item['package'], \
+                                          item['operator'], item['version'])
+            if (relation != 'conflicts' and not satisfied) or \
+               (relation == 'conflicts' and     satisfied):
+                bad.append(item)
+            else:
+                good.append(item)
             #elif recursive:
             #    bad.extend(self.CheckRelations(p)
-        return bad
-
-    def _SplitOptions(self, item):
-        return item.split(r"\s*|\s*")
-
-    def _ParseRelation(self, item):
-        #print "checking item %s" % item
-        m = re.match(r"""(?x)
-                  (?P<package>[\w\d.+-]+)
-                  (?:
-                    \s*
-                    \(\s*
-                      (?P<rel>\>\>|\>=|=|\<\<|\<=)\s*(?P<version>[^\s]+)
-                    \s*\)
-                  )?""", item)
-        return m.group('package'), m.group('rel'), m.group('version')
+        return bad, good
 
     def _loadOrCache(self, package):
         if self.cache.has_key(package): return
@@ -197,7 +187,32 @@ class PackageRelations(Package):
         return self.data[relation]
 
     def RelationsEntryList(self, relation):
-        return re.split(r"\s*,\s*", self.data[relation])
+        if self.data[relation]:
+            rels = []
+            for r in re.split(r"\s*,\s*", self.data[relation]):
+                rset = []
+                for rel in self._SplitOptions(r):
+                    p, o, v = self._ParseRelation(rel)
+                    rset.append({'relation':rel, 'package':p, 'operator':o, 'version':v})
+                rels.append(rset)
+            return rels
+        else:
+            return []
+
+    def _SplitOptions(self, item):
+        return item.split(r"\s*|\s*")
+
+    def _ParseRelation(self, relationship):
+        #print "checking item %s" % item
+        m = re.match(r"""(?x)
+                  (?P<package>[\w\d.+-]+)
+                  (?:
+                    \s*
+                    \(\s*
+                      (?P<rel>\>\>|\>=|=|\<\<|\<=)\s*(?P<version>[^\s]+)
+                    \s*\)
+                  )?""", relationship)
+        return m.group('package'), m.group('rel'), m.group('version')
 
 
 class Judd(callbacks.Plugin):
@@ -734,25 +749,53 @@ class Judd(callbacks.Plugin):
                                optional( 'something' ) ] );
 
     def checkdeps( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--arch <i386>] [--release <lenny>] [--type depends|recommends|suggests|conflicts]
 
         Check that the dependencies listed by a package are satisfiable for the
         specified release and architecture.
-        By default, the current stable release and i386 are used.
+        By default, all dependency types with the current stable release and
+        i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
+        knownRelations = [ 'conflicts',
+                           'depends',
+                           'recommends',
+                           'suggests' ]
+
+        relation = []
+        for( option,arg ) in optlist:
+            if option=='type':
+                if arg in knownRelations:
+                    relation.append(arg)
+                else:
+                    irc.error("Bad relationship specified. Use depends, recommends, suggests or conflicts.")
+        if not relation:
+            relation = knownRelations
+
         r = ReleaseRelations(self.psql, arch=arch, release=release)
-        bad = r.CheckRelations(package)
-        if bad:
+
+        badlist = []
+        for rel in relation:
+            badrels, goodrels = r.CheckRelations(package, rel)
+            if badrels:
+                rlist = map(lambda r: r['relation'], badrels)
+                badlist.append("%s: %s" % (self.bold(rel.title()), ", ".join(rlist)))
+            elif badrels == None:
+                irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
+                                    (package, release, arch) )
+                return
+
+        if badlist:
             irc.reply( "%s in %s/%s unsatisfiable dependencies: %s." % \
-                        ( package, release, arch, ", ".join(bad) ) )
+                        ( package, release, arch, "; ".join(badlist) ) )
         else:
             irc.reply( "%s in %s/%s: all dependencies satisfied." % \
                         ( package, release, arch) )
 
     checkdeps = wrap(checkdeps, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ),
+                                                         'release':'something',
+                                                         'type':'something' } ),
                                optional( 'something' ) ] );
 
     def bug( self, irc, msg, args, bugno ):
