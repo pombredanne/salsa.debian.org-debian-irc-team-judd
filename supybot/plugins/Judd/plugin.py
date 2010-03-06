@@ -87,16 +87,47 @@ def parse_standard_options( optlist, args=None ):
     return release, arch
 
 class Release:
-    cache = {}
     def __init__(self, dbconn, arch="i386", release="lenny", **kwargs):
         self.dbconn = dbconn
         self.arch = arch
         self.release = release
+        self.cache = {}
+        self.scache = {}
 
-class ReleaseRelations(Release):
-    def CheckRelations(self, package, relation='depends'):
-        self._loadOrCache(package)
-        p = self.cache[package]
+    def Package(self, package):
+        if not self.cache.has_key(package):
+            self.cache[package] = Package(self.dbconn, arch=self.arch, \
+                                  release=self.release, package=package)
+        return self.cache[package]
+
+    def Source(self, package):
+        if not self.scache.has_key(package):
+            self.scache[package] = SourcePackage(self.dbconn, arch=self.arch, \
+                                  release=self.release, package=package)
+        return self.scache[package]
+
+    def bin2src(self, package):
+        """Returns the source package for a given binary package"""
+        c = self.dbconn.cursor()
+        c.execute(r"""SELECT source
+                      FROM packages
+                      WHERE package=%(package)s
+                        AND release=%(release)s LIMIT 1""",
+                   dict( package=package,
+                         release=self.release) );
+        row = c.fetchone()
+        if row:
+            return row[0]
+        else:
+            return
+
+
+class ReleaseRelations():
+    def __init__(self, release):
+        self.release = release
+
+    def CheckRelations(self, package=None, relation='depends'):
+        p = self.release.Package(package)
 
         if not p.Found():
             return None, None
@@ -118,17 +149,13 @@ class ReleaseRelations(Release):
             #    bad.extend(self.CheckRelations(p)
         return bad, good
 
-    def _loadOrCache(self, package):
-        if self.cache.has_key(package): return
-        self.cache[package] = PackageRelations(self.dbconn, arch=self.arch, release=self.release, package=package)
-
     def RelationSatisfied(self, package, operator=None, depversion=None):
         #print "Checking relationship for '%s', '%s', '%s'" % (package, operator, depversion)
-        self._loadOrCache(package)
-        if not self.cache.has_key(package) or not self.cache[package].Found():
-            return False
+        p = self.release.Package(package)
+        if not p.Found():
+          return p.IsVirtual()
 
-        version = self.cache[package].data['version']
+        version = p.data['version']
         # see policy s7.1
         # http://www.debian.org/doc/debian-policy/ch-relationships.html
         if operator:
@@ -151,7 +178,9 @@ class ReleaseRelations(Release):
             return True
 
 class Package:
-    fields = ['package']
+    fields  = ['*']
+    table   = 'packages'
+    column  = 'package'
     def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
         if not package:
             raise ValueError("Package name not specified")
@@ -159,14 +188,17 @@ class Package:
         self.arch = arch
         self.release = release
         self.package = package
+        self.virtual = None
+        self._ProvidersList = None
         self._Fetch()
 
     def _Fetch(self):
+        #print "Looking for %s in %s/%s." % (self.package, self.release, self.arch)
         c = self.dbconn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         f = ','.join(self.fields)
         c.execute(r"""SELECT """ + f + """
-                      FROM packages
-                      WHERE package=%(package)s
+                      FROM """ + self.table + """
+                      WHERE """ + self.column + """=%(package)s
                         AND (architecture='all' OR architecture=%(arch)s)
                         AND release=%(release)s""",
                    dict( package=self.package,
@@ -175,13 +207,41 @@ class Package:
         self.data = c.fetchone()
 
     def Found(self):
-        #print "############# Package %s: %s " % (self.package, self.data)
         return self.data != None
 
-class PackageRelations(Package):
-    def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
-        self.fields = ['conflicts', 'depends', 'recommends', 'suggests', 'enhances', 'version']
-        Package.__init__(self, dbconn, arch, release, package)
+    def IsVirtual(self):
+        if self.virtual == None:
+            self.virtual = (self.ProvidersList() != [])
+        return self.virtual
+
+    def ProvidersList(self):
+        if self._ProvidersList == None:
+            # remove all characters from the package name that aren't legal in a
+            # package name i.e. not in:
+            #    a-z0-9-.+
+            # see s5.6.1 of Debian Policy "Source" for details.
+            # http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Source
+            #
+            # \m is start word boundary, \M is finish word boundary
+            # (but - in package name is a word boundary)
+            # \A is start string,        \Z is finish string
+            # http://www.postgresql.org/docs/8.3/static/functions-matching.html
+            packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % re.sub(r"[^a-z\d\-+.]", "", self.package)
+            #print packagere
+            c = self.dbconn.cursor()
+            c.execute(r"""SELECT DISTINCT package
+                          FROM packages
+                          WHERE provides ~ %(package)s
+                            AND (architecture='all' OR architecture=%(arch)s)
+                            AND release=%(release)s""",
+                      dict( package=packagere,
+                            arch=self.arch,
+                            release=self.release) );
+            pkgs=[]
+            for row in c.fetchall():
+                pkgs.append( row[0] )
+            self._ProvidersList = pkgs
+        return self._ProvidersList
 
     def RelationEntry(self, relation):
         return self.data[relation]
@@ -214,6 +274,43 @@ class PackageRelations(Package):
                   )?""", relationship)
         return m.group('package'), m.group('rel'), m.group('version')
 
+#class PackageRelations(Package):
+    #def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
+        #self.fields = ['conflicts', 'depends', 'recommends', 'suggests', 'enhances', 'version']
+        #Package.__init__(self, dbconn, arch, release, package)
+
+class SourcePackage(Package):
+    def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
+        #self.fields = ['build_depends', 'build_depends_indep', 'version']
+        self.table = 'sources'
+        self.column = 'source'
+        self.autobin2src = kwargs.get('bin2src', True)
+        Package.__init__(self, dbconn, arch, release, package)
+
+    def _Fetch(self):
+        #print "Looking for source %s in %s/%s." % (self.package, self.release, self.arch)
+        c = self.dbconn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        f = ','.join(self.fields)
+        c.execute(r"""SELECT """ + f + """
+                      FROM """ + self.table + """
+                      WHERE """ + self.column + """=%(package)s
+                        AND release=%(release)s""",
+                   dict( package=self.package,
+                         release=self.release) );
+        self.data = c.fetchone()
+
+    def Binaries(self):
+        c = self.dbconn.cursor()
+        c.execute(r"""SELECT DISTINCT package
+                      FROM packages
+                      WHERE source=%(package)s AND release=%(release)s""",
+                   dict( package=self.package,
+                         arch=self.arch,
+                         release=self.release) );
+        pkgs = []
+        for row in c.fetchall():
+            pkgs.append(row[0])
+        return pkgs
 
 class Judd(callbacks.Plugin):
     """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
@@ -449,49 +546,16 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        # remove all characters from the package name that aren't legal in a
-        # package name i.e. not in:
-        #    a-z0-9-.+
-        # see s5.6.1 of Debian Policy "Source" for details.
-        # http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Source
-        #
-        # \m is start word boundary, \M is finish word boundary
-        # (but - in package name is a word boundary)
-        # \A is start string,        \Z is finish string
-        # http://www.postgresql.org/docs/8.3/static/functions-matching.html
-        packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % re.sub(r"[^a-z\d\-+.]", "", package)
-        #print packagere
-        c = self.psql.cursor()
-        c.execute(r"""SELECT package
-                      FROM packages
-                      WHERE provides ~ %(package)s
-                        AND (architecture='all' OR architecture=%(arch)s)
-                        AND release=%(release)s""",
-                   dict( package=packagere,
-                         arch=arch,
-                         release=release) );
+        r = Release(self.psql, arch=arch, release=release)
+        p = r.Package(package)
 
-        pkgs=[]
-        for row in c.fetchall():
-            pkgs.append( row[0] )
-
-        c.execute(r"""SELECT package
-                      FROM packages
-                      WHERE package=%(package)s
-                        AND (architecture='all' OR architecture=%(arch)s)
-                        AND release=%(release)s""",
-                   dict( package=package,
-                         arch=arch,
-                         release=release) );
-        realpackage = c.fetchone()
-
-        if pkgs:
+        if p.IsVirtual():
             reply = "%s in %s/%s is provided by: %s." % \
-                    ( package, release, arch, ", ".join(pkgs) )
-            if realpackage:
+                    ( package, release, arch, ", ".join(p.ProvidersList()) )
+            if p.Found():
                 reply += " %s is also a real package." % package
         else:
-            if realpackage:
+            if p.Found():
                 reply = "In %s/%s, %s is a real package." % (release, arch, package)
             else:
                 reply = "Sorry, no packages provide '%s' in %s/%s." %\
@@ -515,21 +579,13 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        c = self.psql.cursor()
-        c.execute(r"""SELECT provides
-                      FROM packages
-                      WHERE package=%(package)s
-                        AND (architecture=%(arch)s OR architecture='all')
-                        AND release=%(release)s""",
-                   dict( package=package,
-                         arch=arch,
-                         release=release) );
+        r = Release(self.psql, arch=arch, release=release)
+        p = r.Package(package)
 
-        row = c.fetchone()
-        if row:
-            if row[0]:
+        if p.Found():
+            if p.data['provides']:
                 irc.reply("%s in %s/%s provides: %s." % \
-                            (package, release, arch, row[0]) )
+                            (package, release, arch, p.data['provides']) )
             else:
                 irc.reply("%s in %s/%s provides no additional packages." % \
                             (package, release, arch) )
@@ -557,7 +613,8 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        p = self.bin2src(package, release)
+        r = Release(self.psql, arch=arch, release=release)
+        p = r.bin2src(package)
         if p:
             irc.reply( "%s -- Source: %s" % ( package, p ) )
         else:
@@ -566,21 +623,6 @@ class Judd(callbacks.Plugin):
 
     src = wrap(source, ['something', getopts( { 'release':'something' } ),
                            optional( 'something' ) ] );
-
-    def bin2src(self, package, release):
-        """Returns the source package for a given binary package"""
-        c = self.psql.cursor()
-        c.execute(r"""SELECT source
-                      FROM packages
-                      WHERE package=%(package)s
-                        AND release=%(release)s LIMIT 1""",
-                   dict( package=package,
-                         release=release) );
-        row = c.fetchone()
-        if row:
-            return row[0]
-        else:
-            return
 
     def binaries( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>]
@@ -591,21 +633,11 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        c = self.psql.cursor()
-        c.execute(r"""SELECT DISTINCT package
-                      FROM packages
-                      WHERE source=%(package)s AND release=%(release)s""",
-                   dict( package=package,
-                         arch=arch,
-                         release=release) );
+        r = Release(self.psql, arch=arch, release=release)
+        p = r.Source(package)
 
-        row = c.fetchone()
-        if row:
-            reply = "%s -- Binaries:" % package
-            while row:
-                reply += " %s" % ( row[0] )
-                row = c.fetchone()
-
+        if p.Found():
+            reply = "%s -- Binaries: %s" % (package, ", ".join(p.Binaries()))
             irc.reply( reply )
         else:
             irc.reply("Cannot find the package %s in %s/%s." % \
@@ -623,13 +655,6 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        c = self.psql.cursor()
-        c.execute(r"""SELECT build_depends, build_depends_indep
-                      FROM sources
-                      WHERE source=%(package)s AND release=%(release)s LIMIT 1""",
-                   dict( package=package,
-                         release=release) );
-
         def bdformat(package, bd, bdi):
             reply = []
             if bd:
@@ -638,23 +663,21 @@ class Judd(callbacks.Plugin):
                 reply.append("Build-Depends-Indep: %s" % bdi)
             return "%s -- %s." % ( package, "; ".join(reply))
 
-        row = c.fetchone()
-        if row:
-            irc.reply(bdformat(package, row[0], row[1]))
-        else:
-            c.execute(r"""SELECT sources.source, build_depends, build_depends_indep
-                          FROM sources
-                            INNER JOIN packages
-                            ON packages.source = sources.source
-                          WHERE packages.package=%(package)s
-                            AND packages.release=%(release)s LIMIT 1""",
-                       dict( package=package,
-                             release=release) );
-            row = c.fetchone()
-            if row:
-                irc.reply(bdformat(row[0], row[1], row[2]))
-            else:
-                irc.reply( "Sorry, there is no record of the %s package in %s." %(package, release) )
+        r = Release(self.psql, arch=arch, release=release)
+        p = r.Source(package)
+        if not p.Found():
+            src = p.bin2src()
+            if bin:
+                p = r.Source(src)
+
+        if not p.Found():
+            irc.reply( "Sorry, there is no record of the %s package in %s." %(package, release) )
+            return
+
+        bd = p.RelationEntry('build_depends')
+        bdi = p.RelationEntry('build_depends_indep')
+
+        irc.reply(bdformat(package, bd, bdi))
 
     builddep = wrap(builddep, ['something', getopts( { 'release':'something' } ), optional( 'something' )] );
 
@@ -679,10 +702,11 @@ class Judd(callbacks.Plugin):
 
         release,arch = parse_standard_options( optlist, something )
 
-        relations = PackageRelations(self.psql, arch=arch, release=release, package=package)
+        r = Release(self.psql, arch=arch, release=release)
+        p = r.Package(package)
 
-        if relations.Found():
-            irc.reply( "%s -- %s: %s." % ( package, relation, relations.RelationEntry(relation)) )
+        if p.Found():
+            irc.reply( "%s -- %s: %s." % ( package, relation, p.RelationEntry(relation)) )
         else:
             irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
                                 (package, release, arch) )
@@ -773,11 +797,12 @@ class Judd(callbacks.Plugin):
         if not relation:
             relation = knownRelations
 
-        r = ReleaseRelations(self.psql, arch=arch, release=release)
+        r = Release(self.psql, arch=arch, release=release)
+        relchecker = ReleaseRelations(r)
 
         badlist = []
         for rel in relation:
-            badrels, goodrels = r.CheckRelations(package, rel)
+            badrels, goodrels = relchecker.CheckRelations(package, rel)
             if badrels:
                 rlist = map(lambda r: r['relation'], badrels)
                 badlist.append("%s: %s" % (self.bold(rel.title()), ", ".join(rlist)))
