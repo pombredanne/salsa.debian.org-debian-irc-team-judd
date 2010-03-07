@@ -122,35 +122,39 @@ class Release:
             return
 
 
-class ReleaseRelations():
+class RelationChecker():
     def __init__(self, release):
         self.release = release
 
-    def CheckRelations(self, package=None, relation='depends'):
-        p = self.release.Package(package)
+    def CheckInstall(self, package=None, recommends=True):
+        pass
 
+    def Check(self, package=None, relation='depends'):
+        p = self.release.Package(package)
         if not p.Found():
             return None, None
+        bad, good = self.CheckRelationsList(p.RelationsEntryList(relation))
+        if relation == 'conflicts':
+            return good, bad
+        return bad, good
 
+    def CheckRelationsList(self, relationlist):
         bad = []
         good = []
-        for opts in p.RelationsEntryList(relation):
+        for opts in relationlist:
             satisfied = False
             while not satisfied and len(opts):
                 item = opts.pop(0)
                 satisfied = self.RelationSatisfied(item['package'], \
                                           item['operator'], item['version'])
-            if (relation != 'conflicts' and not satisfied) or \
-               (relation == 'conflicts' and     satisfied):
+            if not satisfied:
                 bad.append(item)
             else:
                 good.append(item)
-            #elif recursive:
-            #    bad.extend(self.CheckRelations(p)
         return bad, good
 
     def RelationSatisfied(self, package, operator=None, depversion=None):
-        #print "Checking relationship for '%s', '%s', '%s'" % (package, operator, depversion)
+        print "Checking relationship for '%s', '%s', '%s'" % (package, operator, depversion)
         p = self.release.Package(package)
         if not p.Found():
           return p.IsVirtual()
@@ -181,26 +185,30 @@ class Package:
     fields  = ['*']
     table   = 'packages'
     column  = 'package'
-    def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
+    def __init__(self, dbconn, arch="i386", release="lenny", package=None, version=None, **kwargs):
         if not package:
             raise ValueError("Package name not specified")
         self.dbconn = dbconn
         self.arch = arch
         self.release = release
         self.package = package
+        self.version = version
         self.virtual = None
         self._ProvidersList = None
         self._Fetch()
 
     def _Fetch(self):
         #print "Looking for %s in %s/%s." % (self.package, self.release, self.arch)
+        # TODO: have the "version" do something useful
         c = self.dbconn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         f = ','.join(self.fields)
         c.execute(r"""SELECT """ + f + """
                       FROM """ + self.table + """
                       WHERE """ + self.column + """=%(package)s
                         AND (architecture='all' OR architecture=%(arch)s)
-                        AND release=%(release)s""",
+                        AND release=%(release)s
+                      ORDER BY version DESC
+                      LIMIT 1""",
                    dict( package=self.package,
                          arch=self.arch,
                          release=self.release) );
@@ -274,18 +282,13 @@ class Package:
                   )?""", relationship)
         return m.group('package'), m.group('rel'), m.group('version')
 
-#class PackageRelations(Package):
-    #def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
-        #self.fields = ['conflicts', 'depends', 'recommends', 'suggests', 'enhances', 'version']
-        #Package.__init__(self, dbconn, arch, release, package)
-
 class SourcePackage(Package):
-    def __init__(self, dbconn, arch="i386", release="lenny", package=None, **kwargs):
+    def __init__(self, dbconn, arch="i386", release="lenny", package=None, version=None, **kwargs):
         #self.fields = ['build_depends', 'build_depends_indep', 'version']
         self.table = 'sources'
         self.column = 'source'
         self.autobin2src = kwargs.get('bin2src', True)
-        Package.__init__(self, dbconn, arch, release, package)
+        Package.__init__(self, dbconn, arch, release, package, version)
 
     def _Fetch(self):
         #print "Looking for source %s in %s/%s." % (self.package, self.release, self.arch)
@@ -294,7 +297,9 @@ class SourcePackage(Package):
         c.execute(r"""SELECT """ + f + """
                       FROM """ + self.table + """
                       WHERE """ + self.column + """=%(package)s
-                        AND release=%(release)s""",
+                        AND release=%(release)s
+                      ORDER BY version DESC
+                      LIMIT 1""",
                    dict( package=self.package,
                          release=self.release) );
         self.data = c.fetchone()
@@ -798,11 +803,11 @@ class Judd(callbacks.Plugin):
             relation = knownRelations
 
         r = Release(self.psql, arch=arch, release=release)
-        relchecker = ReleaseRelations(r)
+        relchecker = RelationChecker(r)
 
         badlist = []
         for rel in relation:
-            badrels, goodrels = relchecker.CheckRelations(package, rel)
+            badrels, goodrels = relchecker.Check(package, rel)
             if badrels:
                 rlist = map(lambda r: r['relation'], badrels)
                 badlist.append("%s: %s" % (self.bold(rel.title()), ", ".join(rlist)))
@@ -821,6 +826,50 @@ class Judd(callbacks.Plugin):
     checkdeps = wrap(checkdeps, ['something', getopts( { 'arch':'something',
                                                          'release':'something',
                                                          'type':'something' } ),
+                               optional( 'something' ) ] );
+
+    def checkbuilddeps( self, irc, msg, args, package, optlist, something ):
+        """<packagename> [--release <lenny>] [--arch <i386>]
+
+        Check that the build-dependencies listed by a package are satisfiable for the
+        specified release.
+        By default, the current stable release is used.
+        """
+        release,arch = parse_standard_options( optlist, something )
+
+        r = Release(self.psql, arch=arch, release=release)
+        relchecker = RelationChecker(r)
+
+        badlist = []
+        s = r.Source(package)
+        if not s.Found():
+            irc.reply( "Sorry, no package named '%s' was found in %s." % \
+                                (package, release) )
+            return
+
+        bd = s.RelationsEntryList('build_depends')
+        bdi = s.RelationsEntryList('build_depends_indep')
+
+        badrels,  goodrels  = relchecker.CheckRelationsList(bd)
+        badrelsi, goodrelsi = relchecker.CheckRelationsList(bdi)
+        reply = []
+        if badrels:
+            rlist = map(lambda r: r['relation'], badrels)
+            badlist.append("%s: %s" % (self.bold("Build-Depends"), ", ".join(rlist)))
+        if badrelsi:
+            rlist = map(lambda r: r['relation'], badrelsi)
+            badlist.append("%s: %s" % (self.bold("Build-Depends-Indep"), ", ".join(rlist)))
+
+        if badlist:
+            irc.reply( "%s in %s/ unsatisfiable build dependencies: %s." % \
+                        ( package, release, "; ".join(badlist) ) )
+        else:
+            irc.reply( "%s in %s: all build-dependencies satisfied." % \
+                        ( package, release) )
+
+    checkbuilddeps = wrap(checkbuilddeps, ['something', getopts( {'arch':'something',
+                                                         'release':'something',
+                                                         } ),
                                optional( 'something' ) ] );
 
     def bug( self, irc, msg, args, bugno ):
