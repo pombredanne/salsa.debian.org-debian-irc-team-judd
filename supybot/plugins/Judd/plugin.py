@@ -100,10 +100,15 @@ class Release:
                                   release=self.release, package=package)
         return self.cache[package]
 
-    def Source(self, package):
+    def Source(self, package, autoBin2Src=True):
         if not self.scache.has_key(package):
             self.scache[package] = SourcePackage(self.dbconn, arch=self.arch, \
                                   release=self.release, package=package)
+            if autoBin2Src and not self.scache[package].Found():
+                p = self.bin2src(package)
+                if p:
+                    self.Source(p, False)
+                    return self.scache[p]
         return self.scache[package]
 
     def bin2src(self, package):
@@ -142,19 +147,23 @@ class RelationChecker():
         bad = []
         good = []
         for opts in relationlist:
+            #print "Considering fragment %s" % opts
             satisfied = False
             while not satisfied and len(opts):
                 item = opts.pop(0)
+                #print "== part %s (%d)" % (item, len(opts))
                 satisfied = self.RelationSatisfied(item['package'], \
-                                          item['operator'], item['version'])
+                                          item['operator'], item['version'],
+                                          item['arch'])
             if not satisfied:
                 bad.append(item)
             else:
                 good.append(item)
         return bad, good
 
-    def RelationSatisfied(self, package, operator=None, depversion=None):
-        print "Checking relationship for '%s', '%s', '%s'" % (package, operator, depversion)
+    def RelationSatisfied(self, package, operator=None, depversion=None, arch=None):
+        print "Checking relationship for '%s', '%s', '%s' on %s" % \
+                      (package, operator, depversion, arch)
         p = self.release.Package(package)
         if not p.Found():
           return p.IsVirtual()
@@ -260,15 +269,23 @@ class Package:
             for r in re.split(r"\s*,\s*", self.data[relation]):
                 rset = []
                 for rel in self._SplitOptions(r):
-                    p, o, v = self._ParseRelation(rel)
-                    rset.append({'relation':rel, 'package':p, 'operator':o, 'version':v})
+                    #print "found rel=%s" % rel
+                    p, o, v, a = self._ParseRelation(rel)
+                    if a: a = a.split(' ')
+                    rset.append({
+                                  'relation': rel,
+                                  'package':  p,
+                                  'operator': o,
+                                  'version':  v,
+                                  'arch':     a
+                                })
                 rels.append(rset)
             return rels
         else:
             return []
 
     def _SplitOptions(self, item):
-        return item.split(r"\s*|\s*")
+        return re.split(r"\s*\|\s*", item)
 
     def _ParseRelation(self, relationship):
         #print "checking item %s" % item
@@ -279,8 +296,17 @@ class Package:
                     \(\s*
                       (?P<rel>\>\>|\>=|=|\<\<|\<=)\s*(?P<version>[^\s]+)
                     \s*\)
-                  )?""", relationship)
-        return m.group('package'), m.group('rel'), m.group('version')
+                  )?
+                  (?:
+                    \s*
+                    \[\s*
+                      (?P<arch>[^]]+)
+                    \s*\]
+                  )?
+                  """, relationship)
+        if not m:
+            pass        # this should never happen
+        return m.group('package'), m.group('rel'), m.group('version'), m.group('arch')
 
 class SourcePackage(Package):
     def __init__(self, dbconn, arch="i386", release="lenny", package=None, version=None, **kwargs):
@@ -671,11 +697,6 @@ class Judd(callbacks.Plugin):
         r = Release(self.psql, arch=arch, release=release)
         p = r.Source(package)
         if not p.Found():
-            src = p.bin2src()
-            if bin:
-                p = r.Source(src)
-
-        if not p.Found():
             irc.reply( "Sorry, there is no record of the %s package in %s." %(package, release) )
             return
 
@@ -828,44 +849,46 @@ class Judd(callbacks.Plugin):
                                                          'type':'something' } ),
                                optional( 'something' ) ] );
 
+    def checkBuildDepsHelper(self, relchecker, source):
+        def checkRel(rel, longname):
+            bd = source.RelationsEntryList(rel)
+            badrels,  goodrels  = relchecker.CheckRelationsList(bd)
+            if badrels:
+                rlist = map(lambda r: r['relation'], badrels)
+                return "%s: %s" % (self.bold(longname), ", ".join(rlist))
+            return None
+
+        badlist = [
+                checkRel('build_depends', 'Build-Depends'),
+                checkRel('build_depends_indep', 'Build-Depends-Indep')
+            ]
+        return filter(None, badlist)
+
     def checkbuilddeps( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>] [--arch <i386>]
 
         Check that the build-dependencies listed by a package are satisfiable for the
-        specified release.
-        By default, the current stable release is used.
+        specified release and host architecture.
+        By default, the current stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
 
         r = Release(self.psql, arch=arch, release=release)
         relchecker = RelationChecker(r)
 
-        badlist = []
         s = r.Source(package)
         if not s.Found():
             irc.reply( "Sorry, no package named '%s' was found in %s." % \
                                 (package, release) )
             return
 
-        bd = s.RelationsEntryList('build_depends')
-        bdi = s.RelationsEntryList('build_depends_indep')
-
-        badrels,  goodrels  = relchecker.CheckRelationsList(bd)
-        badrelsi, goodrelsi = relchecker.CheckRelationsList(bdi)
-        reply = []
-        if badrels:
-            rlist = map(lambda r: r['relation'], badrels)
-            badlist.append("%s: %s" % (self.bold("Build-Depends"), ", ".join(rlist)))
-        if badrelsi:
-            rlist = map(lambda r: r['relation'], badrelsi)
-            badlist.append("%s: %s" % (self.bold("Build-Depends-Indep"), ", ".join(rlist)))
-
+        badlist = self.checkBuildDepsHelper(relchecker, s)
         if badlist:
-            irc.reply( "%s in %s/ unsatisfiable build dependencies: %s." % \
-                        ( package, release, "; ".join(badlist) ) )
+            irc.reply( "%s in %s/%s unsatisfiable build dependencies: %s." % \
+                        ( package, release, arch, "; ".join(badlist) ) )
         else:
-            irc.reply( "%s in %s: all build-dependencies satisfied." % \
-                        ( package, release) )
+            irc.reply( "%s in %s/%s: all build-dependencies satisfied." % \
+                        ( package, release, arch) )
 
     checkbuilddeps = wrap(checkbuilddeps, ['something', getopts( {'arch':'something',
                                                          'release':'something',
