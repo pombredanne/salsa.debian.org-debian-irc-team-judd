@@ -57,40 +57,61 @@ releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch
 
 arches = [ 'alpha', 'amd64', 'arm', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
 
-def parse_standard_options( optlist, args=None ):
-    # FIXME: should this default to lenny/i386 if the args are out of bounds?
-    if not args:
-        args=[]
-    release='lenny'
-    arch='i386'
-
-    for( option,arg ) in optlist:
-        if option=='release':
-            release=arg;
-        elif option=='arch':
-            arch=arg;
-
-    if args in releases:
-        release=args
-    elif args in arches:
-        arch=args
-
-    if release_map.has_key( release ):
-        release = release_map[ release ]
-
-    if not release in releases:
-        release=None
-
-    if not arch in arches:
-        arch=None
-
+def parse_standard_options(optlist, args=[]):
+    release = CleanReleaseName(optlist=optlist, args=args)
+    arch    = CleanArchName(optlist=optlist, args=args)
     return release, arch
+
+def CleanReleaseName(name=None, optlist=[], optname="release", args=[], default="stable"):
+    """
+    Sanitised release name, extracting it from various data sources if desired
+    """
+    # Look for the name in an optlist, free-text args and simply specified
+    r = default
+    for (option,arg) in optlist:
+        if option == optname:
+            r = arg;
+    for arg in args:
+        if arg in releases:
+          r = arg
+    if name:
+        r = name
+    # Sanitise the name
+    if not r in releases:
+        r = default
+    if release_map.has_key(r):
+        r = release_map[r]
+    return r
+
+def CleanArchName(name=None, optlist=[], optname="arch", args=[], default="i386"):
+    """
+    Sanitised architecture name, extracting it from various data sources if desired
+    """
+    # Look for the name in an optlist, free-text args and simply specified
+    a = default
+    for (option,arg) in optlist:
+        if option == optname:
+            a = arg;
+    for arg in args:
+        if arg in releases:
+          r = arg
+    if name:
+        a = name
+    # Sanitise the name
+    if not a in arches:
+        a = default
+    return a
 
 class Release:
     def __init__(self, dbconn, arch="i386", release="lenny", **kwargs):
         self.dbconn = dbconn
         self.arch = arch
-        self.release = release
+        if type(release) is tuple:
+            self.release = release
+        elif type(release) is list:
+            self.release = tuple(release)
+        else:
+            self.release = (release,)
         self.cache = {}
         self.scache = {}
 
@@ -117,7 +138,7 @@ class Release:
         c.execute(r"""SELECT source
                       FROM packages
                       WHERE package=%(package)s
-                        AND release=%(release)s LIMIT 1""",
+                        AND release IN %(release)s LIMIT 1""",
                    dict( package=package,
                          release=self.release) );
         row = c.fetchone()
@@ -221,7 +242,12 @@ class Package:
             raise ValueError("Package name not specified")
         self.dbconn = dbconn
         self.arch = arch
-        self.release = release
+        if type(release) is tuple:
+            self.release = release
+        elif type(release) is list:
+            self.release = tuple(release)
+        else:
+            self.release = (release,)
         self.package = package
         self.version = version
         self.virtual = None
@@ -237,7 +263,7 @@ class Package:
                       FROM """ + self.table + """
                       WHERE """ + self.column + """=%(package)s
                         AND (architecture='all' OR architecture=%(arch)s)
-                        AND release=%(release)s
+                        AND release IN %(release)s
                       ORDER BY version DESC
                       LIMIT 1""",
                    dict( package=self.package,
@@ -272,7 +298,7 @@ class Package:
                           FROM packages
                           WHERE provides ~ %(package)s
                             AND (architecture='all' OR architecture=%(arch)s)
-                            AND release=%(release)s""",
+                            AND release IN %(release)s""",
                       dict( package=packagere,
                             arch=self.arch,
                             release=self.release) );
@@ -308,7 +334,7 @@ class SourcePackage(Package):
         c.execute(r"""SELECT """ + f + """
                       FROM """ + self.table + """
                       WHERE """ + self.column + """=%(package)s
-                        AND release=%(release)s
+                        AND release IN %(release)s
                       ORDER BY version DESC
                       LIMIT 1""",
                    dict( package=self.package,
@@ -319,7 +345,8 @@ class SourcePackage(Package):
         c = self.dbconn.cursor()
         c.execute(r"""SELECT DISTINCT package
                       FROM packages
-                      WHERE source=%(package)s AND release=%(release)s""",
+                      WHERE source=%(package)s
+                        AND release IN %(release)s""",
                    dict( package=self.package,
                          arch=self.arch,
                          release=self.release) );
@@ -418,22 +445,8 @@ class Judd(callbacks.Plugin):
         packages are searched; prefix the packagename with "src:" to search
         source packages.
         """
-        release = None
-        arch='i386'
-        atleastone=False
-
-        for( option,arg ) in optlist:
-            if option=='release':
-                release=arg;
-            elif option=='arch':
-                arch=arg;
-        for option in args:
-            if option in releases:
-                release=option
-            elif option in arches:
-                arch=option
-        if release_map.has_key( release ):
-            release = release_map[ release ]
+        release = CleanReleaseName(optlist=optlist, args=something, default=None)
+        arch    = CleanArchName   (optlist=optlist, args=something, default='i386')
 
         c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
         if package.startswith('src:'):
@@ -479,7 +492,10 @@ class Judd(callbacks.Plugin):
 
         irc.reply( "%s -- %s" % (package, "; ".join(replies)) )
 
-    versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
+    versions = wrap(versions, ['something',
+                                getopts( { 'arch':'something',
+                                           'release':'something' } ),
+                                any( 'something' ) ] )
 
     def names(self, irc, msg, args, package, optlist, something ):
         """<pattern> [--arch <i386>] [--release <lenny>]
@@ -535,7 +551,10 @@ class Judd(callbacks.Plugin):
 
         irc.reply( "%s in %s/%s: %s" % (package, release, arch, "; ".join(replies)) )
 
-    names = wrap(names, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
+    names = wrap(names, ['something',
+                          getopts( { 'arch':'something',
+                                     'release':'something' } ),
+                          any( 'something' ) ] )
 
     def info(self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -580,8 +599,10 @@ class Judd(callbacks.Plugin):
             irc.reply( "No record of package '%s' in %s/%s." % \
                                     (package, release, arch) )
 
-    info = wrap(info, ['something', getopts( { 'arch':'something',
-                                              'release':'something' } ), optional( 'something' ) ] )
+    info = wrap(info, ['something',
+                        getopts( { 'arch':'something',
+                                   'release':'something' } ),
+                        any( 'something' ) ] )
 
     def archHelper(self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>]
@@ -612,8 +633,12 @@ class Judd(callbacks.Plugin):
 
         irc.reply( "%s in %s: %s" % (package, release, "; ".join(replies)) )
 
-    arches = wrap(archHelper, ['something', getopts({ 'release':'something' } ), optional( 'something' ) ] )
-    archs  = wrap(archHelper, ['something', getopts({ 'release':'something' } ), optional( 'something' ) ] )
+    arches = wrap(archHelper, ['something',
+                                getopts({ 'release':'something' } ),
+                                any( 'something' ) ] )
+    archs  = wrap(archHelper, ['something',
+                                getopts({ 'release':'something' } ),
+                                any( 'something' ) ] )
 
     def rprovidesHelper( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -641,12 +666,14 @@ class Judd(callbacks.Plugin):
 
         irc.reply(reply)
 
-    rprovides = wrap(rprovidesHelper, ['something', getopts( { 'arch':'something',
-                                                    'release':'something' } ),
-                             optional( 'something' ) ] );
-    whatprovides = wrap(rprovidesHelper, ['something', getopts( { 'arch':'something',
-                                                    'release':'something' } ),
-                             optional( 'something' ) ] );
+    rprovides = wrap(rprovidesHelper, ['something',
+                                      getopts( { 'arch':'something',
+                                                 'release':'something' } ),
+                                      any( 'something' ) ] );
+    whatprovides = wrap(rprovidesHelper, ['something',
+                                      getopts( { 'arch':'something',
+                                                 'release':'something' } ),
+                                      any( 'something' ) ] );
 
     def provides(self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -671,8 +698,10 @@ class Judd(callbacks.Plugin):
             irc.reply("Cannot find the package %s in %s/%s." % \
                             (package, release, arch) )
 
-    provides = wrap(provides, ['something', getopts( { 'arch':'something',
-                                              'release':'something' } ), optional( 'something' ) ] )
+    provides = wrap(provides, ['something',
+                              getopts( { 'arch':'something',
+                                         'release':'something' } ),
+                              any( 'something' ) ] )
 
     def danke( self, irc, msg, args ):
         """
@@ -699,8 +728,9 @@ class Judd(callbacks.Plugin):
             irc.reply( "Sorry, there is no record of a source package for the binary package '%s' in %s/%s." % \
                   ( package, release, arch ) )
 
-    src = wrap(source, ['something', getopts( { 'release':'something' } ),
-                           optional( 'something' ) ] );
+    src = wrap(source, ['something',
+                        getopts( { 'release':'something' } ),
+                        any( 'something' ) ] );
 
     def binaries( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>]
@@ -721,8 +751,9 @@ class Judd(callbacks.Plugin):
             irc.reply("Cannot find the package %s in %s/%s." % \
                             (package, release, arch) )
 
-    binaries = wrap(binaries, ['something', getopts( { 'release':'something' } ),
-                           optional( 'something' ) ] );
+    binaries = wrap(binaries, ['something',
+                              getopts( { 'release':'something' } ),
+                              any( 'something' ) ] );
 
     def builddep( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>]
@@ -752,7 +783,9 @@ class Judd(callbacks.Plugin):
 
         irc.reply(bdformat(package, bd, bdi))
 
-    builddep = wrap(builddep, ['something', getopts( { 'release':'something' } ), optional( 'something' )] );
+    builddep = wrap(builddep, ['something',
+                                getopts( { 'release':'something' } ),
+                                any( 'something' )] );
 
     def relationshipHelper( self, irc, msg, args, package, optlist, something, relation ):
         """Does the dirty work for each of the functions that show
@@ -795,7 +828,7 @@ class Judd(callbacks.Plugin):
 
     conflicts = wrap(conflicts, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                                 optional( 'something' )] );
+                                 any( 'something' )] );
 
     def depends( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -819,7 +852,7 @@ class Judd(callbacks.Plugin):
 
     recommends = wrap(recommends, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                                   optional( 'something' )] );
+                                   any( 'something' )] );
 
     def suggests( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -831,7 +864,7 @@ class Judd(callbacks.Plugin):
 
     suggests = wrap(suggests, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                               optional( 'something' ) ] );
+                               any( 'something' ) ] );
 
     def enhances( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -843,7 +876,7 @@ class Judd(callbacks.Plugin):
 
     enhances = wrap(enhances, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                               optional( 'something' ) ] );
+                               any( 'something' ) ] );
 
     def checkdeps( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>] [--type depends|recommends|suggests|conflicts]
@@ -870,7 +903,8 @@ class Judd(callbacks.Plugin):
         if not relation:
             relation = knownRelations
 
-        r = Release(self.psql, arch=arch, release=release)
+        releases = self.listDependentReleases(release)
+        r = Release(self.psql, arch=arch, release=releases)
         relchecker = RelationChecker(r)
 
         badlist = []
@@ -890,10 +924,11 @@ class Judd(callbacks.Plugin):
             irc.reply( "%s in %s/%s: all dependencies satisfied." % \
                         ( package, release, arch) )
 
-    checkdeps = wrap(checkdeps, ['something', getopts( { 'arch':'something',
-                                                         'release':'something',
-                                                         'type':'something' } ),
-                               optional( 'something' ) ] );
+    checkdeps = wrap(checkdeps, ['something',
+                                  getopts( { 'arch':'something',
+                                             'release':'something',
+                                             'type':'something' } ),
+                                  any( 'something' ) ] );
 
     def checkBuildDepsHelper(self, relchecker, source):
         def checkRel(rel):
@@ -919,6 +954,23 @@ class Judd(callbacks.Plugin):
             ]
         return filter(None, l)
 
+    def listDependentReleases(self, release, suffixes=[], includeSelf=True):
+        """
+        List the releases that should also be included in the dependency analysis
+        """
+        rs = []
+        if includeSelf: rs.append(release)
+        parts = release.split('-')
+        if len(parts) > 1:
+            r = CleanReleaseName(name=parts[0], default=None)
+            if r:
+                rs.append(r)
+        for s in suffixes:
+            r = CleanReleaseName(name="%s-%s" % (parts[0], s), default=None)
+            if r:
+                rs.append(r)
+        return rs
+
     def checkbuilddeps( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>] [--arch <i386>]
 
@@ -928,7 +980,8 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        r = Release(self.psql, arch=arch, release=release)
+        releases = self.listDependentReleases(release)
+        r = Release(self.psql, arch=arch, release=releases)
         relchecker = RelationChecker(r)
 
         s = r.Source(package)
@@ -945,13 +998,13 @@ class Judd(callbacks.Plugin):
             irc.reply( "%s in %s/%s: all build-dependencies satisfied." % \
                         ( package, release, arch) )
 
-    checkbuilddeps = wrap(checkbuilddeps, ['something', getopts( {'arch':'something',
-                                                         'release':'something',
-                                                         } ),
-                               optional( 'something' ) ] );
+    checkbuilddeps = wrap(checkbuilddeps, ['something',
+                                            getopts( {'arch':'something',
+                                                      'release':'something'} ),
+                                            any( 'something' ) ] );
 
 
-    def checkbackport( self, irc, msg, args, package, optlist, something ):
+    def checkbackport( self, irc, msg, args, package, optlist ):
         """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <i386>]
 
         Check that the build-dependencies listed by a package in the release
@@ -960,33 +1013,11 @@ class Judd(callbacks.Plugin):
         By default, a backport from unstable to the current stable release 
         and i386 are used.
         """
-        fromrelease=""
-        torelease=""
-        arch=""
-        for( option,arg ) in optlist:
-            if option=='fromrelease':
-                fromrelease=arg;
-            if option=='torelease':
-                torelease=arg;
-            elif option=='arch':
-                arch=arg;
+        fromrelease = CleanReleaseName(optlist=optlist, optname='fromrelease', default='unstable')
+        torelease   = CleanReleaseName(optlist=optlist, optname='torelease',   default='stable')
+        arch        = CleanArchName   (optlist=optlist)
 
-        if not fromrelease in releases:
-            fromrelease='sid'
-        if not torelease in releases:
-            torelease='lenny'
-
-        if release_map.has_key( fromrelease ):
-            fromrelease = release_map[ fromrelease ]
-        if release_map.has_key( torelease ):
-            torelease = release_map[ torelease ]
-
-        backportrelease = "%s-backports" % torelease
-        if release_map.has_key( backportrelease ):
-            backportrelease = release_map[ backportrelease ]
-
-        if not arch in arches:
-            arch='i386'
+        backportrelease = CleanReleaseName(name="%s-backports" % torelease, default=None)
 
         fr = Release(self.psql, arch=arch, release=fromrelease)
         tr = Release(self.psql, arch=arch, release=torelease)
@@ -1001,6 +1032,7 @@ class Judd(callbacks.Plugin):
 
         badlists = self.checkBuildDepsHelper(relchecker, s)
         if badlists[0] or badlists[1]:  # packages missing, try backports
+            # FIXME: don't check backports if the release doesn't exist
             brelchecker = RelationChecker(br)
             bbadrels,  bgoodrels  = brelchecker.CheckRelationsList(badlists[0])
             bibadrels, bigoodrels = brelchecker.CheckRelationsList(badlists[1])
@@ -1019,11 +1051,10 @@ class Judd(callbacks.Plugin):
             irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied." % \
                         (package, fromrelease, torelease, arch))
 
-    checkbackport = wrap(checkbackport, ['something', getopts( {'arch':'something',
-                                                         'fromrelease':'something',
-                                                         'torelease':'something',
-                                                         } ),
-                               optional( 'something' ) ] );
+    checkbackport = wrap(checkbackport, ['something',
+                                          getopts( {'arch':'something',
+                                                    'fromrelease':'something',
+                                                    'torelease':'something' } )] );
 
     def bug( self, irc, msg, args, bugno ):
         """
