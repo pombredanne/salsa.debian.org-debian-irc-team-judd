@@ -52,7 +52,7 @@ import subprocess
 #from supybot.utils.iter import all, imap, ifilter
 from PackageFileList import PackageFileList
 
-release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny' }
+release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny', 'stable-backports':'lenny-backports' }
 releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'lenny-backports', 'lenny-volatile', 'squeeze', 'squeeze-security', 'squeeze-multimedia', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
 
 arches = [ 'alpha', 'amd64', 'arm', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
@@ -144,49 +144,71 @@ class RelationChecker():
         return bad, good
 
     def CheckRelationsList(self, relationlist):
-        bad = []
-        good = []
+        bad  = RelationshipList()
+        good = RelationshipList()
         for opts in relationlist:
-            #print "Considering fragment %s" % opts
+            #print "Considering fragment %s" % str(opts)
             satisfied = False
-            while not satisfied and len(opts):
-                item = opts.pop(0)
+            for item in opts:
                 #print "== part %s (%d)" % (item, len(opts))
-                satisfied = self.RelationSatisfied(item['package'], \
-                                          item['operator'], item['version'],
-                                          item['arch'])
+                satisfied = self.RelationSatisfied(item)
+                if satisfied: break
             if not satisfied:
-                bad.append(item)
+                bad.append(opts)
             else:
-                good.append(item)
+                good.append(opts)
         return bad, good
 
-    def RelationSatisfied(self, package, operator=None, depversion=None, arch=None):
-        print "Checking relationship for '%s', '%s', '%s' on %s" % \
-                      (package, operator, depversion, arch)
-        p = self.release.Package(package)
+    def CheckRelationArch(self, arch):
+        """
+        Compare the architecture restriction to the arch of the release being studied.
+        Examples:
+          i386
+          i386 amd64
+          !i386 !amd64
+        See http://www.debian.org/doc/debian-policy/ch-relationships.html for details
+        """
+        if not arch:  # if there are no restrictions then it applies
+            return True
+
+        # Policy requires that all specifiers be positive or all be negative
+        neg = arch[0].startswith('!')
+        if neg:
+            a = map(lambda x: x[1:], arch)
+            #print "Negated match"
+            return not self.release.arch in a
+        return self.release.arch in arch
+
+    def RelationSatisfied(self, rel):
+        #print "Checking relationship for '%s', '%s', '%s' on %s" % \
+        #             (rel.package, rel.operator, rel.version, rel.arch)
+        if not self.CheckRelationArch(rel.arch):
+            #print "    doesn't apply"
+            return True
+
+        p = self.release.Package(rel.package)
         if not p.Found():
           return p.IsVirtual()
 
         version = p.data['version']
         # see policy s7.1
         # http://www.debian.org/doc/debian-policy/ch-relationships.html
-        if operator:
-            depver = debian_support.Version(depversion)   # version from dep line
-            relver = debian_support.Version(version)      # version in archive
-            print "versions comparison %s %s %s %s" % (package, relver, operator, depver)
-            if operator == ">>": # strictly greater than
-                return relver > depver
-            if operator == ">=": # greater than or equal to
-                return relver >= depver
-            if operator == "=": # equal to
-                return relver == depver
-            if operator == "<=": # less than or equal to
-                return relver >= depver
-            if operator == "<<": # strictly less than
-                return relver < depver
+        if rel.operator:
+            depver = debian_support.Version(rel.version)  # version from dep line
+            aver   = debian_support.Version(version)      # version in archive
+            #print "    versions comparison %s %s %s %s" % (rel.package, aver, rel.operator, depver)
+            if rel.operator == ">>": # strictly greater than
+                return aver > depver
+            if rel.operator == ">=": # greater than or equal to
+                return aver >= depver
+            if rel.operator == "=": # equal to
+                return aver == depver
+            if rel.operator == "<=": # less than or equal to
+                return aver >= depver
+            if rel.operator == "<<": # strictly less than
+                return aver < depver
             raise ValueError("Odd relation found for dependency %s: %s %s %s" % \
-                                (package, relversion, operator, depversion))
+                                (rel.package, relver, rel.operator, depver))
         else:
             return True
 
@@ -264,49 +286,12 @@ class Package:
         return self.data[relation]
 
     def RelationsEntryList(self, relation):
+        rels = RelationshipList()
         if self.data[relation]:
-            rels = []
             for r in re.split(r"\s*,\s*", self.data[relation]):
-                rset = []
-                for rel in self._SplitOptions(r):
-                    #print "found rel=%s" % rel
-                    p, o, v, a = self._ParseRelation(rel)
-                    if a: a = a.split(' ')
-                    rset.append({
-                                  'relation': rel,
-                                  'package':  p,
-                                  'operator': o,
-                                  'version':  v,
-                                  'arch':     a
-                                })
-                rels.append(rset)
-            return rels
-        else:
-            return []
-
-    def _SplitOptions(self, item):
-        return re.split(r"\s*\|\s*", item)
-
-    def _ParseRelation(self, relationship):
-        #print "checking item %s" % item
-        m = re.match(r"""(?x)
-                  (?P<package>[\w\d.+-]+)
-                  (?:
-                    \s*
-                    \(\s*
-                      (?P<rel>\>\>|\>=|=|\<\<|\<=)\s*(?P<version>[^\s]+)
-                    \s*\)
-                  )?
-                  (?:
-                    \s*
-                    \[\s*
-                      (?P<arch>[^]]+)
-                    \s*\]
-                  )?
-                  """, relationship)
-        if not m:
-            pass        # this should never happen
-        return m.group('package'), m.group('rel'), m.group('version'), m.group('arch')
+                roptions = RelationshipOptions(r)
+                rels.append(roptions)
+        return rels
 
 class SourcePackage(Package):
     def __init__(self, dbconn, arch="i386", release="lenny", package=None, version=None, **kwargs):
@@ -342,6 +327,68 @@ class SourcePackage(Package):
         for row in c.fetchall():
             pkgs.append(row[0])
         return pkgs
+
+class Relationship:
+    def __init__(self, **kwargs):
+        self.relation = kwargs.get('relation', None)
+        self.package  = kwargs.get('package',  None)
+        self.operator = kwargs.get('operator', None)
+        self.version  = kwargs.get('version',  None)
+        self.arch     = kwargs.get('arch'   ,  None)
+        if self.relation and self.package:
+            raise ValueError("Cannot specify both the textual relation and the components")
+        if self.relation:
+            self._ParseRelation(self.relation)
+
+    def _ParseRelation(self, relationship):
+        #print "checking item %s" % item
+        m = re.match(r"""(?x)
+                  (?P<package>[\w\d.+-]+)
+                  (?:
+                    \s*
+                    \(\s*
+                      (?P<operator>\>\>|\>=|=|\<\<|\<=)\s*(?P<version>[^\s]+)
+                    \s*\)
+                  )?
+                  (?:
+                    \s*
+                    \[\s*
+                      (?P<arch>[^]]+)
+                    \s*\]
+                  )?
+                  """, relationship)
+        if not m:
+            raise ValueError("Couldn't parse the relationship expression")
+        self.package  = m.group('package')
+        self.operator = m.group('operator')
+        self.version  = m.group('version')
+        self.arch     = m.group('arch')
+        if self.arch:
+            self.arch = re.split(r"\s+", self.arch.strip())
+
+    def __str__(self):
+        if self.relation:
+            return self.relation
+        else:
+            return "%s %s %s [%s]" % \
+              (self.package, self.operator, self.version, " ".join(self.arch))
+
+class RelationshipOptions(list):
+    def __init__(self, options):
+        self.relation = options
+        for rel in self._SplitOptions(options):
+            #print "found rel=%s" % rel
+            self.append(Relationship(relation=rel))
+
+    def _SplitOptions(self, item):
+        return re.split(r"\s*\|\s*", item)
+
+    def __str__(self):
+        return self.relation
+
+class RelationshipList(list):
+    def __str__(self):
+        return ", ".join(map(lambda x: str(x), self[:]))
 
 class Judd(callbacks.Plugin):
     """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
@@ -830,8 +877,7 @@ class Judd(callbacks.Plugin):
         for rel in relation:
             badrels, goodrels = relchecker.Check(package, rel)
             if badrels:
-                rlist = map(lambda r: r['relation'], badrels)
-                badlist.append("%s: %s" % (self.bold(rel.title()), ", ".join(rlist)))
+                badlist.append("%s: %s" % (self.bold(rel.title()), str(badrels)))
             elif badrels == None:
                 irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
                                     (package, release, arch) )
@@ -850,19 +896,28 @@ class Judd(callbacks.Plugin):
                                optional( 'something' ) ] );
 
     def checkBuildDepsHelper(self, relchecker, source):
-        def checkRel(rel, longname):
+        def checkRel(rel):
             bd = source.RelationsEntryList(rel)
-            badrels,  goodrels  = relchecker.CheckRelationsList(bd)
-            if badrels:
-                rlist = map(lambda r: r['relation'], badrels)
-                return "%s: %s" % (self.bold(longname), ", ".join(rlist))
+            badrels, goodrels = relchecker.CheckRelationsList(bd)
+            return badrels
+
+        badlists = [
+                checkRel('build_depends'),
+                checkRel('build_depends_indep')
+              ]
+        return badlists
+
+    def buildDepsFormatter(self, rels):
+        def formatRel(rel, longname):
+            if rel:
+                return "%s: %s" % (self.bold(longname), str(rel))
             return None
 
-        badlist = [
-                checkRel('build_depends', 'Build-Depends'),
-                checkRel('build_depends_indep', 'Build-Depends-Indep')
+        l = [
+               formatRel(rels[0], 'Build-Depends'),
+               formatRel(rels[1], 'Build-Depends-Indep')
             ]
-        return filter(None, badlist)
+        return filter(None, l)
 
     def checkbuilddeps( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>] [--arch <i386>]
@@ -882,7 +937,7 @@ class Judd(callbacks.Plugin):
                                 (package, release) )
             return
 
-        badlist = self.checkBuildDepsHelper(relchecker, s)
+        badlist = self.buildDepsFormatter(self.checkBuildDepsHelper(relchecker, s))
         if badlist:
             irc.reply( "%s in %s/%s unsatisfiable build dependencies: %s." % \
                         ( package, release, arch, "; ".join(badlist) ) )
