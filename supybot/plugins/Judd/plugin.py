@@ -950,6 +950,81 @@ class Judd(callbacks.Plugin):
                                                          } ),
                                optional( 'something' ) ] );
 
+
+    def checkbackport( self, irc, msg, args, package, optlist, something ):
+        """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <i386>]
+
+        Check that the build-dependencies listed by a package in the release
+        specified as "fromrelease" are satisfiable for in "torelease" for the
+        given host architecture.
+        By default, a backport from unstable to the current stable release 
+        and i386 are used.
+        """
+        fromrelease=""
+        torelease=""
+        arch=""
+        for( option,arg ) in optlist:
+            if option=='fromrelease':
+                fromrelease=arg;
+            if option=='torelease':
+                torelease=arg;
+            elif option=='arch':
+                arch=arg;
+
+        if not fromrelease in releases:
+            fromrelease='sid'
+        if not torelease in releases:
+            torelease='lenny'
+
+        if release_map.has_key( fromrelease ):
+            fromrelease = release_map[ fromrelease ]
+        if release_map.has_key( torelease ):
+            torelease = release_map[ torelease ]
+
+        backportrelease = "%s-backports" % torelease
+        if release_map.has_key( backportrelease ):
+            backportrelease = release_map[ backportrelease ]
+
+        if not arch in arches:
+            arch='i386'
+
+        fr = Release(self.psql, arch=arch, release=fromrelease)
+        tr = Release(self.psql, arch=arch, release=torelease)
+        br = Release(self.psql, arch=arch, release=backportrelease)
+        relchecker = RelationChecker(tr)
+
+        s = fr.Source(package)
+        if not s.Found():
+            irc.reply("Sorry, no package named '%s' was found in %s." % \
+                                (package, fromrelease))
+            return
+
+        badlists = self.checkBuildDepsHelper(relchecker, s)
+        if badlists[0] or badlists[1]:  # packages missing, try backports
+            brelchecker = RelationChecker(br)
+            bbadrels,  bgoodrels  = brelchecker.CheckRelationsList(badlists[0])
+            bibadrels, bigoodrels = brelchecker.CheckRelationsList(badlists[1])
+            stillbadrels = self.buildDepsFormatter([bbadrels, bibadrels])
+            if stillbadrels:
+                backnote = ""
+                if backportrelease:
+                    backnote = " (also checked %s)" % backportrelease
+                irc.reply("Backport check for %s in %s->%s/%s shows unsatisfiable build dependencies: %s%s." % \
+                        (self.bold(package), fromrelease, torelease, arch, "; ".join(stillbadrels), backnote))
+            else: #all ok but needed backports
+                goodbackrels = self.buildDepsFormatter([bgoodrels, bigoodrels])
+                irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied. Used %s for %s." % \
+                        (self.bold(package), fromrelease, torelease, arch, backportrelease, "; ".join(goodbackrels)))
+        else:
+            irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied." % \
+                        (package, fromrelease, torelease, arch))
+
+    checkbackport = wrap(checkbackport, ['something', getopts( {'arch':'something',
+                                                         'fromrelease':'something',
+                                                         'torelease':'something',
+                                                         } ),
+                               optional( 'something' ) ] );
+
     def bug( self, irc, msg, args, bugno ):
         """
         Show information about a bug in a given pacage.  
