@@ -37,13 +37,25 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('versions libc6')                   # all versions; show oldstable->experimental
         self.assertNotError('versions libc6 --release sid')     # one version; only show sid
         self.assertNotError('versions libc6 --arch amd64')      # one arch; show amd64 instead
-        self.assertNotError('versions libc6 --release qwerty')  # no such release; should default to lenny
-        self.assertNotError('versions libc6 --arch qwerty')     # no such arch; should default to i386
+        self.assertNotError('versions libc6 --release qwerty')  # no such release; defaults to lenny
+        self.assertNotError('versions libc6 --arch qwerty')     # no such arch; defaults to i386
+        self.assertNotError('versions libc6 amd64')             # implicit arch; show amd64 instead of i386
+        self.assertNotError('versions libc6 sid')               # implicit release; show sid only
+        self.assertNotError('versions libc6 amd64 sid')         # implicit release; show amd64,sid only
         self.assertNotError('versions nosuchpackage')           # package not found; no such package in the archive
+
+    def testNames(self):
+        self.assertNotError('names libc6')                      # exact match; one package only (libc6)
+        self.assertNotError('names libc6*')                     # terminal wildcard; lots of packages (libc6, libc6-dev, ....)
+        self.assertNotError('names latexdraw --release sid')    # release selection; only in sid
+        self.assertNotError('names libc6.1 --arch ia64')        # arch selection; only in amd64
+        self.assertNotError('names nosuchpackage')              # package not found; no such package in the archive
 
     def testInfo(self):
         self.assertNotError('info libc6')                       # package info stable; only show stable
-        self.assertNotError('info libc6 --release sid')         # package info sid; only show sid
+        self.assertNotError('info libc6 --release sid')         # package info sid with homepage; only show sid, include homepage URL too
+        self.assertNotError('info libc6 --arch amd64')          # package info amd64; only show sid
+        self.assertNotError('info synaptic')                    # package info with screenshot; include screenshot URL too
         self.assertNotError('info nosuchpackage')               # package not found; no such package in the archive
 
     def testArch(self):
@@ -97,19 +109,47 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('builddep libc6')                   # build-deps by binary; give build-deps of (e)glibc package
         self.assertNotError('builddep nosuchpackage')           # package not found; no such package in the archive
 
+    def testCheckDeps(self):
+        self.assertNotError('checkdeps libc6')                  # all dependencies present; all depends, recommends and suggests are fulfilled
+        self.assertNotError('checkdeps openjdk-6-jre-headless') # missing recommends; package ca-certificates-java is recommended but not in lenny
+        self.assertNotError('checkdeps openjdk-6-jre-headless --release sid') # check release selection; all relations fulfilled
+        self.assertNotError('checkdeps ffmpeg --release lenny-multimedia') # check release fallback; all relations fulfilled only if fallback to main archive
+        self.assertNotError('checkdeps nosuchpackage')          # package not found; no such package in the archive
+
+    def testCheckBuildDeps(self):
+        self.assertNotError('checkbuilddeps eglibc --release sid') # source package selection; build-deps are fulfilled
+        self.assertNotError('checkbuilddeps libc6')             # binary package selection; build-deps are fulfilled
+        self.assertNotError('checkbuilddeps ffmpeg --release lenny-multimedia') # fallback to official repo; all build-deps are fulfilled but only if lenny itself is included
+        self.assertNotError('checkbuilddeps nosuchpackage')     # package not found; no such package in the archive
+
+    def testCheckbackport(self):
+        self.assertNotError('checkbackport debhelper')          # simple sid backport; all build-deps should be fulfilled
+        self.assertNotError('checkbackport iceweasel')          # backport requires bpo as well; all build-deps should be fulfilled with some from backports.org
+        self.assertNotError('checkbackport iceweasel --torelease etch') # backport not possible; impossible build-deps in etch+etch-backports
+        self.assertNotError('checkbackport iceweasel --fromrelease lenny --torelease etch') # from/to release selection; impossible build-deps in etch+etch-backports
+        self.assertNotError('checkbackport python-pyx')         # bin2src autoselection; impossible build-deps in lenny+lenny-backports
+        self.assertNotError('checkbackport nosuchpackage')      # package not found; no such package in the archive
+
     def testPopcon(self):
         self.assertNotError('popcon perl')                      # list popcon; popular package
         self.assertNotError('popcon nosuchpackage')             # package not found; no such package in the archive
 
     def testMaintainer(self):
         self.assertNotError('maintainer perl')                  # show maintainer; maintianer, uploader and changer
+        self.assertNotError('maintainer python-pyx')            # auto bin2src test; maintianer, uploader and changer for source package pyx
         self.assertNotError('maintainer nosuchpackage')         # package not found; no such package in the archive
+
+    def testRecent(self):
+        self.assertNotError('recent perl')                      # show recent upload; last 10 uploads of perl
+        self.assertNotError('recent python-pyx')                # auto bin2src test; show last 10 uploads of pyx
+        self.assertNotError('recent nosuchpackage')             # package not found; no such package in the archive
 
     def testBugs(self):
         # this is known to be broken at present
         pass
 
     def testFile(self):
+        # TODO: test other architectures and releases as well
         self.assertNotError('file /usr/bin/perl')               # absolute file exists ; /usr/bin/perl in perl
         self.assertNotError('file bin/perl')                    # fragment file exists ; /usr/bin/perl in perl
         self.assertNotError('file *bin/perl*')                  # fragment file exists ; /usr/bin/perl in perl, /usr/bin/perldoc in perldoc

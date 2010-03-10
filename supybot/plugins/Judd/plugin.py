@@ -840,7 +840,7 @@ class Judd(callbacks.Plugin):
 
     depends = wrap(depends, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                                 optional( 'something' )] );
+                                 any( 'something' )] );
 
     def recommends( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -1020,6 +1020,7 @@ class Judd(callbacks.Plugin):
         backportrelease = CleanReleaseName(name="%s-backports" % torelease, default=None)
 
         fr = Release(self.psql, arch=arch, release=fromrelease)
+        # FIXME: should torelease do fallback to allow --torelease lenny-multimedia etc?
         tr = Release(self.psql, arch=arch, release=torelease)
         br = Release(self.psql, arch=arch, release=backportrelease)
         relchecker = RelationChecker(tr)
@@ -1124,7 +1125,8 @@ class Judd(callbacks.Plugin):
 
             irc.reply( reply )
         else:
-            source = self.bin2src(package, 'sid')
+            r = Release(self.psql, release=CleanReleaseName(name='unstable'))
+            source = r.bin2src(package)
             if source:
                 return self.uploaderHelper(irc, msg, args, source, version)
             elif version:
@@ -1157,7 +1159,8 @@ class Judd(callbacks.Plugin):
                         (package, ", ".join(uploads))
             irc.reply( reply )
         else:
-            source = self.bin2src(package, 'sid')
+            r = Release(self.psql, release=CleanReleaseName(name='unstable'))
+            source = r.bin2src(package)
             if source:
                 return self.recentHelper(irc, msg, args, source, version)
             irc.reply( "Sorry, there is no record of source package '%s'." % package )
