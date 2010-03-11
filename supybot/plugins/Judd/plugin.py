@@ -158,27 +158,44 @@ class RelationChecker():
     def Check(self, package=None, relation='depends'):
         p = self.release.Package(package)
         if not p.Found():
-            return None, None
-        bad, good = self.CheckRelationsList(p.RelationsEntryList(relation))
+            return None
+        status = self.CheckRelationsList(p.RelationsEntryList(relation))
         if relation == 'conflicts':
-            return good, bad
-        return bad, good
+            status.swap()
+        return status
+
+    def CheckBuildDeps(self, package=None, bdList=None, bdiList=None):
+        s = package
+        if type(package) == str:
+            s = self.release.Source(package)
+        if not (s and s.Found()) and not (bdList or bdiList):
+            return None
+        if not bdList and s:
+            bdList = s.RelationsEntryList('build_depends')
+        if not bdiList and s:
+            bdiList = s.RelationsEntryList('build_depends_indep')
+        bdstatus  = self.CheckRelationsList(bdList)
+        bdistatus = self.CheckRelationsList(bdiList)
+        return BuildDepStatus(bdstatus, bdistatus)
 
     def CheckRelationsList(self, relationlist):
-        bad  = RelationshipList()
-        good = RelationshipList()
+        status = RelationshipStatus()
         for opts in relationlist:
             #print "Considering fragment %s" % str(opts)
             satisfied = False
             for item in opts:
                 #print "== part %s (%d)" % (item, len(opts))
                 satisfied = self.RelationSatisfied(item)
-                if satisfied: break
+                if satisfied:
+                    opts.satisfiedBy = item
+                    opts.virtual     = item.virtual
+                    opts.satisfied   = True
+                    break
             if not satisfied:
-                bad.append(opts)
+                status.bad.append(opts)
             else:
-                good.append(opts)
-        return bad, good
+                status.good.append(opts)
+        return status
 
     def CheckRelationArch(self, arch):
         """
@@ -205,11 +222,13 @@ class RelationChecker():
         #             (rel.package, rel.operator, rel.version, rel.arch)
         if not self.CheckRelationArch(rel.arch):
             #print "    doesn't apply"
+            rel.archIgnore = True
             return True
 
         p = self.release.Package(rel.package)
         if not p.Found():
-          return p.IsVirtual()
+          self.virtual = p.IsVirtual()
+          return self.virtual
 
         version = p.data['version']
         # see policy s7.1
@@ -362,6 +381,8 @@ class Relationship:
         self.operator = kwargs.get('operator', None)
         self.version  = kwargs.get('version',  None)
         self.arch     = kwargs.get('arch'   ,  None)
+        self.archIgnore  = False
+        self.virtual     = False
         if self.relation and self.package:
             raise ValueError("Cannot specify both the textual relation and the components")
         if self.relation:
@@ -403,6 +424,9 @@ class Relationship:
 class RelationshipOptions(list):
     def __init__(self, options):
         self.relation = options
+        self.satisfiedBy = None
+        self.satisfied   = False
+        self.virtual     = False
         for rel in self._SplitOptions(options):
             #print "found rel=%s" % rel
             self.append(Relationship(relation=rel))
@@ -416,6 +440,42 @@ class RelationshipOptions(list):
 class RelationshipList(list):
     def __str__(self):
         return ", ".join(map(lambda x: str(x), self[:]))
+
+class RelationshipStatus():
+    def __init__(self):
+        self.good = RelationshipList()
+        self.bad  = RelationshipList()
+
+    def swap(self):
+        temp = self.bad
+        self.bad = self.good
+        self.good = temp
+
+    def getRel(self, name):
+        if name == 'good':
+            return self.good
+        if name == 'bad':
+            return self.bad
+        raise ValueError('requested type must be either good or bad')
+
+class BuildDepStatus():
+    def __init__(self, bd=None, bdi=None):
+        if bd:
+            self.bd  = bd
+        else:
+            self.bd  = RelationshipStatus()
+        if bdi:
+            self.bdi = bdi
+        else:
+            self.bdi = RelationshipStatus()
+
+    def AllFound(self):
+        return not(self.bd.bad or self.bdi.bad)
+
+class SolverHierarchy():
+    def __init__(self):
+        self.depends    = RelationshipStatus()
+        self.recommends = RelationshipStatus()
 
 class Judd(callbacks.Plugin):
     """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
@@ -909,13 +969,13 @@ class Judd(callbacks.Plugin):
 
         badlist = []
         for rel in relation:
-            badrels, goodrels = relchecker.Check(package, rel)
-            if badrels:
-                badlist.append("%s: %s" % (self.bold(rel.title()), str(badrels)))
-            elif badrels == None:
+            status = relchecker.Check(package, rel)
+            if status == None:
                 irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
                                     (package, release, arch) )
                 return
+            if status.bad:
+                badlist.append("%s: %s" % (self.bold(rel.title()), str(status.bad)))
 
         if badlist:
             irc.reply( "%s in %s/%s unsatisfiable dependencies: %s." % \
@@ -930,27 +990,58 @@ class Judd(callbacks.Plugin):
                                              'type':'something' } ),
                                   any( 'something' ) ] );
 
-    def checkBuildDepsHelper(self, relchecker, source):
-        def checkRel(rel):
-            bd = source.RelationsEntryList(rel)
-            badrels, goodrels = relchecker.CheckRelationsList(bd)
-            return badrels
 
-        badlists = [
-                checkRel('build_depends'),
-                checkRel('build_depends_indep')
-              ]
-        return badlists
+    def checkinstall( self, irc, msg, args, package, optlist, something ):
+        """<packagename> [--arch <i386>] [--release <lenny>] [--norecommends]
 
-    def buildDepsFormatter(self, rels):
+        Check that the package is installable (i.e. dependencies checked recursively)
+        within the specified release and architecture.
+        By default, recommended packages are checked too and the current 
+        stable release and i386 are used.
+        """
+        release,arch = parse_standard_options( optlist, something )
+        withrecommends = true
+        for (option,arg) in optlist:
+            if option=='norecommends':
+              withrecommends = False
+
+        releases = self.listDependentReleases(release)
+        r = Release(self.psql, arch=arch, release=releases)
+        relchecker = RelationChecker(r)
+
+        dbad, dgood, rbad, rgood, dnotchecked, rnotchecked = r.CheckInstall(package, withrecommends)
+        #badlist = []
+        #for rel in relation:
+            #badrels, goodrels = relchecker.Check(package, rel)
+            #if badrels:
+                #badlist.append("%s: %s" % (self.bold(rel.title()), str(badrels)))
+            #elif badrels == None:
+                #irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
+                                    #(package, release, arch) )
+                #return
+
+        #if badlist:
+            #irc.reply( "%s in %s/%s unsatisfiable dependencies: %s." % \
+                        #( package, release, arch, "; ".join(badlist) ) )
+        #else:
+            #irc.reply( "%s in %s/%s: all dependencies satisfied." % \
+                        #( package, release, arch) )
+
+    checkinstall = wrap(checkinstall, ['something',
+                                        getopts( { 'arch':'something',
+                                                  'release':'something',
+                                                  'norecommends':'' } ),
+                                        any( 'something' ) ] );
+
+    def buildDepsFormatter(self, bdstatus, data='bad'):
         def formatRel(rel, longname):
             if rel:
                 return "%s: %s" % (self.bold(longname), str(rel))
             return None
 
         l = [
-               formatRel(rels[0], 'Build-Depends'),
-               formatRel(rels[1], 'Build-Depends-Indep')
+               formatRel(bdstatus.bd.getRel(data),  'Build-Depends'),
+               formatRel(bdstatus.bdi.getRel(data), 'Build-Depends-Indep')
             ]
         return filter(None, l)
 
@@ -984,14 +1075,14 @@ class Judd(callbacks.Plugin):
         r = Release(self.psql, arch=arch, release=releases)
         relchecker = RelationChecker(r)
 
-        s = r.Source(package)
-        if not s.Found():
+        status = relchecker.CheckBuildDeps(package)
+        if not status:
             irc.reply( "Sorry, no package named '%s' was found in %s." % \
                                 (package, release) )
             return
 
-        badlist = self.buildDepsFormatter(self.checkBuildDepsHelper(relchecker, s))
-        if badlist:
+        if not status.AllFound():
+            badlist = self.buildDepsFormatter(status)
             irc.reply( "%s in %s/%s unsatisfiable build dependencies: %s." % \
                         ( package, release, arch, "; ".join(badlist) ) )
         else:
@@ -1031,13 +1122,12 @@ class Judd(callbacks.Plugin):
                                 (package, fromrelease))
             return
 
-        badlists = self.checkBuildDepsHelper(relchecker, s)
-        if badlists[0] or badlists[1]:  # packages missing, try backports
+        status = relchecker.CheckBuildDeps(s)
+        if not status.AllFound():  # packages missing, try backports
             # FIXME: don't check backports if the release doesn't exist
             brelchecker = RelationChecker(br)
-            bbadrels,  bgoodrels  = brelchecker.CheckRelationsList(badlists[0])
-            bibadrels, bigoodrels = brelchecker.CheckRelationsList(badlists[1])
-            stillbadrels = self.buildDepsFormatter([bbadrels, bibadrels])
+            bstatus  = brelchecker.CheckBuildDeps(bdList=status.bd.bad, bdiList=status.bdi.bad)
+            stillbadrels = self.buildDepsFormatter(bstatus)
             if stillbadrels:
                 backnote = ""
                 if backportrelease:
@@ -1045,7 +1135,7 @@ class Judd(callbacks.Plugin):
                 irc.reply("Backport check for %s in %s->%s/%s shows unsatisfiable build dependencies: %s%s." % \
                         (self.bold(package), fromrelease, torelease, arch, "; ".join(stillbadrels), backnote))
             else: #all ok but needed backports
-                goodbackrels = self.buildDepsFormatter([bgoodrels, bigoodrels])
+                goodbackrels = self.buildDepsFormatter(bstatus, data='good')
                 irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied. Used %s for %s." % \
                         (self.bold(package), fromrelease, torelease, arch, backportrelease, "; ".join(goodbackrels)))
         else:
