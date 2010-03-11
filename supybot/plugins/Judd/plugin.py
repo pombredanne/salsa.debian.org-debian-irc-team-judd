@@ -190,6 +190,7 @@ class RelationChecker():
                     opts.satisfiedBy = item
                     opts.virtual     = item.virtual
                     opts.satisfied   = True
+                    opts.package     = item.packagedata
                     break
             if not satisfied:
                 status.bad.append(opts)
@@ -227,30 +228,33 @@ class RelationChecker():
 
         p = self.release.Package(rel.package)
         if not p.Found():
-          self.virtual = p.IsVirtual()
-          return self.virtual
+          rel.virtual = p.IsVirtual()
+          return rel.virtual
 
         version = p.data['version']
         # see policy s7.1
         # http://www.debian.org/doc/debian-policy/ch-relationships.html
+        relOK = True
         if rel.operator:
             depver = debian_support.Version(rel.version)  # version from dep line
             aver   = debian_support.Version(version)      # version in archive
             #print "    versions comparison %s %s %s %s" % (rel.package, aver, rel.operator, depver)
             if rel.operator == ">>": # strictly greater than
-                return aver > depver
-            if rel.operator == ">=": # greater than or equal to
-                return aver >= depver
-            if rel.operator == "=": # equal to
-                return aver == depver
-            if rel.operator == "<=": # less than or equal to
-                return aver >= depver
-            if rel.operator == "<<": # strictly less than
-                return aver < depver
-            raise ValueError("Odd relation found for dependency %s: %s %s %s" % \
+                relOK = aver > depver
+            elif rel.operator == ">=": # greater than or equal to
+                relOK = aver >= depver
+            elif rel.operator == "=": # equal to
+                relOK = aver == depver
+            elif rel.operator == "<=": # less than or equal to
+                relOK = aver >= depver
+            elif rel.operator == "<<": # strictly less than
+                relOK = aver < depver
+            else:
+                raise ValueError("Odd relation found for dependency %s: %s %s %s" % \
                                 (rel.package, relver, rel.operator, depver))
-        else:
-            return True
+        if relOK:
+            rel.packagedata = p
+        return relOK
 
 class Package:
     fields  = ['*']
@@ -383,6 +387,7 @@ class Relationship:
         self.arch     = kwargs.get('arch'   ,  None)
         self.archIgnore  = False
         self.virtual     = False
+        self.packagedata = None
         if self.relation and self.package:
             raise ValueError("Cannot specify both the textual relation and the components")
         if self.relation:
@@ -427,6 +432,7 @@ class RelationshipOptions(list):
         self.satisfiedBy = None
         self.satisfied   = False
         self.virtual     = False
+        self.package     = None
         for rel in self._SplitOptions(options):
             #print "found rel=%s" % rel
             self.append(Relationship(relation=rel))
@@ -438,8 +444,17 @@ class RelationshipOptions(list):
         return self.relation
 
 class RelationshipList(list):
+    def ReleaseMap(self):
+        releases = {}
+        for i in self.__iter__():
+            r = i.package.data['release']
+            if not releases.has_key(r):
+                releases[r] = []
+            releases[r].append(i)
+        return releases
+
     def __str__(self):
-        return ", ".join(map(lambda x: str(x), self[:]))
+        return ", ".join(map(lambda x: str(x), self.__iter__()))
 
 class RelationshipStatus():
     def __init__(self):
@@ -471,6 +486,17 @@ class BuildDepStatus():
 
     def AllFound(self):
         return not(self.bd.bad or self.bdi.bad)
+
+    def ReleaseMap(self):
+        releases = {}
+        m = self.bd.good.ReleaseMap()
+        for r in m.keys():
+            releases[r] = m[r]
+        m = self.bdi.good.ReleaseMap()
+        for r in m.keys():
+            if not releases.has_key(r): releases[r] = []
+            releases[r].extend(m[r])
+        return releases
 
 class SolverHierarchy():
     def __init__(self):
@@ -1108,12 +1134,11 @@ class Judd(callbacks.Plugin):
         torelease   = CleanReleaseName(optlist=optlist, optname='torelease',   default='stable')
         arch        = CleanArchName   (optlist=optlist)
 
-        backportrelease = CleanReleaseName(name="%s-backports" % torelease, default=None)
-
         fr = Release(self.psql, arch=arch, release=fromrelease)
         # FIXME: should torelease do fallback to allow --torelease lenny-multimedia etc?
-        tr = Release(self.psql, arch=arch, release=torelease)
-        br = Release(self.psql, arch=arch, release=backportrelease)
+        tr = Release(self.psql, arch=arch, 
+                        release=self.listDependentReleases(torelease, suffixes=['backports']))
+        #br = Release(self.psql, arch=arch, release=backportrelease)
         relchecker = RelationChecker(tr)
 
         s = fr.Source(package)
@@ -1124,23 +1149,38 @@ class Judd(callbacks.Plugin):
 
         status = relchecker.CheckBuildDeps(s)
         if not status.AllFound():  # packages missing, try backports
-            # FIXME: don't check backports if the release doesn't exist
-            brelchecker = RelationChecker(br)
-            bstatus  = brelchecker.CheckBuildDeps(bdList=status.bd.bad, bdiList=status.bdi.bad)
-            stillbadrels = self.buildDepsFormatter(bstatus)
-            if stillbadrels:
-                backnote = ""
-                if backportrelease:
-                    backnote = " (also checked %s)" % backportrelease
-                irc.reply("Backport check for %s in %s->%s/%s shows unsatisfiable build dependencies: %s%s." % \
-                        (self.bold(package), fromrelease, torelease, arch, "; ".join(stillbadrels), backnote))
-            else: #all ok but needed backports
-                goodbackrels = self.buildDepsFormatter(bstatus, data='good')
-                irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied. Used %s for %s." % \
-                        (self.bold(package), fromrelease, torelease, arch, backportrelease, "; ".join(goodbackrels)))
+            badrels = self.buildDepsFormatter(status)
+            repolist = ""
+            if len(tr.release) > 1:
+                repolist = " Checked: %s" % ", ".join(tr.release)
+            irc.reply("Backport check for %s in %s->%s/%s shows unsatisfiable build dependencies: %s.%s" % \
+                    (self.bold(package), fromrelease, torelease, arch, "; ".join(badrels), repolist))
         else:
-            irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied." % \
-                        (package, fromrelease, torelease, arch))
+            rm = status.ReleaseMap()
+            for xr in filter(lambda x: x != torelease, rm.keys()):
+                extras.append("%s: %s" % (self.bold(xr),
+                    ", ".join([ i.package.data['package'] for i in rm[xr] ]) ) )
+            irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied. %s" % \
+                        (package, fromrelease, torelease, arch, "; ".join(extras)))
+
+        #if not status.AllFound():  # packages missing, try backports
+            ## FIXME: don't check backports if the release doesn't exist
+            #brelchecker = RelationChecker(br)
+            #bstatus  = brelchecker.CheckBuildDeps(bdList=status.bd.bad, bdiList=status.bdi.bad)
+            #stillbadrels = self.buildDepsFormatter(bstatus)
+            #if stillbadrels:
+                #backnote = ""
+                #if backportrelease:
+                    #backnote = " (also checked %s)" % backportrelease
+                #irc.reply("Backport check for %s in %s->%s/%s shows unsatisfiable build dependencies: %s%s." % \
+                        #(self.bold(package), fromrelease, torelease, arch, "; ".join(stillbadrels), backnote))
+            #else: #all ok but needed backports
+                #goodbackrels = self.buildDepsFormatter(bstatus, data='good')
+                #irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied. Used %s for %s." % \
+                        #(self.bold(package), fromrelease, torelease, arch, backportrelease, "; ".join(goodbackrels)))
+        #else:
+            #irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied." % \
+                        #(package, fromrelease, torelease, arch))
 
     checkbackport = wrap(checkbackport, ['something',
                                           getopts( {'arch':'something',
