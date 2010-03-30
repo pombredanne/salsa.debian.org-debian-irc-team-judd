@@ -330,7 +330,7 @@ class Judd(callbacks.Plugin):
         # (but - in package name is a word boundary)
         # \A is start string,        \Z is finish string
         # http://www.postgresql.org/docs/8.3/static/functions-matching.html
-        packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % re.sub(r"[^a-z\d\-+.]", "", package)
+        packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % re.escape(re.sub(r"[^a-z\d\-+.]", "", package))
         #print packagere
         c = self.psql.cursor()
         c.execute(r"""SELECT package
