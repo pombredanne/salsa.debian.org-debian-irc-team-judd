@@ -89,6 +89,14 @@ debug() {
   fi
 }
 
+cleanup() {
+  if $CLEANUP
+  then
+    debug 'I: cleaning up.'
+    /bin/rm -rf "$TEMPDIR"
+  fi
+}
+
 checktarget() {
   if [ -f "pci.ids" -a -f "versions" ]
   then
@@ -119,7 +127,7 @@ checkklist() {
 updatekernel() {
   # Find the latest version of the kernel that matches the regexp
   # (latest version of the kernel will be sorted to the end)
-  KERNEL=$(aptitude $APTARGS search ~n"$MATCH" -F'%p' -Oversion | tail -1)
+  KERNEL=$(aptitude "${APTARGS[@]}" search ~n"$MATCH" -F'%p' -Oversion | tail -1)
 
   if [ -z "$KERNEL" ]
   then
@@ -131,12 +139,12 @@ updatekernel() {
 
   # Work out what actual filename of the kernel package will be and the
   # version string of the kernel
-  PKGVER=$(apt-cache $APTARGS policy $KERNEL | sed -n "s,.*Candidate:\s*,,p")
-  KERNELDEB=$(apt-cache $APTARGS show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*_${PKGVER}_${ARCH}\),\1,p")
+  PKGVER=$(apt-cache "${APTARGS[@]}" policy $KERNEL | sed -n "s,.*Candidate:\s*,,p")
+  KERNELDEB=$(apt-cache "${APTARGS[@]}" show $KERNEL | sed -n "s,Filename:\s*.*/\([^/]*_${PKGVER}_${ARCH}\),\1,p")
   VER=$(echo $KERNEL | sed "s,linux-image-\(.*\),\1,")
 
-  OLDVER=$(awk "{FS=\", \"} /^\s*$NAME\s*,/ { print \$2 }" $TARGET/versions)
-  if [ -f $TARGET/modules.pcimap-$NAME -a -f $TARGET/config-$NAME ]
+  OLDVER=$(awk "{FS=\", \"} /^\s*$NAME\s*,/ { print \$2 }" "$TARGET/versions")
+  if [ -f "$TARGET/modules.pcimap-$NAME" -a -f "$TARGET/config-$NAME" ]
   then
     if dpkg --compare-versions "$PKGVER" le-nl "$OLDVER"
     then
@@ -147,11 +155,11 @@ updatekernel() {
 
   debug "I: Downloading kernel version $PKGVER ($KERNELDEB)."
 
-  (cd $WD && aptitude $APTARGS download $KERNEL > /dev/null)
+  (cd "$WD" && aptitude "${APTARGS[@]}" download $KERNEL > /dev/null)
 
   # Because aptitude download is run in a subshell, its failure won't
   # cause the entire script to die. Note the failure and keep going.
-  if [ ! -f $WD/$KERNELDEB ]
+  if [ ! -f "$WD/$KERNELDEB" ]
   then
     echo "E: Package '$KERNEL' could not be found for release $NAME"
     return
@@ -159,22 +167,22 @@ updatekernel() {
 
   debug "I: Unpacking kernel package."
   # Unpack the kernel package and create the modules map
-  dpkg -x $WD/$KERNELDEB $WD
+  dpkg -x "$WD/$KERNELDEB" "$WD"
   # If this is running on a squeeze or later machine, -m is also needed for depmod
   # (since this is running under "set -e", make sure the command never has a
   # non-zero exit status)
   DEPMODARGS=$(dpkg --compare-versions $(/sbin/depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m || echo)
-  /sbin/depmod $DEPMODARGS -b $WD $VER
+  /sbin/depmod $DEPMODARGS -b "$WD" "$VER"
 
   # Copy out the map file and kernel config
-  cp $WD/lib/modules/*/modules.pcimap $TARGET/modules.pcimap-$NAME
-  cp $WD/boot/config-* $TARGET/config-$NAME
+  cp "$WD"/lib/modules/*/modules.pcimap "$TARGET/modules.pcimap-$NAME"
+  cp "$WD"/boot/config-* "$TARGET/config-$NAME"
 
   # Record the versions of the kernels that have been obtained in the
   # file "versions". Create this file first if it doesn't exist.
-  if [ ! -f $TARGET/versions ]
+  if [ ! -f "$TARGET/versions" ]
   then
-    cat <<EOF >$TARGET/versions
+    cat <<EOF >"$TARGET/versions"
 # List of kernel versions found in the archive
 # Format:
 #   release,  package version,  uname -r
@@ -182,11 +190,11 @@ EOF
   fi
 
   # If it's a new kernel, add it to the list, otherwise edit the current entry
-  if grep -q "^\s*$NAME\s*," $TARGET/versions
+  if grep -q "^\s*$NAME\s*," "$TARGET/versions"
   then
-    sed -i "s/^\s*$NAME\s*,.*/$NAME, $PKGVER, $VER/" $TARGET/versions
+    sed -i "s/^\s*$NAME\s*,.*/$NAME, $PKGVER, $VER/" "$TARGET/versions"
   else
-    echo "$NAME, $PKGVER, $VER" >> $TARGET/versions
+    echo "$NAME, $PKGVER, $VER" >> "$TARGET/versions"
   fi
 }
 
@@ -199,19 +207,19 @@ updatexorg() {
 
   debug "I: Looking for xorg drivers."
 
-  mkdir -p $TARGET/xorg-$NAME
+  mkdir -p "$TARGET/xorg-$NAME"
 
-  (cd $WD && aptitude $APTARGS download '~nxserver-xorg-video-*!~n-dbg!~v' -F"%p" > /dev/null)
+  (cd "$WD" && aptitude "${APTARGS[@]}" download '~nxserver-xorg-video-*!~n-dbg!~v' -F"%p" > /dev/null)
 
   debug "I: Unpacking video drivers."
-  for i in $WD/*.deb
+  for i in "$WD"/*.deb
   do
-    dpkg -x $i $WD
+    dpkg -x "$i" "$WD"
   done
 
-  if [ $(ls -1 $WD/usr/share/xserver-xorg/pci/*.ids 2>/dev/null | wc -l) -gt 1 ]
+  if [ $(ls -1 "$WD"/usr/share/xserver-xorg/pci/*.ids 2>/dev/null | wc -l) -gt 1 ]
   then
-    cp $WD/usr/share/xserver-xorg/pci/*.ids $TARGET/xorg-$NAME/
+    cp "$WD"/usr/share/xserver-xorg/pci/*.ids "$TARGET/xorg-$NAME/"
   else
     echo "I: No xorg modules found for release '$NAME'."
   fi
@@ -251,7 +259,7 @@ then
   usage
 fi
 
-if [ ! -f $KLIST ]
+if [ ! -f "$KLIST" ]
 then
   echo "E: Couldn't find kernels.list file in specified location."
   usage
@@ -260,19 +268,19 @@ fi
 TEMPDIR=$(mktemp -t -d piccy_update.XXXXXX)
 debug "I: Working in temporary directory '$TEMPDIR'."
 
-trap "if $CLEANUP; then debug 'I: cleaning up.'; /bin/rm -rf $TEMPDIR ; fi; exit 1" INT QUIT
+trap "cleanup; exit 1" INT QUIT
 
 # Fetch the PCI-Ids
 debug "I: Fetching latest pci.ids file."
-wget -q -O $TEMPDIR/pci.ids $PCIIDURL
-mv $TEMPDIR/pci.ids $TARGET/$PCIIDFILE
+wget -q -O "$TEMPDIR/pci.ids" "$PCIIDURL"
+mv "$TEMPDIR/pci.ids" "$TARGET/$PCIIDFILE"
 
 # Fetch the wikimap if defined
-if [ -n $WIKIMAPURL ]
+if [ -n "$WIKIMAPURL" ]
 then
   debug "I: Fetching latest wikimap file."
-  wget -q -U Supybot -O $TEMPDIR/wikimap $WIKIMAPURL
-  mv $TEMPDIR/wikimap $TARGET/$WIKIMAPFILE
+  wget -q -U Supybot -O "$TEMPDIR/wikimap" "$WIKIMAPURL"
+  mv "$TEMPDIR/wikimap" "$TARGET/$WIKIMAPFILE"
 fi
 
 # Make short replacement for /usr/bin/gpgv to suppress apt's warnings
@@ -292,8 +300,8 @@ cat <<EOF 1>&$FD
 gpgv: Good signature from "Debian Archive Automatic Signing Key (4.0/etch) <ftpmaster@debian.org>"
 [GNUPG:] VALIDSIG A99951DAF9BB569BDB50AD90A70DAF536070D3A1 2009-02-25 1235551571 0 3 0 17 2 00 A99951DAF9BB569BDB50AD90A70DAF536070D3A1
 EOF
-' > $TEMPDIR/fakegpgv
-chmod +x $TEMPDIR/fakegpgv
+' > "$TEMPDIR/fakegpgv"
+chmod +x "$TEMPDIR/fakegpgv"
 
 
 grep -v '^#' $KLIST |
@@ -321,25 +329,25 @@ do
            /var/cache/apt/archives/partial \
            /var/lib/dpkg/
   do
-    mkdir -p $WD$d
+    mkdir -p "$WD$d"
   done
-  touch $WD/var/lib/dpkg/status
+  touch "$WD/var/lib/dpkg/status"
 
-  APTARGS="-o quiet=1000
-           -o Debug::NoLocking=true
-           -o Dir::State=$WD/var/lib/apt
-           -o Dir::State::status=$WD/var/lib/dpkg/status
-           -o Dir=$WD
-           -o APT::Architecture=$ARCH
-           -o APT::Get::AllowUnauthenticated=true
-           -o Dir::Bin::gpg=$TEMPDIR/fakegpgv
-"
-#            -o Aptitude::Debtags-Binary=/bin/true
+  APTARGS=(-o "quiet=1000"
+           -o "Debug::NoLocking=true"
+           -o "Dir::State=$WD/var/lib/apt"
+           -o "Dir::State::status=$WD/var/lib/dpkg/status"
+           -o "Dir=$WD"
+           -o "APT::Architecture=$ARCH"
+           -o "APT::Get::AllowUnauthenticated=true"
+           -o "Dir::Bin::gpg=$TEMPDIR/fakegpgv"
+#            -o "Aptitude::Debtags-Binary=/bin/true"
+          )
 
   # Create the sources.list and then grab the Packages file
   # multiple entries in the sources.list are separated by #s
-  echo "$SRC" | tr "#" "\n" > $WD/etc/apt/sources.list
-  apt-get $APTARGS update
+  echo "$SRC" | tr "#" "\n" > "$WD/etc/apt/sources.list"
+  apt-get "${APTARGS[@]}" update
 
   updatekernel
   updatexorg
@@ -347,18 +355,14 @@ do
   # Clean up the downloads so far to reduce disk usage during multiple updates
   if $CLEANUP
   then
-    rm -rf $WD
+    rm -rf "$WD"
   fi
 done
 
 # record that the update ran (even if there were no changes made)
-touch $TARGET/versions
+touch "$TARGET/versions"
 
 # Clean up the tempdir before exit
-if $CLEANUP
-then
-  debug "I: Cleaning up '$TEMPDIR'."
-  /bin/rm -rf $TEMPDIR
-fi
+cleanup
 
 exit 0
