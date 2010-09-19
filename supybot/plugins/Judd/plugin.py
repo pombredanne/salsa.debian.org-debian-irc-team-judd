@@ -158,7 +158,8 @@ class Judd(callbacks.Plugin):
             pkgs.append( row )
 
         if not pkgs:
-            irc.reply( "Sorry, no package named '%s' was found." % package )
+            irc.reply( "Sorry, no package named '%s' was found in %s/%s." %
+                  ( package, release, arch) )
             return
 
         pkgs.sort( lambda a,b: debian_support.version_compare( a['version'], b['version'] ) )
@@ -173,7 +174,7 @@ class Judd(callbacks.Plugin):
                                 (self.bold(row['release']), row['component'],
                                   row['version']))
 
-        irc.reply( "Package %s -- %s" % (package, "; ".join(replies)) )
+        irc.reply( "Package %s on %s -- %s" % (package, arch, "; ".join(replies)) )
 
     versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
 
@@ -263,8 +264,9 @@ class Judd(callbacks.Plugin):
                 d = ds[0]
             else:
                 d=""
-            reply = "Package %s (%s, %s): %s. Version: %s; Size: %0.1fk; Installed: %dk" % \
-                      ( package, row['section'], row['priority'], d,
+            reply = "Package %s (%s, %s) in %s/%s: %s. Version: %s; Size: %0.1fk; Installed: %dk" % \
+                      ( package, row['section'], row['priority'], 
+                        release, arch, d,
                         row['version'], row['size']/1024.0, row['installed_size'] )
             if row[6]:    # homepage field
                 reply += "; Homepage: %s" % row['homepage']
