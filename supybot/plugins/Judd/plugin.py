@@ -677,13 +677,13 @@ class Judd(callbacks.Plugin):
         c = self.psql.cursor()
 
         if version:
-            c.execute(r"""SELECT signed_by_name, changed_by_name,
+            c.execute(r"""SELECT date, signed_by_name, changed_by_name,
                             maintainer_name, nmu, version
                           FROM upload_history
                           WHERE source=%(package)s AND version=%(version)s""",
                       dict(package=package, version=version) )
         else:
-            c.execute(r"""SELECT signed_by_name, changed_by_name,
+            c.execute(r"""SELECT date, signed_by_name, changed_by_name,
                             maintainer_name, nmu, version
                           FROM upload_history
                           WHERE source=%(package)s
@@ -692,8 +692,8 @@ class Judd(callbacks.Plugin):
 
         row = c.fetchone()
         if row:
-            reply = "Package %s version %s was uploaded by %s, last changed by %s and maintained by %s." % (package, row[4], row[0], row[1], row[2])
-            if row[3]:
+            reply = "Package %s version %s was uploaded by %s on %s, last changed by %s and maintained by %s." % (package, row[5], row[1], row[0].date(), row[2], row[3])
+            if row[4]:
                 reply += " (non-maintainer upload)"
 
             irc.reply( reply )
