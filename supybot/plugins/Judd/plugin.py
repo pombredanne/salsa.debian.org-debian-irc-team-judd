@@ -173,7 +173,7 @@ class Judd(callbacks.Plugin):
                                 (self.bold(row['release']), row['component'],
                                   row['version']))
 
-        irc.reply( "%s -- %s" % (package, "; ".join(replies)) )
+        irc.reply( "Package %s -- %s" % (package, "; ".join(replies)) )
 
     versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
 
@@ -229,7 +229,7 @@ class Judd(callbacks.Plugin):
                                 (self.bold(row['package']), row['version'],
                                   row['component']) )
 
-        irc.reply( "%s in %s/%s: %s" % (package, release, arch, "; ".join(replies)) )
+        irc.reply( "Search for %s in %s/%s: %s" % (package, release, arch, "; ".join(replies)) )
 
     names = wrap(names, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
 
@@ -263,7 +263,7 @@ class Judd(callbacks.Plugin):
                 d = ds[0]
             else:
                 d=""
-            reply = "%s (%s, %s): %s. Version: %s; Size: %0.1fk; Installed: %dk" % \
+            reply = "Package %s (%s, %s): %s. Version: %s; Size: %0.1fk; Installed: %dk" % \
                       ( package, row['section'], row['priority'], d,
                         row['version'], row['size']/1024.0, row['installed_size'] )
             if row[6]:    # homepage field
@@ -306,7 +306,7 @@ class Judd(callbacks.Plugin):
         for row in pkgs:
             replies.append("%s (%s)" % (row[0], row[1]) )
 
-        irc.reply( "%s in %s: %s" % (package, release, "; ".join(replies)) )
+        irc.reply( "Package %s in %s: %s" % (package, release, "; ".join(replies)) )
 
     arches = wrap(archHelper, ['something', getopts({ 'release':'something' } ), optional( 'something' ) ] )
     archs  = wrap(archHelper, ['something', getopts({ 'release':'something' } ), optional( 'something' ) ] )
@@ -357,7 +357,7 @@ class Judd(callbacks.Plugin):
         realpackage = c.fetchone()
 
         if pkgs:
-            reply = "%s in %s/%s is provided by: %s." % \
+            reply = "Package %s in %s/%s is provided by: %s." % \
                     ( package, release, arch, ", ".join(pkgs) )
             if realpackage:
                 reply += " %s is also a real package." % package
@@ -399,10 +399,10 @@ class Judd(callbacks.Plugin):
         row = c.fetchone()
         if row:
             if row[0]:
-                irc.reply("%s in %s/%s provides: %s." % \
+                irc.reply("Package %s in %s/%s provides: %s." % \
                             (package, release, arch, row[0]) )
             else:
-                irc.reply("%s in %s/%s provides no additional packages." % \
+                irc.reply("Package %s in %s/%s provides no additional packages." % \
                             (package, release, arch) )
         else:
             irc.reply("Cannot find the package %s in %s/%s." % \
@@ -430,7 +430,7 @@ class Judd(callbacks.Plugin):
 
         p = self.bin2src(package, release)
         if p:
-            irc.reply( "%s -- Source: %s" % ( package, p ) )
+            irc.reply( "Package %s -- Source: %s" % ( package, p ) )
         else:
             irc.reply( "Sorry, there is no record of a source package for the binary package '%s' in %s/%s." % \
                   ( package, release, arch ) )
@@ -472,7 +472,7 @@ class Judd(callbacks.Plugin):
 
         row = c.fetchone()
         if row:
-            reply = "%s -- Binaries:" % package
+            reply = "Package %s -- Binaries:" % package
             while row:
                 reply += " %s" % ( row[0] )
                 row = c.fetchone()
@@ -507,7 +507,7 @@ class Judd(callbacks.Plugin):
                 reply.append("Build-Depends: %s" % bd)
             if bdi:
                 reply.append("Build-Depends-Indep: %s" % bdi)
-            return "%s -- %s." % ( package, "; ".join(reply))
+            return "Package %s -- %s." % ( package, "; ".join(reply))
 
         row = c.fetchone()
         if row:
@@ -562,7 +562,7 @@ class Judd(callbacks.Plugin):
 
         row = c.fetchone()
         if row:
-            irc.reply( "%s -- %s: %s." % ( package, relation, row[relation]) )
+            irc.reply( "Package %s -- %s: %s." % ( package, relation, row[relation]) )
         else:
             irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
                                 (package, release, arch) )
