@@ -9,7 +9,7 @@
 #
 #trunk,              deb http://kernel-archive.buildserver.net/debian-kernel trunk main,   linux-image-2.6.*-686$
 #
-experimental,       deb http://ftp.uk.debian.org/debian/ experimental main   ,  , 
+experimental,       deb http://ftp.de.debian.org/debian/ experimental main   ,  , 
 #
 sid,                deb http://ftp.de.debian.org/debian/ sid main     ,  , xorg
 #
