@@ -225,7 +225,7 @@ class Judd(callbacks.Plugin):
                 replies.append("%s %s" % \
                                 (self.bold(row['package']), row['version']) )
             else:
-                replies.append("%s %s (%s)" % z
+                replies.append("%s %s (%s)" % \
                                 (self.bold(row['package']), row['version'],
                                   row['component']) )
 
