@@ -19,6 +19,6 @@ lenny,              deb http://ftp.de.debian.org/debian/ lenny main    # deb htt
 #
 lenny-backports,    deb http://www.backports.org/debian/ lenny-backports main,                       linux-image-2\.6\.[0-9]+-bpo.~(trunk~|[0-9]+~)-686$
 #
-etchnhalf,          deb http://ftp.de.debian.org/debian/ etch main     # deb http://ftp.de.debian.org/debian-security/ etch/updates main,                       linux-image-2.6.*etchnhalf.*-686$
+#etchnhalf,          deb http://ftp.de.debian.org/debian/ etch main     # deb http://ftp.de.debian.org/debian-security/ etch/updates main,                       linux-image-2.6.*etchnhalf.*-686$
 #
-etch,               deb http://ftp.de.debian.org/debian/ etch main     # deb http://ftp.de.debian.org/debian-security/ etch/updates main
+#etch,               deb http://ftp.de.debian.org/debian/ etch main     # deb http://ftp.de.debian.org/debian-security/ etch/updates main
