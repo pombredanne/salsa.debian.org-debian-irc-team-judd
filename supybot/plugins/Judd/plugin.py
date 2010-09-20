@@ -1229,9 +1229,10 @@ class Judd(callbacks.Plugin):
     def uploaderHelper( self, irc, msg, args, package, version ):
         """<packagename> [<version>]
 
-        Return the names of the person who uploaded the package, the person who
+        Return the names of the person who uploaded the source package, the person who
         changed the package prior to upload and the maintainer of the specified
         source package. If version is omitted, the most recent upload is used.
+        Imperfect binary-to-source package mapping will be tried too.
         """
         c = self.psql.cursor()
 
@@ -1259,7 +1260,7 @@ class Judd(callbacks.Plugin):
         else:
             r = Release(self.psql, release=CleanReleaseName(name='unstable'))
             source = r.bin2src(package)
-            if source:
+            if source and source != package:
                 return self.uploaderHelper(irc, msg, args, source, version)
             elif version:
                 irc.reply( "Sorry, there is no record of '%s', version '%s'." % (package,version) )
@@ -1275,7 +1276,8 @@ class Judd(callbacks.Plugin):
         """<packagename>
 
         Return the dates and versions of recent uploads of the specified source
-        or binary package.
+        package.
+        Imperfect binary-to-source package mapping will be tried too.
         """
         c = self.psql.cursor()
 
