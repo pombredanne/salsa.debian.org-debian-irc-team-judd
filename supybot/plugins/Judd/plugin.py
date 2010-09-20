@@ -561,7 +561,8 @@ class Judd(callbacks.Plugin):
             pkgs.append( row )
 
         if not pkgs:
-            irc.reply( "Sorry, no package named '%s' was found." % package )
+            irc.reply( "Sorry, no package named '%s' was found in %s." %
+                  ( package, arch) )
             return
 
         pkgs.sort( lambda a,b: debian_support.version_compare( a['version'], b['version'] ) )
@@ -576,7 +577,7 @@ class Judd(callbacks.Plugin):
                                 (self.bold(row['release']), row['component'],
                                   row['version']))
 
-        irc.reply( "%s -- %s" % (package, "; ".join(replies)) )
+        irc.reply( "Package %s on %s -- %s" % (package, arch, "; ".join(replies)) )
 
     versions = wrap(versions, ['something',
                                 getopts( { 'arch':'something',
@@ -631,11 +632,11 @@ class Judd(callbacks.Plugin):
                 replies.append("%s %s" % \
                                 (self.bold(row['package']), row['version']) )
             else:
-                replies.append("%s %s (%s)" % z
+                replies.append("%s %s (%s)" % \
                                 (self.bold(row['package']), row['version'],
                                   row['component']) )
 
-        irc.reply( "%s in %s/%s: %s" % (package, release, arch, "; ".join(replies)) )
+        irc.reply( "Search for %s in %s/%s: %s" % (package, release, arch, "; ".join(replies)) )
 
     names = wrap(names, ['something',
                           getopts( { 'arch':'something',
@@ -672,8 +673,9 @@ class Judd(callbacks.Plugin):
                 d = ds[0]
             else:
                 d=""
-            reply = "%s (%s, %s): %s. Version: %s; Size: %0.1fk; Installed: %dk" % \
-                      ( package, row['section'], row['priority'], d,
+            reply = "Package %s (%s, %s) in %s/%s: %s. Version: %s; Size: %0.1fk; Installed: %dk" % \
+                      ( package, row['section'], row['priority'], 
+                        release, arch, d,
                         row['version'], row['size']/1024.0, row['installed_size'] )
             if row[6]:    # homepage field
                 reply += "; Homepage: %s" % row['homepage']
@@ -717,7 +719,7 @@ class Judd(callbacks.Plugin):
         for row in pkgs:
             replies.append("%s (%s)" % (row[0], row[1]) )
 
-        irc.reply( "%s in %s: %s" % (package, release, "; ".join(replies)) )
+        irc.reply( "Package %s in %s: %s" % (package, release, "; ".join(replies)) )
 
     arches = wrap(archHelper, ['something',
                                 getopts({ 'release':'something' } ),
@@ -739,7 +741,7 @@ class Judd(callbacks.Plugin):
         p = r.Package(package)
 
         if p.IsVirtual():
-            reply = "%s in %s/%s is provided by: %s." % \
+            reply = "Package %s in %s/%s is provided by: %s." % \
                     ( package, release, arch, ", ".join(p.ProvidersList()) )
             if p.Found():
                 reply += " %s is also a real package." % package
@@ -775,10 +777,10 @@ class Judd(callbacks.Plugin):
 
         if p.Found():
             if p.data['provides']:
-                irc.reply("%s in %s/%s provides: %s." % \
+                irc.reply("Package %s in %s/%s provides: %s." % \
                             (package, release, arch, p.data['provides']) )
             else:
-                irc.reply("%s in %s/%s provides no additional packages." % \
+                irc.reply("Package %s in %s/%s provides no additional packages." % \
                             (package, release, arch) )
         else:
             irc.reply("Cannot find the package %s in %s/%s." % \
@@ -809,7 +811,7 @@ class Judd(callbacks.Plugin):
         r = Release(self.psql, arch=arch, release=release)
         p = r.bin2src(package)
         if p:
-            irc.reply( "%s -- Source: %s" % ( package, p ) )
+            irc.reply( "Package %s -- Source: %s" % ( package, p ) )
         else:
             irc.reply( "Sorry, there is no record of a source package for the binary package '%s' in %s/%s." % \
                   ( package, release, arch ) )
@@ -856,7 +858,7 @@ class Judd(callbacks.Plugin):
                 reply.append("Build-Depends: %s" % bd)
             if bdi:
                 reply.append("Build-Depends-Indep: %s" % bdi)
-            return "%s -- %s." % ( package, "; ".join(reply))
+            return "Package %s -- %s." % ( package, "; ".join(reply))
 
         r = Release(self.psql, arch=arch, release=release)
         p = r.Source(package)
@@ -898,7 +900,7 @@ class Judd(callbacks.Plugin):
         p = r.Package(package)
 
         if p.Found():
-            irc.reply( "%s -- %s: %s." % ( package, relation, p.RelationEntry(relation)) )
+            irc.reply( "Package %s -- %s: %s." % ( package, relation, p.RelationEntry(relation)) )
         else:
             irc.reply( "Sorry, no package named '%s' was found in %s/%s." % \
                                 (package, release, arch) )
@@ -1234,13 +1236,13 @@ class Judd(callbacks.Plugin):
         c = self.psql.cursor()
 
         if version:
-            c.execute(r"""SELECT signed_by_name, changed_by_name,
+            c.execute(r"""SELECT date, signed_by_name, changed_by_name,
                             maintainer_name, nmu, version
                           FROM upload_history
                           WHERE source=%(package)s AND version=%(version)s""",
                       dict(package=package, version=version) )
         else:
-            c.execute(r"""SELECT signed_by_name, changed_by_name,
+            c.execute(r"""SELECT date, signed_by_name, changed_by_name,
                             maintainer_name, nmu, version
                           FROM upload_history
                           WHERE source=%(package)s
@@ -1249,8 +1251,8 @@ class Judd(callbacks.Plugin):
 
         row = c.fetchone()
         if row:
-            reply = "Package %s version %s was uploaded by %s, last changed by %s and maintained by %s." % (package, row[4], row[0], row[1], row[2])
-            if row[3]:
+            reply = "Package %s version %s was uploaded by %s on %s, last changed by %s and maintained by %s." % (package, row[5], row[1], row[0].date(), row[2], row[3])
+            if row[4]:
                 reply += " (non-maintainer upload)"
 
             irc.reply( reply )
@@ -1291,7 +1293,7 @@ class Judd(callbacks.Plugin):
         else:
             r = Release(self.psql, release=CleanReleaseName(name='unstable'))
             source = r.bin2src(package)
-            if source:
+            if source and source != package:
                 return self.recentHelper(irc, msg, args, source, version)
             irc.reply( "Sorry, there is no record of source package '%s'." % package )
 
@@ -1324,7 +1326,8 @@ class Judd(callbacks.Plugin):
 
         Returns packages that include files matching <pattern> which, by
         default, is interpreted as a glob (see glob(7)).
-        If --regex is given, the pattern is treated as a regex (see regex(7)).
+        If --regex is given, the pattern is treated as a extended regex
+        (see regex(7); note not PCRE!).
         If --exact is given, the exact filename is required.
         The current stable release and i386 are searched by default.
         """
@@ -1370,7 +1373,7 @@ class Judd(callbacks.Plugin):
             s = packages.toString(self.bold)
             irc.reply("%s in %s/%s: %s" % (glob, release, arch, s))
 
-    file = wrap(file, [optional('something'),
+    file = wrap(file, ['something',
                         getopts({'arch':'something',
                                 'release':'something',
                                 'regex':'',
