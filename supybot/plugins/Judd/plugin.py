@@ -158,8 +158,8 @@ class Judd(callbacks.Plugin):
             pkgs.append( row )
 
         if not pkgs:
-            irc.reply( "Sorry, no package named '%s' was found in %s/%s." %
-                  ( package, release, arch) )
+            irc.reply( "Sorry, no package named '%s' was found in %s." %
+                  ( package, arch) )
             return
 
         pkgs.sort( lambda a,b: debian_support.version_compare( a['version'], b['version'] ) )
