@@ -55,6 +55,7 @@ import subprocess
 # sanitisation of the release argument -- if it's not in this map, it is
 # ignored.
 release_map = { 'trunk'             : 'trunk',
+                'experimental'      : 'experimental',
                 'unstable'          : 'sid',
                 'testing'           : 'squeeze',
                 'stable-backports'  : 'lenny-backports',
