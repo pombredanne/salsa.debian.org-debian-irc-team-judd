@@ -844,8 +844,8 @@ class Judd(callbacks.Plugin):
             irc.error("Sorry, couldn't look up file list.", Raise=True)
 
         try:
-            #print "Trying: zgrep -ie '%s' '%s'" % (regexp, contents)
-            output = subprocess.Popen(['zgrep', '-ie', regexp, contents],
+            #print "Trying: zgrep -iE -e '%s' '%s'" % (regexp, contents)
+            output = subprocess.Popen(['zgrep', '-iE', '-e', regexp, contents],
                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True).communicate()[0]
         except TypeError:
             irc.error(r"Sorry, couldn't look up the file list.", Raise=True)
