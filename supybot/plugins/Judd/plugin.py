@@ -852,10 +852,13 @@ class Judd(callbacks.Plugin):
 
         packages = PackageFileList()
         try:
-            for line in output.split("\n"):
-                if len(data) > 100:
-                    irc.error('There were more than 100 files matching your search, '
-                              'please narrow your search.', Raise=True)
+            lines = output.split("\n")
+            maxhits = 20
+            if len(lines) > maxhits:
+                irc.error('There were more than %s files matching your '
+                          'search; please narrow your search.' % maxhits,
+                          Raise=True)
+            for line in lines:
                 try:
                     (filename, pkg_list) = line.split()
                     if filename == 'FILE':
