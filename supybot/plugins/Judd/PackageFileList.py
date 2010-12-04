@@ -45,7 +45,11 @@ class PackageFileList:
 
     def toString(self, boldfn):
         s = []
-        for p in self.packages.keys():
+        # sort the packages so that packages that contain the shortest paths
+        # (by number of path elements, /) come first.
+        pprio = sorted(self.packages.keys(),
+          key=lambda p: min(map(lambda f: f.count('/'), self.packages[p])))
+        for p in pprio:
             #section,name = p.split('/')
             info = p.split('/')
             if len(info) == 2:
