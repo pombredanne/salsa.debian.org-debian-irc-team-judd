@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2009 Stuart Prescott
+# Copyright (c) 2009, 2011 Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -59,9 +59,8 @@ release_map = { 'trunk'             : 'trunk',
                 'unstable'          : 'sid',
                 'testing'           : 'squeeze',
                 'stable-backports'  : 'lenny-backports',
-                'stable'            : 'lenny',
-                'oldstable1'        : 'etchnhalf',
-                'oldstable'         : 'etch' }
+                'stable'            : 'lenny'
+               }
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
@@ -288,7 +287,7 @@ class Piccy(callbacks.Plugin):
 
 
     def kernelVersionHelper(self, irc, msg, args, optlist):
-        """[--release <lenny>]
+        """[--release <squeeze>]
 
         Outputs the kernel versions in the archive, optionally restricted to
         one release. Note that semi-major releases like etchnhalf are treated
