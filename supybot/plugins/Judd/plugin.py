@@ -1,6 +1,6 @@
 ###
 # Copyright (c) 2007,2008, Mike O'Connor
-# Copyright (c) 2010,      Stuart Prescott
+# Copyright (c) 2010,2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -53,9 +53,23 @@ import subprocess
 from PackageFileList import PackageFileList
 
 release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny' }
-releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'lenny-backports', 'lenny-volatile', 'squeeze', 'squeeze-security', 'squeeze-multimedia', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
+releases = [
+                'lenny',
+                'lenny-multimedia',
+                'lenny-security',
+                'lenny-backports',
+                'lenny-backports-sloppy',
+                'lenny-volatile',
+                'squeeze',
+                'squeeze-security',
+                'squeeze-updates',
+                'squeeze-backports',
+                'squeeze-multimedia',
+                'sid',
+                'sid-multimedia',
+                'experimental', 'unstable', 'testing', 'stable' ]
 
-arches = [ 'alpha', 'amd64', 'arm', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
+arches = [ 'alpha', 'amd64', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
 
 def parse_standard_options( optlist, args=None ):
     # FIXME: should this default to lenny/i386 if the args are out of bounds?
