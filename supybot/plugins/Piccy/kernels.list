@@ -13,6 +13,7 @@ experimental,       deb http://ftp.de.debian.org/debian/ experimental main   ,  
 #
 sid,                deb http://ftp.de.debian.org/debian/ sid main     ,  , xorg
 #
+wheezy,             deb http://ftp.de.debian.org/debian/ wheezy main  #  deb http://ftp.de.debian.org/debian-security/ wheezy/updates main           , , xorg
 squeeze,            deb http://ftp.de.debian.org/debian/ squeeze main  #  deb http://ftp.de.debian.org/debian-security/ squeeze/updates main           , , xorg
 #
 lenny,              deb http://ftp.de.debian.org/debian/ lenny main    # deb http://ftp.de.debian.org/debian-security/ lenny/updates main             , , xorg

@@ -52,7 +52,7 @@ import subprocess
 #from supybot.utils.iter import all, imap, ifilter
 from PackageFileList import PackageFileList
 
-release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny' }
+release_map = { 'unstable':'sid', 'testing':'wheezy', 'stable':'squeeze', 'oldstable':'lenny' }
 releases = [
                 'lenny',
                 'lenny-multimedia',
@@ -65,6 +65,9 @@ releases = [
                 'squeeze-updates',
                 'squeeze-backports',
                 'squeeze-multimedia',
+                'wheezy',
+                'wheezy-security',
+                'wheezy-multimedia',
                 'sid',
                 'sid-multimedia',
                 'experimental', 'unstable', 'testing', 'stable' ]
@@ -72,10 +75,10 @@ releases = [
 arches = [ 'alpha', 'amd64', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
 
 def parse_standard_options( optlist, args=None ):
-    # FIXME: should this default to lenny/i386 if the args are out of bounds?
+    # FIXME: should this default to squeeze/i386 if the args are out of bounds?
     if not args:
         args=[]
-    release='lenny'
+    release='squeeze'
     arch='i386'
 
     for( option,arg ) in optlist:
@@ -120,7 +123,7 @@ class Judd(callbacks.Plugin):
 
 
     def versions(self, irc, msg, args, package, optlist, something ):
-        """<pattern> [--arch <i386>] [--release <lenny>]
+        """<pattern> [--arch <i386>] [--release <squeeze>]
 
         Show the available versions of a package in the optionally specified
         release and for the given architecture.
@@ -193,7 +196,7 @@ class Judd(callbacks.Plugin):
     versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
 
     def names(self, irc, msg, args, package, optlist, something ):
-        """<pattern> [--arch <i386>] [--release <lenny>]
+        """<pattern> [--arch <i386>] [--release <squeeze>]
 
         Search package names with * and ? as wildcards.
         The current stable release and i386 are searched by default.
@@ -249,7 +252,7 @@ class Judd(callbacks.Plugin):
     names = wrap(names, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
 
     def info(self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--arch <i386>] [--release <squeeze>]
 
         Show the short description and some other brief details about a package
         in the specified release and architecture. By default, the current
@@ -296,7 +299,7 @@ class Judd(callbacks.Plugin):
                                               'release':'something' } ), optional( 'something' ) ] )
 
     def archHelper(self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--release <lenny>]
+        """<packagename> [--release <squeeze>]
 
         Show for what architectures a package is available. By default, the current
         stable release is used.
@@ -328,7 +331,7 @@ class Judd(callbacks.Plugin):
     archs  = wrap(archHelper, ['something', getopts({ 'release':'something' } ), optional( 'something' ) ] )
 
     def rprovidesHelper( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--arch <i386>] [--release <squeeze>]
 
         Show the packages that 'Provide' the specified virtual package
         ('reverse provides').
@@ -394,7 +397,7 @@ class Judd(callbacks.Plugin):
                              optional( 'something' ) ] );
 
     def provides(self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--arch <i386>] [--release <squeeze>]
 
         Show the list of "provided" packages for the specified binary package
         in the given release and architecture. By default, the current
@@ -436,7 +439,7 @@ class Judd(callbacks.Plugin):
     danke = wrap( danke, [] )
 
     def source( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--release <lenny>]
+        """<packagename> [--release <squeeze>]
 
         Show the name of the source package from which a given binary package
         is derived.
@@ -470,7 +473,7 @@ class Judd(callbacks.Plugin):
             return
 
     def binaries( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--release <lenny>]
+        """<packagename> [--release <squeeze>]
 
         Show the name of the binary package(s) that are derived from a given
         source package.
@@ -502,7 +505,7 @@ class Judd(callbacks.Plugin):
                            optional( 'something' ) ] );
 
     def builddep( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--release <lenny>]
+        """<packagename> [--release <squeeze>]
 
         Show the name of the binary packages on which a given source package
         or binary package build-depends.
@@ -550,7 +553,7 @@ class Judd(callbacks.Plugin):
         "conflicts", "depends", "recommends", "suggests", "enhances".
 
         The standard usage for each of these functions is accepted:
-            relationship <packagename> [--arch <i386>] [--release <lenny>]
+            relationship <packagename> [--arch <i386>] [--release <squeeze>]
 
         Show the packages that are listed as 'Depends' for a given package.
         By default, the current stable release and i386 are used.
@@ -584,7 +587,7 @@ class Judd(callbacks.Plugin):
                                 (package, release, arch) )
 
     def conflicts( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--arch <i386>] [--release <squeeze>]
 
         Show the binary packages listed as conflicting with a given binary
         package.
@@ -597,7 +600,7 @@ class Judd(callbacks.Plugin):
                                  optional( 'something' )] );
 
     def depends( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--arch <i386>] [--release <squeeze>]
 
         Show the packages that are listed as 'Depends' for a given package.
         By default, the current stable release and i386 are used.
@@ -609,7 +612,7 @@ class Judd(callbacks.Plugin):
                                  optional( 'something' )] );
 
     def recommends( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--arch <i386>] [--release <squeeze>]
 
         Show the packages that are listed as 'Recommends' for a given package.
         By default, the current stable release and i386 are used.
@@ -621,7 +624,7 @@ class Judd(callbacks.Plugin):
                                    optional( 'something' )] );
 
     def suggests( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--arch <i386>] [--release <squeeze>]
 
         Show the packages that are listed as 'Suggests' for a given package.
         By default, the current stable release and i386 are used.
@@ -633,7 +636,7 @@ class Judd(callbacks.Plugin):
                                optional( 'something' ) ] );
 
     def enhances( self, irc, msg, args, package, optlist, something ):
-        """<packagename> [--arch <i386>] [--release <lenny>]
+        """<packagename> [--arch <i386>] [--release <squeeze>]
 
         Show the packages that are listed as 'Enhances' for a given package.
         By default, the current stable release and i386 are used.
@@ -777,7 +780,7 @@ class Judd(callbacks.Plugin):
     rcbugs = wrap(rcbugs, ['something'] )
 
     def file(self, irc, msg, args, glob, optlist, something):
-        """<pattern> [--arch <i386>] [--release <lenny>] [--regex | --exact]
+        """<pattern> [--arch <i386>] [--release <squeeze>] [--regex | --exact]
 
         Returns packages that include files matching <pattern> which, by
         default, is interpreted as a glob (see glob(7)).
