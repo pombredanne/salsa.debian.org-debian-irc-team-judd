@@ -59,7 +59,7 @@ release_map = { 'trunk'             : 'trunk',
                 'unstable'          : 'sid',
                 'testing'           : 'wheezy',
                 'stable-backports'  : 'squeeze-backports',
-                'stable'            : 'squeeze'
+                'stable'            : 'squeeze',
                 'oldstable-backports'  : 'lenny-backports',
                 'oldstable'            : 'lenny'
                }
