@@ -1,0 +1,49 @@
+Judd: A supybot plugin to view into the Ulimate Debian Database
+===============================================================
+
+
+
+Maintenance notes for UDD
+=========================
+
+udd oldstable removal actions:
+* update cron job (~/bin/udd-update-stable)
+* stop importing oldstable (config-judd/Makefile)
+* delete oldoldstable data from database:
+  psql
+    => SELECT count(*) FROM packages WHERE release LIKE 'etch%';
+    num archs * num packages (250k?)
+    => DELETE FROM packages WHERE release LIKE 'etch%';
+    => SELECT count(*) FROM sources WHERE release LIKE 'etch%';
+    num src packages (15k?)
+    => DELETE FROM sources WHERE release LIKE 'etch%';
+* delete oldoldstable data from disk cache
+    /org/ftp.debian.org/dists/etch /org/backports.org/dists/etch-backports /org/security.debian.org/etch /org/debian-multimedia.org/dists/etch /org/volatile.debian.org/dists/etch
+
+udd release actions:
+* update cron jobs (~/bin/udd-update-{stable,changing})
+* update archs with release architectures (config-judd/archlist)
+* check components (volatile vs updates, backports-sloppy etc:
+  config-judd/config-generic-release.yaml)
+
+udd new testing actions:
+* add new testing (config-judd/Makefile)
+* update cron jobs (~/bin/udd-update-changing)
+* update archs (config-judd/archlist)
+
+
+Maintenance notes for Judd
+==========================
+
+judd oldstable removal:
+* shift/remove oldstable alias
+
+judd release actions:
+* add new -backports, -backports-sloppy, -updates etc to plugin.py
+* shift stable alias
+
+judd new testing actions
+* add new (testing) release to plugin.py
+* shift testing alias
+* mkcontentslinks
+
