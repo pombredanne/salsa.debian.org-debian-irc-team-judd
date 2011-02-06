@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2007, Mike O'Connor
+# Copyright (c) 2009,2011 Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

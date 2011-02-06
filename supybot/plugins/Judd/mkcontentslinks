@@ -70,7 +70,7 @@ fi
 TARGET="$1"
 
 for section in $(udd-sections |
-                grep -e etch -e lenny -e squeeze -e sid -e experimental |
+                grep -e lenny -e squeeze -e wheezy -e sid -e experimental |
                 grep -v security)
 do
   DIR=$(awk "/^$section:/,/^$/" $UDDCONFIG |
