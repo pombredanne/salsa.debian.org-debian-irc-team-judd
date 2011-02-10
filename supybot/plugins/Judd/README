@@ -19,6 +19,7 @@ udd oldstable removal actions:
     => DELETE FROM sources WHERE release LIKE 'etch%';
 * delete oldoldstable data from disk cache
     /org/ftp.debian.org/dists/etch /org/backports.org/dists/etch-backports /org/security.debian.org/etch /org/debian-multimedia.org/dists/etch /org/volatile.debian.org/dists/etch
+* add oldoldstable to the list of old timestamps to ignore in udd-check-updates
 
 udd release actions:
 * update cron jobs (~/bin/udd-update-{stable,changing})
