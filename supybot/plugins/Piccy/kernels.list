@@ -9,17 +9,17 @@
 #
 #trunk,              deb http://kernel-archive.buildserver.net/debian-kernel trunk main,   linux-image-2.6.*-686$
 #
-experimental,       deb http://ftp.de.debian.org/debian/ experimental main   ,  , 
+experimental,       deb http://ftp.de.debian.org/debian/ experimental main   ,  ,
 #
-sid,                deb http://ftp.de.debian.org/debian/ sid main     ,  , xorg
+sid,                deb http://ftp.de.debian.org/debian/ sid main     ,  ,
 #
-wheezy,             deb http://ftp.de.debian.org/debian/ wheezy main  #  deb http://ftp.de.debian.org/debian-security/ wheezy/updates main           , , xorg
-squeeze-backports,    deb http://ftp.de.debian.org/debian-backports/ squeeze-backports main,                       linux-image-2\.6\.[0-9]+-bpo.~(trunk~|[0-9]+~)-686$
-squeeze,            deb http://ftp.de.debian.org/debian/ squeeze main  #  deb http://ftp.de.debian.org/debian-security/ squeeze/updates main           , , xorg
+wheezy,             deb http://ftp.de.debian.org/debian/ wheezy main  #  deb http://ftp.de.debian.org/debian-security/ wheezy/updates main           , ,
+squeeze-backports,    deb http://ftp.de.debian.org/debian-backports/ squeeze-backports main,
+squeeze,            deb http://ftp.de.debian.org/debian/ squeeze main  #  deb http://ftp.de.debian.org/debian-security/ squeeze/updates main           , ,
 #
 lenny,              deb http://ftp.de.debian.org/debian/ lenny main    # deb http://ftp.de.debian.org/debian-security/ lenny/updates main             , , xorg
 #
-lenny-backports,    deb http://ftp.de.debian.org/debian-backports/ lenny-backports main,                       linux-image-2\.6\.[0-9]+-bpo.~(trunk~|[0-9]+~)-686$
+lenny-backports,    deb http://ftp.de.debian.org/debian-backports/ lenny-backports main,
 #
 #etchnhalf,          deb http://ftp.de.debian.org/debian/ etch main     # deb http://ftp.de.debian.org/debian-security/ etch/updates main,                       linux-image-2.6.*etchnhalf.*-686$
 #

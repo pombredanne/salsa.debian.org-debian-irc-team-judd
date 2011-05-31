@@ -52,7 +52,13 @@ WIKIMAPFILE="modules.wikilinks"
 # Note that if the architecture being targeted by the script is changed,
 # KERNERLRE will need changing too.
 ARCH="i386"
-KERNELRE='linux-image-2\.6\.[0-9]+-~(rc[0-9]~|trunk~|[0-9]+~)-686~(-pae~)?$'
+# match various kernel versions and changes including:
+# lenny/squeeze:                 linux-image-2.6.32-5-686
+# squeeze trunk:                 linux-image-2.6.32-trunk-686
+# backports:                     linux-image-2.6.38-bpo.2-686
+# wheezy PAE (replaces -686):    linux-image-2.6.39-1-686-pae
+# wheezy 3.0:                    linux-image-3.0-1-686-pae
+KERNELRE='linux-image-~(2\.6\.[0-9]+~|3\.[0-9]+~)+-~(bpo.~)?~(rc[0-9]~|trunk~|[0-9]+~)-686~(-pae~)?$'
 # ARCH="amd64"
 # KERNELRE='linux-image-2.6.[0-9]+-[0-9]-amd64$'
 
