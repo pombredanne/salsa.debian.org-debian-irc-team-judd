@@ -58,7 +58,7 @@ ARCH="i386"
 # backports:                     linux-image-2.6.38-bpo.2-686
 # wheezy PAE (replaces -686):    linux-image-2.6.39-1-686-pae
 # wheezy 3.0:                    linux-image-3.0-1-686-pae
-KERNELRE='linux-image-~(2\.6\.[0-9]+~|3\.[0-9]+~)+-~(bpo.~)?~(rc[0-9]~|trunk~|[0-9]+~)-686~(-pae~)?$'
+KERNELRE='linux-image-~(2\.6\.[0-9]+~|3\.[0-9]+\.[0-9]+~)+-~(bpo.~)?~(rc[0-9]~|trunk~|[0-9]+~)-686~(-pae~)?$'
 # ARCH="amd64"
 # KERNELRE='linux-image-2.6.[0-9]+-[0-9]-amd64$'
 
