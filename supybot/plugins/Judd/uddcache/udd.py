@@ -38,9 +38,9 @@
 import re
 import psycopg2
 import uddcache.database
-from uddcache.udddata import DebianData
-from uddcache.uddconfig import UddConfig
-from uddcache.uddpackages import *
+from uddcache.data import DebianData
+from uddcache.config import Config
+from uddcache.packages import *
 
 
 class Udd():
@@ -50,15 +50,15 @@ class Udd():
     def __init__(self, config=None, distro="debian", logfile=None):
         """Initialise the connection to the UDD instance
 
-            config: config filename or UddConfig instance
+            config: config filename or Config instance
             distro: string naming the distribution that is being used
             logfile: filename into which database calls should be logged
                     or False to suppress loading this setting from the
                     config file
         """
         if type(config) is str or config is None:
-            self.config = UddConfig(config)
-        elif isinstance(config, UddConfig):
+            self.config = Config(config)
+        elif isinstance(config, Config):
             self.config = config
         else:
             raise ValueError("No database configuration provided")

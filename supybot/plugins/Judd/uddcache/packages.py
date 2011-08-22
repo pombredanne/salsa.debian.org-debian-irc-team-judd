@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007,2008, Mike O'Connor
-# Copyright (c) 2010,2011  Stuart Prescott
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ import re
 import psycopg2
 import psycopg2.extras
 from psycopg2.extensions import adapt
-from uddcache.uddrelations import *
+from uddcache.relations import *
 
 
 class Release(object):

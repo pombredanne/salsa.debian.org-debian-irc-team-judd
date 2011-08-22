@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007,2008, Mike O'Connor
-# Copyright (c) 2010,2011  Stuart Prescott
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,8 +39,8 @@ SolverHierarchy -- TODO: complete
 """
 
 import copy
-from uddcache.uddrelations import *
-from uddcache.uddpackages import *
+from uddcache.relations import *
+from uddcache.packages import *
 
 
 class RelationChecker(object):

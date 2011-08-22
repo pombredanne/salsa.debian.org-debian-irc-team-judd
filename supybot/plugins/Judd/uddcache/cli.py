@@ -6,7 +6,7 @@
 # CLI bindings
 #
 ###
-# Copyright (c) 2010,      Stuart Prescott
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@
 """ Command line interface to udd - output to stdout """
 
 import os
-from uddcache.uddcommands import UddCommands
+import uddcache.commands
 
 
 class Cli():
@@ -82,7 +82,8 @@ class Cli():
                 'build-deps':   'builddeps',
                 }
         if initialise:
-            self.udd = UddCommands(config=config, distro=options.distro)
+            self.udd = uddcache.commands.Commands(config=config,
+                                                  distro=options.distro)
             self.options = options
 
     def is_valid_command(self, command):

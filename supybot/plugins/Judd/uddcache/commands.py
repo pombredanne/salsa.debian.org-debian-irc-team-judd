@@ -5,7 +5,7 @@
 #
 ###
 #
-# Copyright (c) 2010,      Stuart Prescott
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,13 +35,13 @@
 ###
 
 from udd import Udd
-from uddpackages import *
-from uddrelations import *
-from uddresolver import *
+from packages import *
+from relations import *
+from resolver import *
 from debian import debian_support
 
 
-class UddCommands(Udd):
+class Commands(Udd):
 
     def versions(self, package, release, arch):
         c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)

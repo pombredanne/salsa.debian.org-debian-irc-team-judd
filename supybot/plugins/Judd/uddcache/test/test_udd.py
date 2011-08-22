@@ -6,7 +6,7 @@
 #
 ###
 #
-# Copyright (c) 2010,      Stuart Prescott
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@
 """ Unit tests for base UDD bindings """
 
 from uddcache.udd import Udd
-from uddcache.uddconfig import UddConfig
+from uddcache.config import Config
 import unittest2 as unittest
 
 
@@ -54,7 +54,7 @@ class database(unittest.TestCase):
 
     def testPassConfig(self):
         """Test loading a config file manually"""
-        config = UddConfig()
+        config = Config()
         self.assert_(Udd(config=config))
         self.assertRaises(ValueError,  Udd,  config=False)
 

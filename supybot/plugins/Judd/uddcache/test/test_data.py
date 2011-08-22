@@ -6,7 +6,7 @@
 #
 ###
 #
-# Copyright (c) 2010,      Stuart Prescott
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 
 # Fairly sparse tests at this stage
 
-from uddcache.udddata import DebianData
+from uddcache.data import DebianData
 
 import unittest2 as unittest
 

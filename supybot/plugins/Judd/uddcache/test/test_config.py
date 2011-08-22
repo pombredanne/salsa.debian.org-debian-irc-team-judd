@@ -6,7 +6,7 @@
 #
 ###
 #
-# Copyright (c) 2010,      Stuart Prescott
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 
 import os
 import unittest2 as unittest
-from uddcache.uddconfig import UddConfig
+from uddcache.config import Config
 
 class config(unittest.TestCase):
     def setUp(self):
@@ -47,19 +47,18 @@ class config(unittest.TestCase):
 
     def testNoFileName(self):
         """Test no specified filename to load"""
-        self.assert_(UddConfig())
-        self.assertRaises(ValueError, UddConfig, skipDefaultFiles=True)
+        self.assert_(Config())
+        self.assertRaises(ValueError, Config, skipDefaultFiles=True)
 
     def testGoodFileName(self):
         """Test loading of config file"""
-        conf = UddConfig("udd-cache.conf")
+        conf = Config("udd-cache.conf")
         self.assert_(conf)
         self.assertEqual(conf.db()['hostname'], 'localhost')
 
     def testBadFileName(self):
         """Test loading of non-existent config file"""
-        self.assertRaises(IOError, UddConfig,
-                            "/path/to/no/such/file")
+        self.assertRaises(IOError, Config, "/path/to/no/such/file")
 
     def testEnvironment(self):
         """Test loading config file from environment"""
@@ -67,24 +66,24 @@ class config(unittest.TestCase):
         if os.environ.has_key('UDD_CACHE_CONFIG'):
             origEnv = os.environ['UDD_CACHE_CONFIG']
         os.environ['UDD_CACHE_CONFIG'] = "/path/to/no/such/file"
-        self.assertRaises(IOError, UddConfig)
+        self.assertRaises(IOError, Config)
         os.environ['UDD_CACHE_CONFIG'] = "udd-cache.conf"
-        self.assert_(UddConfig(skipDefaultFiles=True))
+        self.assert_(Config(skipDefaultFiles=True))
         os.environ['UDD_CACHE_CONFIG'] = ""
-        self.assertRaises(ValueError, UddConfig, skipDefaultFiles=True)
+        self.assertRaises(ValueError, Config, skipDefaultFiles=True)
         if origEnv:
             os.environ['UDD_CACHE_CONFIG'] = origEnv
         else:
             os.unsetenv('UDD_CACHE_CONFIG')
 
     def testConfigGet(self):
-        conf = UddConfig()
+        conf = Config()
         self.assertEqual(conf.get('database', 'hostname', 'quux'),  'localhost')
         self.assertEqual(conf.get('nosuchsection', 'hostname', 'quux'),  'quux')
         self.assertEqual(conf.get('database', 'nosuchkey', 'quux'),  'quux')
 
     def testLogging(self):
-        conf = UddConfig()
+        conf = Config()
         self.assert_(conf.db_logging())
 
 ###########################################################

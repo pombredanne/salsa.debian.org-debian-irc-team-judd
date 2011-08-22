@@ -6,7 +6,7 @@
 #
 ###
 #
-# Copyright (c) 2010,      Stuart Prescott
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,8 +39,8 @@
 
 import os
 import unittest2 as unittest
-from uddcache.uddcommands import UddCommands
-from uddcache.uddpackages import *
+from uddcache.commands import Commands
+from uddcache.packages import *
 
 
 includeSlowTests = 1
@@ -50,7 +50,7 @@ if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_T
 
 class commands(unittest.TestCase):
     def setUp(self):
-        self.udd = UddCommands()
+        self.udd = Commands()
 
     def testVersions(self):
         """Test version lookups"""

@@ -6,7 +6,7 @@
 #
 ###
 #
-# Copyright (c) 2010,      Stuart Prescott
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 
 import os
 from uddcache.udd import Udd
-from uddcache.uddresolver import *
+from uddcache.resolver import *
 import unittest2 as unittest
 
 includeSlowTests = 1
