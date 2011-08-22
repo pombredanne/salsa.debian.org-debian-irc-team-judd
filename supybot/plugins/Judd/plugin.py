@@ -899,7 +899,7 @@ class Judd(callbacks.Plugin):
         Returns packages that include files matching <pattern> which, by
         default, is interpreted as a glob (see glob(7)).
         If --regex is given, the pattern is treated as a extended regex
-        (see regex(7) note not PCRE!).
+        (see regex(7); note not PCRE!).
         If --exact is given, the exact filename is required.
         The current stable release and i386 are searched by default.
         """
