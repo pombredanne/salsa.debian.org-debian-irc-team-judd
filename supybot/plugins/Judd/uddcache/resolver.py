@@ -43,37 +43,34 @@ from uddcache.relations import *
 from uddcache.packages import *
 
 
-class RelationChecker(object):
+class Checker(object):
     """
     Check sets of dependencies to determine installability, build-ability etc
 
     Check -- check specified relationship for a package
-    CheckBuildDeps -- check that build-deps are satisfied for a package
-    CheckInstall -- check that a package is installable
-    CheckRelationArch -- determine if a relationship pertains to give arch
     CheckRelationshipOptionsList -- determine if a list of relationships is
                                 satisfied
     RelationSatisfied -- check an individual relationship
+    CheckRelationArch -- check if the relationship applies to the
+                            current architecture
 
     Typical usage:
         udd = Udd()
         release = udd.BindRelease(arch="i386",release="sid")
-        checker = RelationChecker(release)
+        checker = Checker(release)
 
         relationship = Relationship(relation="libc6 (>> 2.7)")
         if checker.RelationSatisfied(relationship):
             ...
-        if checker.CheckInstall('libc6'):
-            ...
-        if checker.CheckBuildDeps('eglibc'):
+        if checker.Check('libc6', 'depends'):
             ...
     """
 
     def __init__(self, release):
-        """ Construct a RelationChecker for the specified release """
+        """ Construct a Checker for the specified release """
         if not isinstance(release, Release):
             raise TypeError("The release object must be of type "
-                            "uddcache.uddpackages.Release")
+                            "uddcache.packages.Release")
         self.release = release
         self._checkInstallCache = {}
 
@@ -96,83 +93,6 @@ class RelationChecker(object):
         if relation == 'conflicts':
             status.swap()
         return status
-
-    def CheckInstall(self, package=None, recommends=True, _level=0):
-        """
-        Check the installability of a package
-
-        A check is run to see if all the package's Depends satisfiable and
-        that each of these packages are themselves installable too. This
-        recursive search is expensive to do against UDD and other tools like
-        edos-debcheck are better for performing large-scale checks; this
-        function is designed for occasional one-off checks of a package.
-        Recommended packages can be included in the analysis if desired.
-
-        package: name of the package (string)
-        recommends: include Recommended packages in the analysis
-        level: recursion level (private)
-
-        returns: SolverHierarchy object for the installation or None
-        if the package doesn't exist.
-        """
-        s = SolverHierarchy(package, _level)
-        if _level == 0:
-            self._checkInstallCache = {}
-
-        if package in self._checkInstallCache:
-            return
-        self._checkInstallCache[package] = True
-        s.depends = self.Check(package, 'depends')
-        if s.depends == None:   # package not found
-            return None
-        if recommends:
-            s.recommends = self.Check(package, 'recommends')
-        reltypes = ['depends']
-        if recommends:
-            reltypes.append('recommends')
-
-        for reltype in reltypes:
-            for relation in s.get(reltype).good:
-                if not relation.virtual:
-                    relation.status = self.CheckInstall(
-                                                relation.satisfiedBy.package,
-                                                recommends, _level + 1)
-                else:
-                    # virtual package requires separate handling; iterate
-                    # over each of the providers until one is installable
-                    for vpackage in relation.satisfiedBy.packagedata.ProvidersList():
-                        status = self.CheckInstall(vpackage,
-                                                    recommends, _level + 1)
-                        if status:
-                            break
-                    relation.status = status
-        return s
-
-    def CheckBuildDeps(self, package=None, bdList=None, bdiList=None):
-        """
-        Check that the build-depends and build-depends-indep are satisfied
-        for a package in the current release
-            package: string source package name (or binary package name)
-            bdList: RelationshipOptionsList of build-depends to check
-            bdiList: RelationshipOptionsList of build-depends-indep to check
-        Note that if package is specified, bdList and bdiList should not be
-        specified.
-
-            Returns a BuildDepStatus object for the relationships tested.
-            Returns None if the package doesn't exist.
-        """
-        s = package
-        if type(package) == str:
-            s = self.release.Source(package)
-        if not (s and s.Found()) and not (bdList or bdiList):
-            return None
-        if not bdList and s:
-            bdList = s.BuildDependsList()
-        if not bdiList and s:
-            bdiList = s.BuildDependsIndepList()
-        bdstatus = self.CheckRelationshipOptionsList(bdList)
-        bdistatus = self.CheckRelationshipOptionsList(bdiList)
-        return BuildDepStatus(bdstatus, bdistatus)
 
     def CheckRelationshipOptionsList(self, relationlist):
         """Check a set of package relationships to see if they are satisfied
@@ -296,6 +216,106 @@ class RelationChecker(object):
         if relOK:
             rel.packagedata = p
         return relOK
+
+
+class InstallChecker(Checker):
+    """
+    Recursively check package dependencies to determine installability
+
+    Typical usage:
+        udd = Udd()
+        release = udd.BindRelease(arch="i386",release="sid")
+        checker = RelationChecker(release)
+        if checker.CheckInstall('libc6'):
+            ...
+    """
+    def Check(self, package=None, recommends=True, _level=0):
+        """
+        Check the installability of a package
+
+        A check is run to see if all the package's Depends satisfiable and
+        that each of these packages are themselves installable too. This
+        recursive search is expensive to do against UDD and other tools like
+        edos-debcheck are better for performing large-scale checks; this
+        function is designed for occasional one-off checks of a package.
+        Recommended packages can be included in the analysis if desired.
+
+        package: name of the package (string)
+        recommends: include Recommended packages in the analysis
+        level: recursion level (private)
+
+        returns: SolverHierarchy object for the installation or None
+        if the package doesn't exist.
+        """
+        s = SolverHierarchy(package, _level)
+        if _level == 0:
+            self._checkInstallCache = {}
+
+        if package in self._checkInstallCache:
+            return
+        self._checkInstallCache[package] = True
+        s.depends = super(InstallChecker, self).Check(package, 'depends')
+        if s.depends == None:   # package not found
+            return None
+        if recommends:
+            s.recommends = super(InstallChecker, self).Check(package, 'recommends')
+        reltypes = ['depends']
+        if recommends:
+            reltypes.append('recommends')
+
+        for reltype in reltypes:
+            for relation in s.get(reltype).good:
+                if not relation.virtual:
+                    relation.status = self.Check(relation.satisfiedBy.package,
+                                                recommends, _level + 1)
+                else:
+                    # virtual package requires separate handling; iterate
+                    # over each of the providers until one is installable
+                    for vpackage in relation.satisfiedBy.packagedata.ProvidersList():
+                        status = self.Check(vpackage,
+                                            recommends, _level + 1)
+                        if status:
+                            break
+                    relation.status = status
+        return s
+
+
+class BuildDepsChecker(Checker):
+    """
+    Check the build-dependencies of a source package
+
+    Typical usage:
+        udd = Udd()
+        release = udd.BindRelease(arch="i386",release="sid")
+        checker = RelationChecker(release)
+        if checker.CheckBuildDeps('eglibc'):
+            ...
+    """
+    def Check(self, package=None, bdList=None, bdiList=None):
+        """
+        Check that the build-depends and build-depends-indep are satisfied
+        for a package in the current release
+            package: string source package name (or binary package name)
+            bdList: RelationshipOptionsList of build-depends to check
+            bdiList: RelationshipOptionsList of build-depends-indep to check
+        Note that if package is specified, bdList and bdiList should not be
+        specified.
+
+            Returns a BuildDepStatus object for the relationships tested.
+            Returns None if the package doesn't exist.
+        """
+        s = package
+        if type(package) == str:
+            s = self.release.Source(package)
+        if not (s and s.Found()) and not (bdList or bdiList):
+            return None
+        if not bdList and s:
+            bdList = s.BuildDependsList()
+        if not bdiList and s:
+            bdiList = s.BuildDependsIndepList()
+        bdstatus = self.CheckRelationshipOptionsList(bdList)
+        bdistatus = self.CheckRelationshipOptionsList(bdiList)
+        return BuildDepStatus(bdstatus, bdistatus)
 
 
 class SolverHierarchy(object):

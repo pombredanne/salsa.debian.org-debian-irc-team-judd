@@ -137,7 +137,7 @@ class RelationshipOptionsListTests(unittest.TestCase):
         self.assert_(rl.ReleaseMap()['unresolved'])
 
         release = self.udd.BindRelease(arch="i386", release="squeeze")
-        checker = RelationChecker(release)
+        checker = Checker(release)
 
         # all resolvable, options, versioned deps
         p = release.Package("build-essential")
@@ -174,7 +174,7 @@ class RelationshipOptionsListTests(unittest.TestCase):
         self.assert_(rl.PackageSet())
 
         release = self.udd.BindRelease(arch="i386", release="squeeze")
-        checker = RelationChecker(release)
+        checker = Checker(release)
 
         # all resolvable, options, versioned deps
         p = release.Package("build-essential")
@@ -253,14 +253,14 @@ class BuildDepStatusTests(unittest.TestCase):
 
     def testAllFound(self):
         release = self.udd.BindRelease(arch="i386", release="squeeze")
-        checker = RelationChecker(release)
+        checker = Checker(release)
         p = release.Source("eglibc")
         bdstatus = BuildDepStatus(bd=checker.CheckRelationshipOptionsList(p.BuildDependsList()),
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))
         self.assert_(bdstatus.AllFound())
 
         release = self.udd.BindRelease(arch="i386", release="sid")
-        checker = RelationChecker(release)
+        checker = Checker(release)
         p = release.Source("stage")   # has been BD-uninstallable since 2009
         bdstatus = BuildDepStatus(bd=checker.CheckRelationshipOptionsList(p.BuildDependsList()),
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))
@@ -268,7 +268,7 @@ class BuildDepStatusTests(unittest.TestCase):
 
     def testReleaseMap(self):
         release = self.udd.BindRelease(arch="i386", release="squeeze")
-        checker = RelationChecker(release)
+        checker = Checker(release)
         p = release.Source("eglibc")
         bdstatus = BuildDepStatus(bd=checker.CheckRelationshipOptionsList(p.BuildDependsList()),
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))
@@ -277,7 +277,7 @@ class BuildDepStatusTests(unittest.TestCase):
         self.assert_(len(m['squeeze']) > 1)
 
         release = self.udd.BindRelease(arch="i386", release=["squeeze", "squeeze-backports"])
-        checker = RelationChecker(release)
+        checker = Checker(release)
         p = release.Source("libxfont1", version='1:1.4.3', operator='>>')
         bdstatus = BuildDepStatus(bd=checker.CheckRelationshipOptionsList(p.BuildDependsList()),
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))
@@ -289,7 +289,7 @@ class BuildDepStatusTests(unittest.TestCase):
         self.assert_(str(bdstatus))
 
         release = self.udd.BindRelease(arch="i386", release="squeeze")
-        checker = RelationChecker(release)
+        checker = Checker(release)
         p = release.Source("eglibc")
         bdstatus = BuildDepStatus(bd=checker.CheckRelationshipOptionsList(p.BuildDependsList()),
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))

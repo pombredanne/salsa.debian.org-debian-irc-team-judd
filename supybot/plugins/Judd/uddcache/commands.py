@@ -179,7 +179,7 @@ class Commands(Udd):
         """
         releases = self.data.list_dependent_releases(release)
         r = self.BindRelease(arch=arch, release=releases)
-        relchecker = RelationChecker(r)
+        relchecker = Checker(r)
 
         statusdict = {}
         for rel in relations:
@@ -192,8 +192,8 @@ class Commands(Udd):
     def checkInstall(self, package, release, arch, withrecommends):
         releases = self.data.list_dependent_releases(release)
         r = Release(self.psql, arch=arch, release=releases)
-        relchecker = RelationChecker(r)
-        status = relchecker.CheckInstall(package, withrecommends)
+        relchecker = InstallChecker(r)
+        status = relchecker.Check(package, withrecommends)
 
         if not status:
             return None
@@ -201,7 +201,6 @@ class Commands(Udd):
 #        print status
 #        print "Summary"
         s = status.flatten()
-#        print s
         return s
 
     def checkBackport(self, package, fromrelease, torelease):
@@ -210,10 +209,10 @@ class Commands(Udd):
         specified as "fromrelease" are satisfiable for in "torelease" for the
         given host architecture.
         """
-        relchecker = RelationChecker(torelease)
+        relchecker = BuildDepsChecker(torelease)
 
         s = fromrelease.Source(package)
         if not s.Found():
             return None
 
-        return relchecker.CheckBuildDeps(s)
+        return relchecker.Check(s)

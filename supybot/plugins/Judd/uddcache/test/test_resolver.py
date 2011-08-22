@@ -48,13 +48,13 @@ if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_T
     includeSlowTests = 0
 
 
-class RelationCheckerTests(unittest.TestCase):
+class CheckerTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
-        self.checker = RelationChecker(self.udd.BindRelease(arch="i386", release="lenny"))
+        self.checker = Checker(self.udd.BindRelease(arch="i386", release="lenny"))
 
     def testInit(self):
-        self.assertRaises(TypeError, RelationChecker, None)
+        self.assertRaises(TypeError, Checker, None)
 
     def testCheckRelationsList(self):
         """Test checking the dependencies of a package"""
@@ -82,69 +82,6 @@ class RelationCheckerTests(unittest.TestCase):
         # bad input object
         r = self.checker.CheckRelationshipOptionsList(None)
         self.assert_(not r is None)
-
-    def testCheck(self):
-        # package with no dependencies
-        c = self.checker.Check(package="when")
-        self.assert_(not c is None)
-        self.assert_(len(c.good) == 0)
-        self.assert_(len(c.bad) == 0)
-        # known good package
-        c = self.checker.Check(package="libc6")
-        self.assert_(c)
-        self.assert_(len(c.good) > 0)
-        self.assert_(len(c.bad) == 0)
-        # known bad package [ca-certificates-java is not in lenny]
-        c = self.checker.Check(package="openjdk-6-jre-headless", relation='recommends')
-        self.assert_(c)
-        self.assert_(len(c.bad) > 0)
-        # non-existent package
-        c = self.checker.Check(package="no-such-package")
-        self.assert_(c == None)
-        # conflicts in a package
-        c = self.checker.Check(package="dpkg", relation="conflicts")
-        self.assert_(c)
-        self.assert_(len(c.good) > 0)
-        self.assert_(len(c.bad) == 0)
-        # non-existent conflicts in a package
-        c = self.checker.Check(package="libapr1", relation="conflicts")
-        self.assert_(c)
-        self.assert_(len(c.good) > 0)
-        self.assert_(len(c.bad) == 0)
-
-    def testCheckBuildDeps(self):
-        """Test checking the build-dependencies of a package"""
-        # simple package, check by source package name
-        b = self.checker.CheckBuildDeps(package="pyxplot")
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
-        self.assert_(len(b.bd.bad) == 0)
-        # big complicated package with lots of arch-dependent entries, check by binary name
-        b = self.checker.CheckBuildDeps(package="libc6")
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
-        self.assert_(len(b.bdi.good) > 0)
-        self.assert_(len(b.bd.bad) == 0)
-        self.assert_(len(b.bdi.bad) == 0)
-        # check by SourcePackage object
-        p = self.udd.BindSourcePackage(package="latexdraw", release="sid")
-        b = self.checker.CheckBuildDeps(package=p)
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
-        self.assert_(len(b.bd.bad) == 0)
-        # non-existent package
-        self.assertFalse(self.checker.CheckBuildDeps(package="no-such-package"))
-        # bd and bdi lists
-        p = self.udd.BindSourcePackage(package="libc6")
-        bd = p.RelationshipOptionsList("build_depends")
-        b = self.checker.CheckBuildDeps(bdList=bd)
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
-        b = self.checker.CheckBuildDeps(bdList=p.RelationshipOptionsList("build_depends"),
-                                        bdiList=p.RelationshipOptionsList("build_depends"))
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
-        self.assert_(len(b.bdi.good) > 0)
 
     def testCheckRelationArch(self):
         """Check architecture-specific dependency syntax"""
@@ -212,14 +149,89 @@ class RelationCheckerTests(unittest.TestCase):
         r = Relationship(relation="no-such-package [i386]")
         self.assertFalse(self.checker.RelationSatisfied(r))
 
+    def testCheck(self):
+        # package with no dependencies
+        c = self.checker.Check(package="when")
+        self.assert_(not c is None)
+        self.assert_(len(c.good) == 0)
+        self.assert_(len(c.bad) == 0)
+        # known good package
+        c = self.checker.Check(package="libc6")
+        self.assert_(c)
+        self.assert_(len(c.good) > 0)
+        self.assert_(len(c.bad) == 0)
+        # known bad package [ca-certificates-java is not in lenny]
+        c = self.checker.Check(package="openjdk-6-jre-headless", relation='recommends')
+        self.assert_(c)
+        self.assert_(len(c.bad) > 0)
+        # non-existent package
+        c = self.checker.Check(package="no-such-package")
+        self.assert_(c == None)
+        # conflicts in a package
+        c = self.checker.Check(package="dpkg", relation="conflicts")
+        self.assert_(c)
+        self.assert_(len(c.good) > 0)
+        self.assert_(len(c.bad) == 0)
+        # non-existent conflicts in a package
+        c = self.checker.Check(package="libapr1", relation="conflicts")
+        self.assert_(c)
+        self.assert_(len(c.good) > 0)
+        self.assert_(len(c.bad) == 0)
+
+
+class BuildDepCheckerTests(unittest.TestCase):
+    def setUp(self):
+        self.udd = Udd()
+        self.checker = BuildDepsChecker(self.udd.BindRelease(arch="i386", release="lenny"))
+
+    def testCheck(self):
+        """Test checking the build-dependencies of a package"""
+        # simple package, check by source package name
+        b = self.checker.Check(package="pyxplot")
+        self.assert_(b)
+        self.assert_(len(b.bd.good) > 0)
+        self.assert_(len(b.bd.bad) == 0)
+        # big complicated package with lots of arch-dependent entries, check by binary name
+        b = self.checker.Check(package="libc6")
+        self.assert_(b)
+        self.assert_(len(b.bd.good) > 0)
+        self.assert_(len(b.bdi.good) > 0)
+        self.assert_(len(b.bd.bad) == 0)
+        self.assert_(len(b.bdi.bad) == 0)
+        # check by SourcePackage object
+        p = self.udd.BindSourcePackage(package="latexdraw", release="sid")
+        b = self.checker.Check(package=p)
+        self.assert_(b)
+        self.assert_(len(b.bd.good) > 0)
+        self.assert_(len(b.bd.bad) == 0)
+        # non-existent package
+        self.assertFalse(self.checker.Check(package="no-such-package"))
+        # bd and bdi lists
+        p = self.udd.BindSourcePackage(package="libc6")
+        bd = p.RelationshipOptionsList("build_depends")
+        b = self.checker.Check(bdList=bd)
+        self.assert_(b)
+        self.assert_(len(b.bd.good) > 0)
+        b = self.checker.Check(bdList=p.RelationshipOptionsList("build_depends"),
+                               bdiList=p.RelationshipOptionsList("build_depends"))
+        self.assert_(b)
+        self.assert_(len(b.bd.good) > 0)
+        self.assert_(len(b.bdi.good) > 0)
+
+
+class InstallCheckerTests(unittest.TestCase):
+    def setUp(self):
+        self.udd = Udd()
+        self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="lenny"))
+
     @unittest.skipUnless(includeSlowTests, 'slow test')
-    def testCheckInstall(self):
+    def testCheck(self):
         """Test installability of packages"""
         # FIXME: it would be good to check if these results are right
-        self.assert_(self.checker.CheckInstall('libc6'))
-        self.assert_(self.checker.CheckInstall('nosuchpackage') is None)
-        self.assert_(self.checker.CheckInstall('perl', True))
-        self.assert_(self.checker.CheckInstall('openjdk-6-jre-headless', True))   # missing recommended package
+        self.assert_(self.checker.Check('libc6'))
+        self.assert_(self.checker.Check('nosuchpackage') is None)
+        self.assert_(self.checker.Check('perl', True))
+        self.assert_(self.checker.Check('openjdk-6-jre-headless', True))   # missing recommended package
 
 #
 #
@@ -248,15 +260,15 @@ class SolverHierarchyTests(unittest.TestCase):
         self.assertFalse(s.get('recommends'))
 
     def testFlatten(self):
-        self.checker = RelationChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
-        s = self.checker.CheckInstall('perl', True)
+        self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
+        s = self.checker.Check('perl', True)
         f = s.flatten()
         self.assert_(f)
         self.assert_(len(f.depends))
 
     def testStr(self):
-        self.checker = RelationChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
-        s = self.checker.CheckInstall('perl', True)
+        self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
+        s = self.checker.Check('perl', True)
         self.assert_(unicode(s))
         self.assert_(str(s))
         f = s.flatten()
