@@ -49,6 +49,7 @@ my $sleep    = 4;                # break between tests so the bot doesn't flood
 my $noact    = 0;                # don't act
 my $verbose  = 0;                # verbosity
 my $help     = 0;
+my @exclude = qw{update};        # list of tests not to perform
 
 
 GetOptions(
@@ -59,6 +60,7 @@ GetOptions(
              'bot=s'          => \$bot,
              'sleep=s'        => \$sleep,
              'noact'          => \$noact,
+             'exclude=s@'     => \@exclude,
              'verbose'        => \$verbose,
              'help'           => \$help,
           );
@@ -103,13 +105,20 @@ while ($line = <TESTS>) {
 }
 close(TESTS);
 
+foreach (@exclude) {
+  print "Excluding: $_\n";
+}
+
 # run the tests
 foreach my $t (@TESTS) {
   #print "t=$t\n";
-  if ($t->{test} !~ /^update/) {
-    dotest($t);
-    sleep($sleep);
+  my ($tname,@junk) = split(/\s+/, $t->{test});
+  if (grep {/^$tname$/} @exclude) {
+    print "skip $t->{test}\n";
+    next;
   }
+  dotest($t);
+  sleep($sleep);
 }
 
 ##########################################################################
