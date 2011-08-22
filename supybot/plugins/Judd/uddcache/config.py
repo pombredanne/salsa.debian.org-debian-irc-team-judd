@@ -60,7 +60,7 @@ import os.path
 import ConfigParser
 
 
-class Config:
+class Config(object):
     def __init__(self, file=None, skipDefaultFiles=False, confdict=None):
         self.filename = file
         self.config = None

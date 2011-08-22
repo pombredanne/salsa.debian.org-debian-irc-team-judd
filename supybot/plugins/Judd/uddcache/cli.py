@@ -67,6 +67,7 @@ class Cli():
                 'enhances':     self.depends,
                 'conflicts':    self.depends,
                 'checkdeps':    self.checkdeps,
+                'checkbuilddeps': self.checkbuilddeps,
                 'checkinstall': self.checkinstall,
                 'checkbackport': self.checkbackport
                 }
@@ -82,8 +83,9 @@ class Cli():
                 'build-deps':   'builddeps',
                 }
         if initialise:
-            self.udd = uddcache.commands.Commands(config=config,
+            self.udd = uddcache.udd.Udd(config=config,
                                                   distro=options.distro)
+            self.dispatcher = uddcache.commands.Commands(self.udd)
             self.options = options
 
     def is_valid_command(self, command):
@@ -122,7 +124,7 @@ class Cli():
                                    args=args, default=None)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        pkgs = self.udd.versions(package, release, arch)
+        pkgs = self.dispatcher.versions(package, release, arch)
         if not pkgs:
             return self.notfound(package, release, arch)
 
@@ -145,7 +147,7 @@ class Cli():
                                                    args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        p = self.udd.info(package, release, arch)
+        p = self.dispatcher.info(package, release, arch)
         if p:
             print "Package: %s (%s, %s)" % \
                             (package, p['section'], p['priority'])
@@ -167,7 +169,7 @@ class Cli():
                                                    args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        pkgs = self.udd.names(package, release, arch)
+        pkgs = self.dispatcher.names(package, release, arch)
         if not pkgs:
             return self.notfound(package, release, arch,
                              message="No packages matching %s were found%s.")
@@ -192,7 +194,7 @@ class Cli():
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
 
-        pkgs = self.udd.archs(package, release)
+        pkgs = self.dispatcher.archs(package, release)
 
         if not pkgs:
             return self.notfound(package, release)
@@ -331,7 +333,7 @@ class Cli():
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
         p = self.udd.BindSourcePackage(package, release)
-        uploads = self.udd.uploads(p, max=10)
+        uploads = self.dispatcher.uploads(p, max=10)
         if not uploads:
             return self.notfound(package)
         format = "%-20s %-10s %-20s %-20s %s"
@@ -349,7 +351,7 @@ class Cli():
         version = ""
         if args:
             version = args.pop(0)
-        uploads = self.udd.uploads(p, max=1, version=version)
+        uploads = self.dispatcher.uploads(p, max=1, version=version)
         if not uploads:
             return self.notfound(package)
         u = uploads[0]
@@ -366,7 +368,7 @@ class Cli():
     def popcon(self, command, package, args):
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
-        d = self.udd.popcon(package)
+        d = self.dispatcher.popcon(package)
         if not d:
             return self.notfound(package)
         print "Popcon data for %s:" % package
@@ -399,7 +401,7 @@ class Cli():
         if not relation:
             relation = self.udd.data.relations
 
-        status = self.udd.checkdeps(package, release, arch, relation)
+        status = self.dispatcher.checkdeps(package, release, arch, relation)
 
         if status == None:
             return self.notfound(package, release, arch)
@@ -413,15 +415,42 @@ class Cli():
                 else:
                     print "%s: satisfied" % label
 
+
+    def checkbuilddeps(self, command, package, args):
+        """
+        Check a package's build-dependencies are satisfiable
+
+        Checks that each Build-Depends and Build-Depends-Indep package
+        as listed by a source package is satisfiable for the
+        specified release and architecture.
+
+        By default, the current stable release and i386 are used.
+        """
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
+        arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
+
+        r = self.udd.BindRelease(arch=arch, release=release)
+        status = self.dispatcher.checkBackport(package, r, r)
+        print "Build-depenency check for %s in %s/%s:" % \
+                (package, release, arch)
+        print "Checked: %s" % ", ".join(r.release)
+
+        if not status:
+            return self.notfound(package)
+
+        self._builddeps_status_formatter(status)
+
+
     def checkinstall(self, command, package, args):
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        status = self.udd.checkInstall(package, release, arch,
+        solverh = self.dispatcher.checkInstall(package, release, arch,
                               self.options.withrecommends)
-        if status:
-            print status
+        if solverh:
+            print solverh
         else:
             return self.notfound(package, release, arch)
 
@@ -450,13 +479,18 @@ class Cli():
         tr = self.udd.BindRelease(arch=arch,
                         release=releases, pins=pins)
 
-        status = self.udd.checkBackport(package, fr, tr)
+        status = self.dispatcher.checkBackport(package, fr, tr)
         print "Backport check for %s in %s->%s/%s:" % \
                 (package, fromrelease, torelease, arch,)
         print "Checked: %s" % ", ".join(tr.release)
 
         if not status:
             return self.notfound(package)
+
+        self._builddeps_status_formatter(status)
+
+    @classmethod
+    def _builddeps_status_formatter(self, status):
 
         if not status.AllFound():  # packages missing
             badrels = self._builddeps_formatter(status, data='bad')

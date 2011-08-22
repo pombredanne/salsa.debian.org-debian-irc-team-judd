@@ -56,7 +56,6 @@ class database(unittest.TestCase):
         """Test loading a config file manually"""
         config = Config()
         self.assert_(Udd(config=config))
-        self.assertRaises(ValueError,  Udd,  config=False)
 
     def testRelease(self):
         """Test binding to a release and doing a lookup"""

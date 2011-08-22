@@ -57,11 +57,8 @@ class Udd():
                     config file
         """
         if type(config) is str or config is None:
-            self.config = Config(config)
-        elif isinstance(config, Config):
-            self.config = config
-        else:
-            raise ValueError("No database configuration provided")
+            config = Config(config)
+        self.config = config
         self.psql = None
         self._connect(logfile)
         if distro == 'debian':

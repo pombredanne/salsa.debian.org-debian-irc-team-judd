@@ -41,10 +41,13 @@ from resolver import *
 from debian import debian_support
 
 
-class Commands(Udd):
+class Commands(object):
+
+    def __init__(self, udd):
+        self.udd = udd
 
     def versions(self, package, release, arch):
-        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = self.udd.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
         if package.startswith('src:'):
             packagename = package[4:]
             sql = r"""SELECT DISTINCT release,version,component
@@ -61,6 +64,7 @@ class Commands(Udd):
             if release:
                 sql += " AND release=%(release)s"
 
+        sql += ' ORDER BY version'
         c.execute(sql,
                   dict(package=packagename,
                        arch=arch,
@@ -70,12 +74,12 @@ class Commands(Udd):
         for row in c.fetchall():
             pkgs.append(row)
 
-        pkgs.sort(lambda a, b:
-                    debian_support.version_compare(a['version'], b['version']))
+#        pkgs.sort(lambda a, b:
+#                    debian_support.version_compare(a['version'], b['version']))
         return pkgs
 
     def info(self, package, release, arch):
-        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = self.udd.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
         c.execute(r"""SELECT p.section, p.priority, p.version,
                       p.size, p.installed_size, p.description,
                       p.homepage, s.screenshot_url
@@ -94,7 +98,7 @@ class Commands(Udd):
         """
         Search package names with * and ? as wildcards.
         """
-        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = self.udd.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         packagesql = package.replace("*", "%")
         packagesql = packagesql.replace("?", "_")
@@ -125,7 +129,7 @@ class Commands(Udd):
         """
         Find in which architectures a package is available.
         """
-        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = self.udd.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
         c.execute(r"""SELECT architecture, version
                       FROM packages
                       WHERE package=%(package)s
@@ -139,7 +143,7 @@ class Commands(Udd):
         Return the dates and versions of recent uploads of the specified source
         package.
         """
-        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = self.udd.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
         if type(package) == str:
             p = package
         else:
@@ -165,7 +169,7 @@ class Commands(Udd):
         binary package.
         See also: http://popcon.debian.org/FAQ
         """
-        c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = self.udd.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
         c.execute(r"""SELECT insts, vote, olde, recent, nofiles
                       FROM popcon
                       WHERE package=%(package)s""",
@@ -177,8 +181,8 @@ class Commands(Udd):
         Check that the dependencies listed by a package are satisfiable for the
         specified release and architecture.
         """
-        releases = self.data.list_dependent_releases(release)
-        r = self.BindRelease(arch=arch, release=releases)
+        releases = self.udd.data.list_dependent_releases(release)
+        r = self.udd.BindRelease(arch=arch, release=releases)
         relchecker = Checker(r)
 
         statusdict = {}
@@ -190,17 +194,17 @@ class Commands(Udd):
         return statusdict
 
     def checkInstall(self, package, release, arch, withrecommends):
-        releases = self.data.list_dependent_releases(release)
-        r = Release(self.psql, arch=arch, release=releases)
+        releases = self.udd.data.list_dependent_releases(release)
+        r = Release(self.udd.psql, arch=arch, release=releases)
         relchecker = InstallChecker(r)
-        status = relchecker.Check(package, withrecommends)
+        solverh = relchecker.Check(package, withrecommends)
 
-        if not status:
+        if not solverh:
             return None
 
 #        print status
 #        print "Summary"
-        s = status.flatten()
+        s = solverh.flatten()
         return s
 
     def checkBackport(self, package, fromrelease, torelease):

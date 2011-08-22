@@ -37,6 +37,7 @@ class AvailableData:
     """ Base class for available data across all distros """
     release_map = {}
     releases = []
+    devel_release = ''
     arches = []
 
     relations = [
@@ -138,6 +139,7 @@ class DebianData(AvailableData):
                     'oldstable':           'lenny',
                     'oldstable-backports': 'lenny-backports'
                 }
+
     releases = [
                     'lenny',
                     'lenny-multimedia',
@@ -157,6 +159,8 @@ class DebianData(AvailableData):
                     'sid-multimedia',
                     'experimental',
                 ]
+
+    devel_release = 'sid'
 
     arches = ['alpha', 'amd64', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64',
                'kfreebsd-amd64', 'kfreebsd-i386',
