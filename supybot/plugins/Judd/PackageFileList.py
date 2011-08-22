@@ -28,6 +28,7 @@
 
 ###
 
+""" Contents file results parsing """
 
 class PackageFileList:
     """
@@ -35,32 +36,44 @@ class PackageFileList:
     """
 
     def __init__(self):
+        """ Create internal storage """
         self.packages = {}
 
-    def add(self, f, p):
-        for pack in p:
+    def add(self, filename, packagelist):
+        """ Add a file and set of packages containing that file"""
+        for pack in packagelist:
             if not pack in self.packages.keys():
                 self.packages[pack] = []
-            self.packages[pack].append(f)
+            self.packages[pack].append(filename)
 
-    def toString(self, boldfn):
+    def to_string(self, boldfn):
+        """ Turn the list into a condensed one-line string output """
         s = []
-        for p in self.packages.keys():
-            #section,name = p.split('/')
-            info = p.split('/')
+        for pack in self.packages.keys():
+            # either section/package (shells/bash) or
+            # component/section/package (non-free/editors/axe)
+            info = pack.split('/')
             if len(info) == 2:
                 name = info[1]
             elif len(info) == 3:
                 name = info[2]
-            s.append("%s: %s" % (boldfn(name), ", ".join(self.packages[p])))
+            s.append("%s: %s" % (boldfn(name), ", ".join(self.packages[pack])))
         return "; ".join(s)
 
     def __len__(self):
+        """ Return the number of packages in the list """
         return len(self.packages.keys())
 
     def __str__(self):
+        """ Turn the list into a condensed one-line string (simple) """
         s = []
-        for p in self.packages.keys():
-            section,name = p.split('/')
-            s.append("%s: %s" % (name, ", ".join(self.packages[p])))
+        for pack in self.packages.keys():
+           # either section/package (shells/bash) or
+            # component/section/package (non-free/editors/axe)
+            info = pack.split('/')
+            if len(info) == 2:
+                name = info[1]
+            elif len(info) == 3:
+                name = info[2]
+            s.append("%s: %s" % (name, ", ".join(self.packages[pack])))
         return "; ".join(s)

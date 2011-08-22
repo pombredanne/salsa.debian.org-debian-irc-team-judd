@@ -111,22 +111,22 @@ class DebianTestCase(PluginTestCase):
 
     def testCheckDeps(self):
         self.assertNotError('checkdeps libc6')                  # all dependencies present; all depends, recommends and suggests are fulfilled
-        self.assertNotError('checkdeps openjdk-6-jre-headless') # missing recommends; package ca-certificates-java is recommended but not in lenny
-        self.assertNotError('checkdeps openjdk-6-jre-headless --release sid') # check release selection; all relations fulfilled
-        self.assertNotError('checkdeps ffmpeg --release lenny-multimedia') # check release fallback; all relations fulfilled only if fallback to main archive
+        self.assertNotError('checkdeps openjdk-6-jre-headless')  # missing recommends; package ca-certificates-java is recommended but not in lenny
+        self.assertNotError('checkdeps openjdk-6-jre-headless --release sid')  # check release selection; all relations fulfilled
+        self.assertNotError('checkdeps ffmpeg --release lenny-multimedia')  # check release fallback; all relations fulfilled only if fallback to main archive
         self.assertNotError('checkdeps nosuchpackage')          # package not found; no such package in the archive
 
     def testCheckBuildDeps(self):
-        self.assertNotError('checkbuilddeps eglibc --release sid') # source package selection; build-deps are fulfilled
+        self.assertNotError('checkbuilddeps eglibc --release sid')  # source package selection; build-deps are fulfilled
         self.assertNotError('checkbuilddeps libc6')             # binary package selection; build-deps are fulfilled
-        self.assertNotError('checkbuilddeps ffmpeg --release lenny-multimedia') # fallback to official repo; all build-deps are fulfilled but only if lenny itself is included
+        self.assertNotError('checkbuilddeps ffmpeg --release lenny-multimedia')  # fallback to official repo; all build-deps are fulfilled but only if lenny itself is included
         self.assertNotError('checkbuilddeps nosuchpackage')     # package not found; no such package in the archive
 
     def testCheckbackport(self):
         self.assertNotError('checkbackport debhelper')          # simple sid backport; all build-deps should be fulfilled
         self.assertNotError('checkbackport iceweasel')          # backport requires bpo as well; all build-deps should be fulfilled with some from backports.org
-        self.assertNotError('checkbackport iceweasel --torelease etch') # backport not possible; impossible build-deps in etch+etch-backports
-        self.assertNotError('checkbackport iceweasel --fromrelease lenny --torelease etch') # from/to release selection; impossible build-deps in etch+etch-backports
+        self.assertNotError('checkbackport iceweasel --torelease etch')  # backport not possible; impossible build-deps in etch+etch-backports
+        self.assertNotError('checkbackport iceweasel --fromrelease lenny --torelease etch')  # from/to release selection; impossible build-deps in etch+etch-backports
         self.assertNotError('checkbackport python-pyx')         # bin2src autoselection; impossible build-deps in lenny+lenny-backports
         self.assertNotError('checkbackport nosuchpackage')      # package not found; no such package in the archive
 

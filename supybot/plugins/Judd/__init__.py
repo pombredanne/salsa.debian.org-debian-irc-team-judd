@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2007, Mike O'Connor
+#               2011, Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -48,11 +49,11 @@ __author__ = supybot.authors.unknown
 __contributors__ = {}
 
 # This is a url where the most recent plugin package can be downloaded.
-__url__ = 'whatever';
+__url__ = 'http://git.nanonanonano.net/?p=judd.git'
 
 import config
 import plugin
-reload(plugin) # In case we're being reloaded.
+reload(plugin)  # In case we're being reloaded.
 # Add more reloads here if you add third-party modules and want them to be
 # reloaded when this plugin is reloaded.  Don't forget to import them as well!
 

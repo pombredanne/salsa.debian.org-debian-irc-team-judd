@@ -1,6 +1,8 @@
 ###
+# -*- coding: utf-8 -*-
+#
 # Copyright (c) 2007,2008, Mike O'Connor
-# Copyright (c) 2010,      Stuart Prescott
+# Copyright (c) 2010,2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,11 +39,11 @@ from supybot.commands import *
 import supybot.plugins as plugins
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
-from debian_bundle import debian_support
 
 import re
 import psycopg2
 import psycopg2.extras
+
 
 import os
 #import gzip
@@ -51,457 +53,18 @@ import fnmatch
 import subprocess
 #from supybot.utils.iter import all, imap, ifilter
 from PackageFileList import PackageFileList
+#
+#release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny', 'stable-backports':'lenny-backports' }
+#releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'lenny-backports', 'lenny-volatile', 'squeeze', 'squeeze-security', 'squeeze-multimedia', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
+#
+#arches = [ 'alpha', 'amd64', 'arm', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
 
-release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny', 'stable-backports':'lenny-backports' }
-releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'lenny-backports', 'lenny-volatile', 'squeeze', 'squeeze-security', 'squeeze-multimedia', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
 
-arches = [ 'alpha', 'amd64', 'arm', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
-
-def parse_standard_options(optlist, args=[]):
-    release = CleanReleaseName(optlist=optlist, args=args)
-    arch    = CleanArchName(optlist=optlist, args=args)
+def parse_standard_options(optlist, args=None):
+    release = clean_release_name(optlist=optlist, args=args)
+    arch = clean_arch_name(optlist=optlist, args=args)
     return release, arch
 
-def CleanReleaseName(name=None, optlist=[], optname="release", args=[], default="stable"):
-    """
-    Sanitised release name, extracting it from various data sources if desired
-    """
-    # Look for the name in an optlist, free-text args and simply specified
-    r = default
-    for (option,arg) in optlist:
-        if option == optname:
-            r = arg;
-    for arg in args:
-        if arg in releases:
-          r = arg
-    if name:
-        r = name
-    # Sanitise the name
-    if not r in releases:
-        r = default
-    if release_map.has_key(r):
-        r = release_map[r]
-    return r
-
-def CleanArchName(name=None, optlist=[], optname="arch", args=[], default="i386"):
-    """
-    Sanitised architecture name, extracting it from various data sources if desired
-    """
-    # Look for the name in an optlist, free-text args and simply specified
-    a = default
-    for (option,arg) in optlist:
-        if option == optname:
-            a = arg;
-    for arg in args:
-        if arg in releases:
-          r = arg
-    if name:
-        a = name
-    # Sanitise the name
-    if not a in arches:
-        a = default
-    return a
-
-class Release:
-    def __init__(self, dbconn, arch="i386", release="lenny", **kwargs):
-        self.dbconn = dbconn
-        self.arch = arch
-        if type(release) is tuple:
-            self.release = release
-        elif type(release) is list:
-            self.release = tuple(release)
-        else:
-            self.release = (release,)
-        self.cache = {}
-        self.scache = {}
-
-    def Package(self, package):
-        if not self.cache.has_key(package):
-            self.cache[package] = Package(self.dbconn, arch=self.arch, \
-                                  release=self.release, package=package)
-        return self.cache[package]
-
-    def Source(self, package, autoBin2Src=True):
-        if not self.scache.has_key(package):
-            self.scache[package] = SourcePackage(self.dbconn, arch=self.arch, \
-                                  release=self.release, package=package)
-            if autoBin2Src and not self.scache[package].Found():
-                p = self.bin2src(package)
-                if p:
-                    self.Source(p, False)
-                    return self.scache[p]
-        return self.scache[package]
-
-    def bin2src(self, package):
-        """Returns the source package for a given binary package"""
-        c = self.dbconn.cursor()
-        c.execute(r"""SELECT source
-                      FROM packages
-                      WHERE package=%(package)s
-                        AND release IN %(release)s LIMIT 1""",
-                   dict( package=package,
-                         release=self.release) );
-        row = c.fetchone()
-        if row:
-            return row[0]
-        else:
-            return
-
-
-class RelationChecker():
-    def __init__(self, release):
-        self.release = release
-
-    def CheckInstall(self, package=None, recommends=True):
-        pass
-
-    def Check(self, package=None, relation='depends'):
-        p = self.release.Package(package)
-        if not p.Found():
-            return None
-        status = self.CheckRelationsList(p.RelationsEntryList(relation))
-        if relation == 'conflicts':
-            status.swap()
-        return status
-
-    def CheckBuildDeps(self, package=None, bdList=None, bdiList=None):
-        s = package
-        if type(package) == str:
-            s = self.release.Source(package)
-        if not (s and s.Found()) and not (bdList or bdiList):
-            return None
-        if not bdList and s:
-            bdList = s.RelationsEntryList('build_depends')
-        if not bdiList and s:
-            bdiList = s.RelationsEntryList('build_depends_indep')
-        bdstatus  = self.CheckRelationsList(bdList)
-        bdistatus = self.CheckRelationsList(bdiList)
-        return BuildDepStatus(bdstatus, bdistatus)
-
-    def CheckRelationsList(self, relationlist):
-        status = RelationshipStatus()
-        for opts in relationlist:
-            #print "Considering fragment %s" % str(opts)
-            satisfied = False
-            for item in opts:
-                #print "== part %s (%d)" % (item, len(opts))
-                satisfied = self.RelationSatisfied(item)
-                if satisfied:
-                    opts.satisfiedBy = item
-                    opts.virtual     = item.virtual
-                    opts.satisfied   = True
-                    opts.package     = item.packagedata
-                    break
-            if not satisfied:
-                status.bad.append(opts)
-            else:
-                status.good.append(opts)
-        return status
-
-    def CheckRelationArch(self, arch):
-        """
-        Compare the architecture restriction to the arch of the release being studied.
-        Examples:
-          i386
-          i386 amd64
-          !i386 !amd64
-        See http://www.debian.org/doc/debian-policy/ch-relationships.html for details
-        """
-        if not arch:  # if there are no restrictions then it applies
-            return True
-
-        # Policy requires that all specifiers be positive or all be negative
-        neg = arch[0].startswith('!')
-        if neg:
-            a = map(lambda x: x[1:], arch)
-            #print "Negated match"
-            return not self.release.arch in a
-        return self.release.arch in arch
-
-    def RelationSatisfied(self, rel):
-        #print "Checking relationship for '%s', '%s', '%s' on %s" % \
-        #             (rel.package, rel.operator, rel.version, rel.arch)
-        if not self.CheckRelationArch(rel.arch):
-            #print "    doesn't apply"
-            rel.archIgnore = True
-            return True
-
-        p = self.release.Package(rel.package)
-        if not p.Found():
-          rel.virtual = p.IsVirtual()
-          return rel.virtual
-
-        version = p.data['version']
-        # see policy s7.1
-        # http://www.debian.org/doc/debian-policy/ch-relationships.html
-        relOK = True
-        if rel.operator:
-            depver = debian_support.Version(rel.version)  # version from dep line
-            aver   = debian_support.Version(version)      # version in archive
-            #print "    versions comparison %s %s %s %s" % (rel.package, aver, rel.operator, depver)
-            if rel.operator == ">>": # strictly greater than
-                relOK = aver > depver
-            elif rel.operator == ">=": # greater than or equal to
-                relOK = aver >= depver
-            elif rel.operator == "=": # equal to
-                relOK = aver == depver
-            elif rel.operator == "<=": # less than or equal to
-                relOK = aver >= depver
-            elif rel.operator == "<<": # strictly less than
-                relOK = aver < depver
-            else:
-                raise ValueError("Odd relation found for dependency %s: %s %s %s" % \
-                                (rel.package, relver, rel.operator, depver))
-        if relOK:
-            rel.packagedata = p
-        return relOK
-
-class Package:
-    fields  = ['*']
-    table   = 'packages'
-    column  = 'package'
-    def __init__(self, dbconn, arch="i386", release="lenny", package=None, version=None, **kwargs):
-        if not package:
-            raise ValueError("Package name not specified")
-        self.dbconn = dbconn
-        self.arch = arch
-        if type(release) is tuple:
-            self.release = release
-        elif type(release) is list:
-            self.release = tuple(release)
-        else:
-            self.release = (release,)
-        self.package = package
-        self.version = version
-        self.virtual = None
-        self._ProvidersList = None
-        self._Fetch()
-
-    def _Fetch(self):
-        #print "Looking for %s in %s/%s." % (self.package, self.release, self.arch)
-        # TODO: have the "version" do something useful
-        c = self.dbconn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        f = ','.join(self.fields)
-        c.execute(r"""SELECT """ + f + """
-                      FROM """ + self.table + """
-                      WHERE """ + self.column + """=%(package)s
-                        AND (architecture='all' OR architecture=%(arch)s)
-                        AND release IN %(release)s
-                      ORDER BY version DESC
-                      LIMIT 1""",
-                   dict( package=self.package,
-                         arch=self.arch,
-                         release=self.release) );
-        self.data = c.fetchone()
-
-    def Found(self):
-        return self.data != None
-
-    def IsVirtual(self):
-        if self.virtual == None:
-            self.virtual = (self.ProvidersList() != [])
-        return self.virtual
-
-    def ProvidersList(self):
-        if self._ProvidersList == None:
-            # remove all characters from the package name that aren't legal in a
-            # package name i.e. not in:
-            #    a-z0-9-.+
-            # see s5.6.1 of Debian Policy "Source" for details.
-            # http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Source
-            #
-            # \m is start word boundary, \M is finish word boundary
-            # (but - in package name is a word boundary)
-            # \A is start string,        \Z is finish string
-            # http://www.postgresql.org/docs/8.3/static/functions-matching.html
-            packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % re.sub(r"[^a-z\d\-+.]", "", self.package)
-            #print packagere
-            c = self.dbconn.cursor()
-            c.execute(r"""SELECT DISTINCT package
-                          FROM packages
-                          WHERE provides ~ %(package)s
-                            AND (architecture='all' OR architecture=%(arch)s)
-                            AND release IN %(release)s""",
-                      dict( package=packagere,
-                            arch=self.arch,
-                            release=self.release) );
-            pkgs=[]
-            for row in c.fetchall():
-                pkgs.append( row[0] )
-            self._ProvidersList = pkgs
-        return self._ProvidersList
-
-    def RelationEntry(self, relation):
-        return self.data[relation]
-
-    def RelationsEntryList(self, relation):
-        rels = RelationshipList()
-        if self.data[relation]:
-            for r in re.split(r"\s*,\s*", self.data[relation]):
-                roptions = RelationshipOptions(r)
-                rels.append(roptions)
-        return rels
-
-class SourcePackage(Package):
-    def __init__(self, dbconn, arch="i386", release="lenny", package=None, version=None, **kwargs):
-        #self.fields = ['build_depends', 'build_depends_indep', 'version']
-        self.table = 'sources'
-        self.column = 'source'
-        self.autobin2src = kwargs.get('bin2src', True)
-        Package.__init__(self, dbconn, arch, release, package, version)
-
-    def _Fetch(self):
-        #print "Looking for source %s in %s/%s." % (self.package, self.release, self.arch)
-        c = self.dbconn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        f = ','.join(self.fields)
-        c.execute(r"""SELECT """ + f + """
-                      FROM """ + self.table + """
-                      WHERE """ + self.column + """=%(package)s
-                        AND release IN %(release)s
-                      ORDER BY version DESC
-                      LIMIT 1""",
-                   dict( package=self.package,
-                         release=self.release) );
-        self.data = c.fetchone()
-
-    def Binaries(self):
-        c = self.dbconn.cursor()
-        c.execute(r"""SELECT DISTINCT package
-                      FROM packages
-                      WHERE source=%(package)s
-                        AND release IN %(release)s""",
-                   dict( package=self.package,
-                         arch=self.arch,
-                         release=self.release) );
-        pkgs = []
-        for row in c.fetchall():
-            pkgs.append(row[0])
-        return pkgs
-
-class Relationship:
-    def __init__(self, **kwargs):
-        self.relation = kwargs.get('relation', None)
-        self.package  = kwargs.get('package',  None)
-        self.operator = kwargs.get('operator', None)
-        self.version  = kwargs.get('version',  None)
-        self.arch     = kwargs.get('arch'   ,  None)
-        self.archIgnore  = False
-        self.virtual     = False
-        self.packagedata = None
-        if self.relation and self.package:
-            raise ValueError("Cannot specify both the textual relation and the components")
-        if self.relation:
-            self._ParseRelation(self.relation)
-
-    def _ParseRelation(self, relationship):
-        #print "checking item %s" % item
-        m = re.match(r"""(?x)
-                  (?P<package>[\w\d.+-]+)
-                  (?:
-                    \s*
-                    \(\s*
-                      (?P<operator>\>\>|\>=|=|\<\<|\<=)\s*(?P<version>[^\s]+)
-                    \s*\)
-                  )?
-                  (?:
-                    \s*
-                    \[\s*
-                      (?P<arch>[^]]+)
-                    \s*\]
-                  )?
-                  """, relationship)
-        if not m:
-            raise ValueError("Couldn't parse the relationship expression")
-        self.package  = m.group('package')
-        self.operator = m.group('operator')
-        self.version  = m.group('version')
-        self.arch     = m.group('arch')
-        if self.arch:
-            self.arch = re.split(r"\s+", self.arch.strip())
-
-    def __str__(self):
-        if self.relation:
-            return self.relation
-        else:
-            return "%s %s %s [%s]" % \
-              (self.package, self.operator, self.version, " ".join(self.arch))
-
-class RelationshipOptions(list):
-    def __init__(self, options):
-        self.relation = options
-        self.satisfiedBy = None
-        self.satisfied   = False
-        self.virtual     = False
-        self.package     = None
-        for rel in self._SplitOptions(options):
-            #print "found rel=%s" % rel
-            self.append(Relationship(relation=rel))
-
-    def _SplitOptions(self, item):
-        return re.split(r"\s*\|\s*", item)
-
-    def __str__(self):
-        return self.relation
-
-class RelationshipList(list):
-    def ReleaseMap(self):
-        releases = {}
-        for i in self.__iter__():
-            r = i.package.data['release']
-            if not releases.has_key(r):
-                releases[r] = []
-            releases[r].append(i)
-        return releases
-
-    def __str__(self):
-        return ", ".join(map(lambda x: str(x), self.__iter__()))
-
-class RelationshipStatus():
-    def __init__(self):
-        self.good = RelationshipList()
-        self.bad  = RelationshipList()
-
-    def swap(self):
-        temp = self.bad
-        self.bad = self.good
-        self.good = temp
-
-    def getRel(self, name):
-        if name == 'good':
-            return self.good
-        if name == 'bad':
-            return self.bad
-        raise ValueError('requested type must be either good or bad')
-
-class BuildDepStatus():
-    def __init__(self, bd=None, bdi=None):
-        if bd:
-            self.bd  = bd
-        else:
-            self.bd  = RelationshipStatus()
-        if bdi:
-            self.bdi = bdi
-        else:
-            self.bdi = RelationshipStatus()
-
-    def AllFound(self):
-        return not(self.bd.bad or self.bdi.bad)
-
-    def ReleaseMap(self):
-        releases = {}
-        m = self.bd.good.ReleaseMap()
-        for r in m.keys():
-            releases[r] = m[r]
-        m = self.bdi.good.ReleaseMap()
-        for r in m.keys():
-            if not releases.has_key(r): releases[r] = []
-            releases[r].extend(m[r])
-        return releases
-
-class SolverHierarchy():
-    def __init__(self):
-        self.depends    = RelationshipStatus()
-        self.recommends = RelationshipStatus()
 
 class Judd(callbacks.Plugin):
     """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
@@ -521,7 +84,6 @@ class Judd(callbacks.Plugin):
 
         self.psql.set_isolation_level(0)
 
-
     def versions(self, irc, msg, args, package, optlist, something ):
         """<pattern> [--arch <i386>] [--release <lenny>]
 
@@ -531,8 +93,8 @@ class Judd(callbacks.Plugin):
         packages are searched; prefix the packagename with "src:" to search
         source packages.
         """
-        release = CleanReleaseName(optlist=optlist, args=something, default=None)
-        arch    = CleanArchName   (optlist=optlist, args=something, default='i386')
+        release = clean_release_name(optlist=optlist, args=something, default=None)
+        arch    = clean_arch_name(optlist=optlist, args=something, default='i386')
 
         c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
         if package.startswith('src:'):
@@ -554,9 +116,9 @@ class Judd(callbacks.Plugin):
         c.execute( sql,
                     dict( package=packagename,
                           arch=arch,
-                          release=release ) );
+                          release=release ) )
 
-        pkgs=[]
+        pkgs = []
         for row in c.fetchall():
             pkgs.append( row )
 
@@ -617,8 +179,8 @@ class Judd(callbacks.Plugin):
         c.execute( sql,
                   dict( package=packagesql,
                           arch=arch,
-                          release=release ) );
-        pkgs=[]
+                          release=release ) )
+        pkgs = []
         for row in c.fetchall():
             pkgs.append( row )
 
@@ -626,7 +188,7 @@ class Judd(callbacks.Plugin):
             irc.reply( "Sorry, no packages matching '%s' were found." % package )
             return
 
-        replies=[]
+        replies = []
         for row in pkgs:
             if( row['component'] == 'main' ):
                 replies.append("%s %s" % \
@@ -663,7 +225,7 @@ class Judd(callbacks.Plugin):
                       p.release=%(release)s""",
                    dict( package=package,
                          arch=arch,
-                         release=release) );
+                         release=release) )
 
         row = c.fetchone()
 
@@ -672,11 +234,11 @@ class Judd(callbacks.Plugin):
             if ds:
                 d = ds[0]
             else:
-                d=""
+                d = ""
             reply = "Package %s (%s, %s) in %s/%s: %s. Version: %s; Size: %0.1fk; Installed: %dk" % \
-                      ( package, row['section'], row['priority'], 
+                      ( package, row['section'], row['priority'],
                         release, arch, d,
-                        row['version'], row['size']/1024.0, row['installed_size'] )
+                        row['version'], row['size'] / 1024.0, row['installed_size'] )
             if row[6]:    # homepage field
                 reply += "; Homepage: %s" % row['homepage']
             if row[7]:    # screenshot url from screenshots.debian.net
@@ -706,8 +268,8 @@ class Judd(callbacks.Plugin):
                       WHERE package=%(package)s
                         AND release=%(release)s""",
                    dict( package=package,
-                         release=release) );
-        pkgs=[]
+                         release=release) )
+        pkgs = []
         for row in c.fetchall():
             pkgs.append( [row[0], row[1]] )
 
@@ -715,7 +277,7 @@ class Judd(callbacks.Plugin):
             irc.reply( "Sorry, no package named '%s' was found." % package )
             return
 
-        replies=[]
+        replies = []
         for row in pkgs:
             replies.append("%s (%s)" % (row[0], row[1]) )
 
@@ -757,11 +319,11 @@ class Judd(callbacks.Plugin):
     rprovides = wrap(rprovidesHelper, ['something',
                                       getopts( { 'arch':'something',
                                                  'release':'something' } ),
-                                      any( 'something' ) ] );
+                                      any( 'something' ) ] )
     whatprovides = wrap(rprovidesHelper, ['something',
                                       getopts( { 'arch':'something',
                                                  'release':'something' } ),
-                                      any( 'something' ) ] );
+                                      any( 'something' ) ] )
 
     def provides(self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -818,7 +380,11 @@ class Judd(callbacks.Plugin):
 
     src = wrap(source, ['something',
                         getopts( { 'release':'something' } ),
-                        any( 'something' ) ] );
+                        any( 'something' ) ] )
+
+    source = wrap(source, ['something',
+                        getopts( { 'release':'something' } ),
+                        any( 'something' ) ] )
 
     def binaries( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>]
@@ -841,7 +407,7 @@ class Judd(callbacks.Plugin):
 
     binaries = wrap(binaries, ['something',
                               getopts( { 'release':'something' } ),
-                              any( 'something' ) ] );
+                              any( 'something' ) ] )
 
     def builddep( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--release <lenny>]
@@ -863,7 +429,8 @@ class Judd(callbacks.Plugin):
         r = Release(self.psql, arch=arch, release=release)
         p = r.Source(package)
         if not p.Found():
-            irc.reply( "Sorry, there is no record of the %s package in %s." %(package, release) )
+            irc.reply("Sorry, there is no record of the %s package in %s." % \
+                        (package, release) )
             return
 
         bd = p.RelationEntry('build_depends')
@@ -873,7 +440,7 @@ class Judd(callbacks.Plugin):
 
     builddep = wrap(builddep, ['something',
                                 getopts( { 'release':'something' } ),
-                                any( 'something' )] );
+                                any( 'something' )] )
 
     def relationshipHelper( self, irc, msg, args, package, optlist, something, relation ):
         """Does the dirty work for each of the functions that show
@@ -916,7 +483,7 @@ class Judd(callbacks.Plugin):
 
     conflicts = wrap(conflicts, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                                 any( 'something' )] );
+                                 any( 'something' )] )
 
     def depends( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -928,7 +495,7 @@ class Judd(callbacks.Plugin):
 
     depends = wrap(depends, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                                 any( 'something' )] );
+                                 any( 'something' )] )
 
     def recommends( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -940,7 +507,7 @@ class Judd(callbacks.Plugin):
 
     recommends = wrap(recommends, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                                   any( 'something' )] );
+                                   any( 'something' )] )
 
     def suggests( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -952,7 +519,7 @@ class Judd(callbacks.Plugin):
 
     suggests = wrap(suggests, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                               any( 'something' ) ] );
+                               any( 'something' ) ] )
 
     def enhances( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>]
@@ -964,7 +531,7 @@ class Judd(callbacks.Plugin):
 
     enhances = wrap(enhances, ['something', getopts( { 'arch':'something',
                                                          'release':'something' } ),
-                               any( 'something' ) ] );
+                               any( 'something' ) ] )
 
     def checkdeps( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>] [--type depends|recommends|suggests|conflicts]
@@ -982,8 +549,8 @@ class Judd(callbacks.Plugin):
                            'suggests' ]
 
         relation = []
-        for( option,arg ) in optlist:
-            if option=='type':
+        for (option,arg) in optlist:
+            if option == 'type':
                 if arg in knownRelations:
                     relation.append(arg)
                 else:
@@ -991,7 +558,7 @@ class Judd(callbacks.Plugin):
         if not relation:
             relation = knownRelations
 
-        releases = self.listDependentReleases(release)
+        releases = self.list_dependent_releases(release)
         r = Release(self.psql, arch=arch, release=releases)
         relchecker = RelationChecker(r)
 
@@ -1007,7 +574,7 @@ class Judd(callbacks.Plugin):
 
         if badlist:
             irc.reply( "%s in %s/%s unsatisfiable dependencies: %s." % \
-                        ( package, release, arch, "; ".join(badlist) ) )
+                        ( package, release, arch, "i; ".join(badlist) ) )
         else:
             irc.reply( "%s in %s/%s: all dependencies satisfied." % \
                         ( package, release, arch) )
@@ -1016,28 +583,28 @@ class Judd(callbacks.Plugin):
                                   getopts( { 'arch':'something',
                                              'release':'something',
                                              'type':'something' } ),
-                                  any( 'something' ) ] );
-
+                                  any( 'something' ) ] )
 
     def checkinstall( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <lenny>] [--norecommends]
 
         Check that the package is installable (i.e. dependencies checked recursively)
         within the specified release and architecture.
-        By default, recommended packages are checked too and the current 
+        By default, recommended packages are checked too and the current
         stable release and i386 are used.
         """
         release,arch = parse_standard_options( optlist, something )
-        withrecommends = true
+        withrecommends = True
         for (option,arg) in optlist:
-            if option=='norecommends':
-              withrecommends = False
+            if option == 'norecommends':
+                withrecommends = False
 
-        releases = self.listDependentReleases(release)
+        releases = self.list_dependent_releases(release)
         r = Release(self.psql, arch=arch, release=releases)
         relchecker = RelationChecker(r)
 
-        dbad, dgood, rbad, rgood, dnotchecked, rnotchecked = r.CheckInstall(package, withrecommends)
+        status = relchecker.CheckInstall(package, withrecommends)
+        print status
         #badlist = []
         #for rel in relation:
             #badrels, goodrels = relchecker.Check(package, rel)
@@ -1059,7 +626,7 @@ class Judd(callbacks.Plugin):
                                         getopts( { 'arch':'something',
                                                   'release':'something',
                                                   'norecommends':'' } ),
-                                        any( 'something' ) ] );
+                                        any( 'something' ) ] )
 
     def buildDepsFormatter(self, bdstatus, data='bad'):
         def formatRel(rel, longname):
@@ -1068,24 +635,25 @@ class Judd(callbacks.Plugin):
             return None
 
         l = [
-               formatRel(bdstatus.bd.getRel(data),  'Build-Depends'),
-               formatRel(bdstatus.bdi.getRel(data), 'Build-Depends-Indep')
+               formatRel(bdstatus.bd.get(data),  'Build-Depends'),
+               formatRel(bdstatus.bdi.get(data), 'Build-Depends-Indep')
             ]
         return filter(None, l)
 
-    def listDependentReleases(self, release, suffixes=[], includeSelf=True):
+    def list_dependent_releases(self, release, suffixes=[], include_self=True):
         """
         List the releases that should also be included in the dependency analysis
         """
         rs = []
-        if includeSelf: rs.append(release)
+        if include_self:
+            rs.append(release)
         parts = release.split('-')
         if len(parts) > 1:
-            r = CleanReleaseName(name=parts[0], default=None)
+            r = clean_release_name(name=parts[0], default=None)
             if r:
                 rs.append(r)
         for s in suffixes:
-            r = CleanReleaseName(name="%s-%s" % (parts[0], s), default=None)
+            r = clean_release_name(name="%s-%s" % (parts[0], s), default=None)
             if r:
                 rs.append(r)
         return rs
@@ -1099,7 +667,7 @@ class Judd(callbacks.Plugin):
         """
         release,arch = parse_standard_options( optlist, something )
 
-        releases = self.listDependentReleases(release)
+        releases = self.list_dependent_releases(release)
         r = Release(self.psql, arch=arch, release=releases)
         relchecker = RelationChecker(r)
 
@@ -1120,8 +688,7 @@ class Judd(callbacks.Plugin):
     checkbuilddeps = wrap(checkbuilddeps, ['something',
                                             getopts( {'arch':'something',
                                                       'release':'something'} ),
-                                            any( 'something' ) ] );
-
+                                            any( 'something' ) ] )
 
     def checkbackport( self, irc, msg, args, package, optlist ):
         """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <i386>]
@@ -1129,17 +696,19 @@ class Judd(callbacks.Plugin):
         Check that the build-dependencies listed by a package in the release
         specified as "fromrelease" are satisfiable for in "torelease" for the
         given host architecture.
-        By default, a backport from unstable to the current stable release 
+        By default, a backport from unstable to the current stable release
         and i386 are used.
         """
-        fromrelease = CleanReleaseName(optlist=optlist, optname='fromrelease', default='unstable')
-        torelease   = CleanReleaseName(optlist=optlist, optname='torelease',   default='stable')
-        arch        = CleanArchName   (optlist=optlist)
+        fromrelease = clean_release_name(optlist=optlist, optname='fromrelease',
+                                        default='unstable')
+        torelease = clean_release_name(optlist=optlist, optname='torelease',
+                                        default='stable')
+        arch = clean_arch_name(optlist=optlist)
 
         fr = Release(self.psql, arch=arch, release=fromrelease)
         # FIXME: should torelease do fallback to allow --torelease lenny-multimedia etc?
-        tr = Release(self.psql, arch=arch, 
-                        release=self.listDependentReleases(torelease, suffixes=['backports']))
+        tr = Release(self.psql, arch=arch,
+                        release=self.list_dependent_releases(torelease, suffixes=['backports']))
         #br = Release(self.psql, arch=arch, release=backportrelease)
         relchecker = RelationChecker(tr)
 
@@ -1156,14 +725,15 @@ class Judd(callbacks.Plugin):
             if len(tr.release) > 1:
                 repolist = " Checked: %s" % ", ".join(tr.release)
             irc.reply("Backport check for %s in %s->%s/%s shows unsatisfiable build dependencies: %s.%s" % \
-                    (self.bold(package), fromrelease, torelease, arch, "; ".join(badrels), repolist))
+                    (self.bold(package), fromrelease, torelease, arch, " ".join(badrels), repolist))
         else:
+            extras = []
             rm = status.ReleaseMap()
             for xr in filter(lambda x: x != torelease, rm.keys()):
                 extras.append("%s: %s" % (self.bold(xr),
                     ", ".join([ i.package.data['package'] for i in rm[xr] ]) ) )
             irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied. %s" % \
-                        (package, fromrelease, torelease, arch, "; ".join(extras)))
+                        (package, fromrelease, torelease, arch, " ".join(extras)))
 
         #if not status.AllFound():  # packages missing, try backports
             ## FIXME: don't check backports if the release doesn't exist
@@ -1175,11 +745,11 @@ class Judd(callbacks.Plugin):
                 #if backportrelease:
                     #backnote = " (also checked %s)" % backportrelease
                 #irc.reply("Backport check for %s in %s->%s/%s shows unsatisfiable build dependencies: %s%s." % \
-                        #(self.bold(package), fromrelease, torelease, arch, "; ".join(stillbadrels), backnote))
+                        #(self.bold(package), fromrelease, torelease, arch, " ".join(stillbadrels), backnote))
             #else: #all ok but needed backports
                 #goodbackrels = self.buildDepsFormatter(bstatus, data='good')
                 #irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied. Used %s for %s." % \
-                        #(self.bold(package), fromrelease, torelease, arch, backportrelease, "; ".join(goodbackrels)))
+                        #(self.bold(package), fromrelease, torelease, arch, backportrelease, " ".join(goodbackrels)))
         #else:
             #irc.reply("Backport check for %s in %s->%s/%s: all build-dependencies satisfied." % \
                         #(package, fromrelease, torelease, arch))
@@ -1187,11 +757,11 @@ class Judd(callbacks.Plugin):
     checkbackport = wrap(checkbackport, ['something',
                                           getopts( {'arch':'something',
                                                     'fromrelease':'something',
-                                                    'torelease':'something' } )] );
+                                                    'torelease':'something' } )] )
 
     def bug( self, irc, msg, args, bugno ):
         """
-        Show information about a bug in a given pacage.  
+        Show information about a bug in a given pacage.
         Usage: "bug bugnumber"
         """
         c = self.psql.cursor()
@@ -1203,8 +773,8 @@ class Judd(callbacks.Plugin):
             if ds:
                 d = ds[0]
             else:
-                d=""
-            irc.reply( "Bug #%d (%s) %s -- %s; Severity: %s; Last Modified: %s" % ( bugno, row[1], row[0], d, row[2], row[4]) )
+                d = ""
+            irc.reply( "Bug #%d (%s) %s -- %s Severity: %s; Last Modified: %s" % ( bugno, row[1], row[0], d, row[2], row[4]) )
 
     bug = wrap(bug, ['int'] )
 
@@ -1258,7 +828,7 @@ class Judd(callbacks.Plugin):
 
             irc.reply( reply )
         else:
-            r = Release(self.psql, release=CleanReleaseName(name='unstable'))
+            r = Release(self.psql, release=clean_release_name(name='unstable'))
             source = r.bin2src(package)
             if source and source != package:
                 return self.uploaderHelper(irc, msg, args, source, version)
@@ -1293,7 +863,7 @@ class Judd(callbacks.Plugin):
                         (package, ", ".join(uploads))
             irc.reply( reply )
         else:
-            r = Release(self.psql, release=CleanReleaseName(name='unstable'))
+            r = Release(self.psql, release=clean_release_name(name='unstable'))
             source = r.bin2src(package)
             if source and source != package:
                 return self.recentHelper(irc, msg, args, source, version)
@@ -1315,7 +885,7 @@ class Judd(callbacks.Plugin):
         else:
             c.execute( "SELECT id FROM bugs WHERE package=%(package)s AND severity in ('critical', 'grave', 'serious' ) and status not in ('done,fixed') order by bugs.id", dict( package=package ) )
 
-        reply = "RC bugs in %s:" % package;
+        reply = "RC bugs in %s:" % package
         for row in c.fetchall():
             reply += " %d" % row[0]
 
@@ -1329,7 +899,7 @@ class Judd(callbacks.Plugin):
         Returns packages that include files matching <pattern> which, by
         default, is interpreted as a glob (see glob(7)).
         If --regex is given, the pattern is treated as a extended regex
-        (see regex(7); note not PCRE!).
+        (see regex(7) note not PCRE!).
         If --exact is given, the exact filename is required.
         The current stable release and i386 are searched by default.
         """
@@ -1363,7 +933,7 @@ class Judd(callbacks.Plugin):
             if regexp.endswith(r'$'):
                 regexp = regexp[:-1] + r'[[:space:]]'
         else:
-            regexp = regexp =  r'^%s[[:space:]]' % re.escape(regexp.lstrip(r'/'))
+            regexp = regexp = r'^%s[[:space:]]' % re.escape(regexp.lstrip(r'/'))
 
         self.log.debug("RE=%s" % regexp)
 
@@ -1372,7 +942,7 @@ class Judd(callbacks.Plugin):
         if len(packages) == 0:
             irc.reply('No packages were found with that file.')
         else:
-            s = packages.toString(self.bold)
+            s = packages.to_string(self.bold)
             irc.reply("%s in %s/%s: %s" % (glob, release, arch, s))
 
     file = wrap(file, ['something',
@@ -1422,8 +992,8 @@ class Judd(callbacks.Plugin):
                     if filename == 'FILE':
                         # This is the last line before the actual files.
                         continue
-                except ValueError: # Unpack list of wrong size.
-                    continue       # We've not gotten to the files yet.
+                except ValueError:  # Unpack list of wrong size.
+                    continue        # We've not gotten to the files yet.
                 packages.add(filename, pkg_list.split(','))
         finally:
             pass

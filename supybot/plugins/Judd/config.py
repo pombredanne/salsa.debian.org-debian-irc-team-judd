@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2007, Mike O'Connor
+#           (c) 2009-2011, Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,9 +29,14 @@
 
 ###
 
+""" plugin configuration when run from the wizard and default values
+when just loaded """
+
 import supybot.conf as conf
+import supybot.utils as utils
 import supybot.registry as registry
 import Judd
+
 
 def configure(advanced):
     # This will be called by supybot to configure this module.  advanced is
@@ -67,12 +73,30 @@ Judd = conf.registerPlugin('Judd')
 # This is where your configuration variables (if any) should go.  For example:
 # conf.registerGlobalValue(Judd, 'someConfigVariableName',
 #     registry.Boolean(False, """Help for someConfigVariableName."""))
-conf.registerGlobalValue( Judd, 'db_hostname', registry.String( "localhost", "hostname of udd postgres database", private=True) )
-conf.registerGlobalValue( Judd, 'db_username', registry.String( 'stew', "username of udd postgres database", private=True) )
-conf.registerGlobalValue( Judd, 'db_password', registry.String( 'stew', "password to udd postgres database", private=True) )
-conf.registerGlobalValue( Judd, 'db_port', registry.Integer( 5432, "port of udd postgres database", private=True) )
-conf.registerGlobalValue( Judd, 'db_database', registry.String( "udd", "postgres to use", private=True) )
-conf.registerGlobalValue( Judd, 'base_path', registry.String("judd", "base path to the data files; if a relative path is used, it is relative to supybot.directories.data", private=True) )
-conf.registerChannelValue( Judd, 'bold', registry.Boolean(True, """Determines whether the plugin will use bold in the responses to some of its commands."""))
+conf.registerGlobalValue(Judd, 'db_hostname',
+                         registry.String("localhost",
+                         "hostname of udd postgres database", private=True))
+conf.registerGlobalValue(Judd, 'db_username',
+                         registry.String('stew',
+                         "username of udd postgres database", private=True))
+conf.registerGlobalValue(Judd, 'db_password',
+                         registry.String('stew',
+                         "password to udd postgres database", private=True))
+conf.registerGlobalValue(Judd, 'db_port',
+                         registry.Integer(5432,
+                         "port of udd postgres database", private=True))
+conf.registerGlobalValue(Judd, 'db_database',
+                         registry.String("udd",
+                         "postgres to use", private=True))
+conf.registerGlobalValue(Judd, 'base_path',
+                         registry.String("judd",
+                         "base path to the data files; "
+                         "if a relative path is used, "
+                         "it is relative to supybot.directories.data",
+                         private=True))
+conf.registerChannelValue(Judd, 'bold',
+                          registry.Boolean(True,
+                          "Determines whether the plugin will use bold in the "
+                          "responses to some of its commands."))
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

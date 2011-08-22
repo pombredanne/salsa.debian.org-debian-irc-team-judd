@@ -217,11 +217,11 @@ updatexorg() {
     dpkg -x "$i" "$WD"
   done
 
-  if [ $(ls -1 "$WD"/usr/share/xserver-xorg/pci/*.ids 2>/dev/null | wc -l) -gt 1 ]
+  if (shopt -s nullglob dotglob; f=("$WD"/usr/share/xserver-xorg/pci/*.ids); ((! ${#f[@]})))
   then
-    cp "$WD"/usr/share/xserver-xorg/pci/*.ids "$TARGET/xorg-$NAME/"
-  else
     echo "I: No xorg modules found for release '$NAME'."
+  else
+    cp "$WD"/usr/share/xserver-xorg/pci/*.ids "$TARGET/xorg-$NAME/"
   fi
 }
 
