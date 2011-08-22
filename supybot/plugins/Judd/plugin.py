@@ -52,7 +52,7 @@ import os
 import fnmatch
 import subprocess
 #from supybot.utils.iter import all, imap, ifilter
-from PackageFileList import PackageFileList
+import PackageFileList
 
 import uddcache.udd
 import uddcache.commands
@@ -80,8 +80,8 @@ class Judd(callbacks.Plugin):
                         'password': self.registryValue('db_password')
                     }
         conf = uddcache.config.Config(confdict=confdict)
-        #self.udd = uddcache.udd.Udd(conf)
-        self.udd = uddcache.udd.Udd()
+        self.udd = uddcache.udd.Udd(conf)
+        #self.udd = uddcache.udd.Udd()
         self.dispatcher = uddcache.commands.Commands(self.udd)
 
     def notfound(self, irc, package, release=None, arch=None,
@@ -99,7 +99,7 @@ class Judd(callbacks.Plugin):
                 tag = ""
         irc.reply(message % (package, tag))
 
-    def versions(self, irc, msg, args, package, optlist, something ):
+    def versions(self, irc, msg, args, package, optlist, something):
         """<pattern> [--arch <i386>] [--release <stable>]
 
         Show the available versions of a package in the optionally specified
@@ -109,9 +109,9 @@ class Judd(callbacks.Plugin):
         source packages.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=None)
+                                    args=something, default=None)
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_arch())
+                                    args=something, default=self.default_arch())
 
         pkgs = self.dispatcher.versions(package, release, arch)
         if not pkgs:
@@ -135,16 +135,16 @@ class Judd(callbacks.Plugin):
                                            'release':'something' } ),
                                 any( 'something' ) ] )
 
-    def names(self, irc, msg, args, package, optlist, something ):
+    def names(self, irc, msg, args, package, optlist, something):
         """<pattern> [--arch <i386>] [--release <stable>]
 
         Search package names with * and ? as wildcards.
         The current stable release and i386 are searched by default.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_arch())
 
         pkgs = self.dispatcher.names(package, release, arch)
         if not pkgs:
@@ -176,9 +176,9 @@ class Judd(callbacks.Plugin):
         stable release and i386 are used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_arch())
 
         p = self.dispatcher.info(package, release, arch)
         if p:
@@ -211,9 +211,9 @@ class Judd(callbacks.Plugin):
         stable release is used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_arch())
 
         pkgs = self.dispatcher.archs(package, release)
 
@@ -237,9 +237,9 @@ class Judd(callbacks.Plugin):
         By default, the current stable release and i386 are used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_arch())
 
         p = self.udd.BindPackage(package, release, arch)
         if p.IsVirtual():
@@ -270,9 +270,9 @@ class Judd(callbacks.Plugin):
         stable release and i386 are used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_arch())
 
         p = self.udd.BindPackage(package, release, arch)
 
@@ -307,14 +307,14 @@ class Judd(callbacks.Plugin):
         By default, the current stable release and i386 are used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_arch())
 
         r = self.udd.BindRelease(release, arch)
         p = r.bin2src(package)
         if p:
-            irc.reply("Package %s -- source: %s" % (package, p))
+            irc.reply("Package %s in %s -- source: %s" % (package, release, p))
         else:
             return self.notfound(irc, package, release, arch,
                             message="Sorry, there is no record of a source package for the binary package '%s'%s.")
@@ -331,16 +331,17 @@ class Judd(callbacks.Plugin):
         By default, the current stable release and i386 are used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
-        arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
+#        arch = self.udd.data.clean_arch_name(optlist=optlist,
+#                                    args=something, default=self.default_arch())
 
         p = self.udd.BindSourcePackage(package, release)
 
         if p.Found():
-            irc.reply("Source %s: Binaries: %s" % (package, ", ".join(p.Binaries())))
+            irc.reply("Source %s in %s: Binaries: %s" % \
+                      (package, release, ", ".join(p.Binaries())))
         else:
-            return self.notfound(irc, package, release, arch)
+            return self.notfound(irc, package, release, None)
 
     binaries = wrap(binaries, ['something',
                               getopts( { 'release':'something' } ),
@@ -354,17 +355,9 @@ class Judd(callbacks.Plugin):
         By default, the current stable release is used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=None)
-#
-#        def bdformat(package, release, bd, bdi):
-#            reply = []
-#            if bd:
-#                reply.append("Build-Depends: %s" % bd)
-#            if bdi:
-#                reply.append("Build-Depends-Indep: %s" % bdi)
-#            return "Package %s in %s-- %s." % (package, release, "; ".join(reply))
+                                    args=something, default=None)
 
         # FIXME: make b-d list arch-specific
         p = self.udd.BindSourcePackage(package, release)
@@ -402,14 +395,16 @@ class Judd(callbacks.Plugin):
             irc.error("Sorry, unknown error determining package relationships.")
 
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_arch())
+                                    args=something, default=self.default_arch())
 
         p = self.udd.BindPackage(package, release, arch)
 
         if p.Found():
-            irc.reply( "Package %s -- %s: %s." % ( package, relation, p.RelationEntry(relation)) )
+            irc.reply( "Package %s in %s/%s -- %s: %s." % \
+                      (package, release, arch,
+                        relation, p.RelationEntry(relation)) )
         else:
             return self.notfound(irc, package, release, arch)
 
@@ -483,9 +478,9 @@ class Judd(callbacks.Plugin):
         i386 are used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=None)
+                                    args=something, default=self.default_arch())
 
         relation = []
         for opt in optlist:
@@ -501,8 +496,8 @@ class Judd(callbacks.Plugin):
 
         badlist = []
         for rel in relation:
-            if status.bad:
-                badlist.append("%s: %s" % (self.bold(rel.title()), str(status.bad)))
+            if status[rel].bad:
+                badlist.append("%s: %s" % (self.bold(rel.title()), str(status[rel].bad)))
 
         if badlist:
             irc.reply( "Package %s in %s/%s unsatisfiable dependencies: %s." % \
@@ -526,9 +521,9 @@ class Judd(callbacks.Plugin):
         stable release and i386 are used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_arch())
+                                    args=something, default=self.default_arch())
 
         withrecommends = True
         for (option,arg) in optlist:
@@ -553,7 +548,7 @@ class Judd(callbacks.Plugin):
                 details.append("%d packages in the Recommends chain are uninstallable" % len(solverh.recommends.bad))
 
         irc.reply("Package %s on %s/%s: %s" % \
-                    (package, release, arch, "".join(details)))
+                    (package, release, arch, "; ".join(details)))
 
     checkinstall = wrap(checkinstall, ['something',
                                         getopts( { 'arch':'something',
@@ -564,7 +559,7 @@ class Judd(callbacks.Plugin):
     def _buildDepsFormatter(self, bd, bdi):
         def formatRel(rel, longname):
             if rel:
-                return "%s: %s" % (self.bold(longname), str(rel))
+                return u"%s: %s" % (self.bold(longname), unicode(rel))
             return None
 
         l = [
@@ -575,8 +570,8 @@ class Judd(callbacks.Plugin):
 
     def _builddeps_status_formatter(self, status):
         if not status.AllFound():
-            return "unsatisfiable build dependencies: %s." % self._buildDepsFormatter(status.bd.bad, status.bdi.bad)
-        return "all build-dependencies satisfied."
+            return u"unsatisfiable build dependencies: %s." % ";".join(self._buildDepsFormatter(status.bd.bad, status.bdi.bad))
+        return u"all build-dependencies satisfied."
 
 
     def checkbuilddeps( self, irc, msg, args, package, optlist, something ):
@@ -587,9 +582,9 @@ class Judd(callbacks.Plugin):
         By default, the current stable release and i386 are used.
         """
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_arch())
+                                    args=something, default=self.default_arch())
 
         r = self.udd.BindRelease(arch=arch, release=release)
         status = self.dispatcher.checkBackport(package, r, r)
@@ -606,7 +601,7 @@ class Judd(callbacks.Plugin):
                                                       'release':'something'} ),
                                             any( 'something' ) ] )
 
-    def checkbackport( self, irc, msg, args, package, optlist ):
+    def checkbackport( self, irc, msg, args, package, optlist, something):
         """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <i386>]
 
         Check that the build-dependencies listed by a package in the release
@@ -617,12 +612,12 @@ class Judd(callbacks.Plugin):
         """
         fromrelease = self.udd.data.clean_release_name(optlist=optlist,
                                     optname='fromrelease',
-                                    args=args, default=self.udd.data.devel_release)
+                                    args=None, default=self.udd.data.devel_release)
         torelease = self.udd.data.clean_release_name(optlist=optlist,
                                     optname='torelease',
-                                    args=args, default=self.default_release())
+                                    args=None, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_arch())
+                                    args=something, default=self.default_arch())
 
         fr = self.udd.BindRelease(arch=arch, release=fromrelease)
         # FIXME: should torelease do fallback to allow --to-release lenny-multimedia etc?
@@ -638,14 +633,15 @@ class Judd(callbacks.Plugin):
         if not status:
             return self.notfound(irc, package, fromrelease, arch)
 
-        irc.reply("Backporting package %s in %s->%s/%s: %s" % \
+        irc.reply((u"Backporting package %s in %s→%s/%s: %s" % \
                         (package, fromrelease, torelease, arch,
-                        self._builddeps_status_formatter(status)))
+                        self._builddeps_status_formatter(status))).encode('UTF-8'))
 
     checkbackport = wrap(checkbackport, ['something',
                                           getopts( {'arch':'something',
                                                     'fromrelease':'something',
-                                                    'torelease':'something' } )] )
+                                                    'torelease':'something' } ),
+                                         any( 'something' ) ] )
 
     def bug( self, irc, msg, args, bugno ):
         """
@@ -692,19 +688,17 @@ class Judd(callbacks.Plugin):
         Imperfect binary-to-source package mapping will be tried too.
         """
 
-        release = self.udd.data.clean_release_name(#optlist=optlist, args=args,
+        release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
                             default=self.udd.data.devel_release)
 
         p = self.udd.BindSourcePackage(package, release)
-        version = ""
-        if args:
-            version = args.pop(0)
         uploads = self.dispatcher.uploads(p, max=1, version=version)
         if not uploads:
             if version:
                 irc.reply("Sorry, there is no record of '%s', version '%s'." % (package,version))
             else:
                 irc.reply("Sorry, there is no record of '%s'." % package )
+            return
 
         u = uploads[0]
         reply = "Package %s version %s was uploaded by %s on %s, " \
@@ -728,7 +722,7 @@ class Judd(callbacks.Plugin):
         package.
         Imperfect binary-to-source package mapping will be tried too.
         """
-        release = self.udd.data.clean_release_name(#optlist=optlist, args=args,
+        release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
                             default=self.udd.data.devel_release)
 
         p = self.udd.BindSourcePackage(package, release)
@@ -779,9 +773,9 @@ class Judd(callbacks.Plugin):
         # Based on the file command in the Debian plugin by James Vega
 
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=args, default=self.default_release())
+                                    args=something, default=self.default_release())
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=args, default=self.default_arch())
+                                    args=something, default=self.default_arch())
 
         mode = 'glob'
         for (option, arg) in optlist:
@@ -803,6 +797,8 @@ class Judd(callbacks.Plugin):
                 regexp = '.*' + regexp
             if regexp.endswith(r'$'):
                 regexp = regexp[:-1] + r'[[:space:]]'
+            elif regexp.endswith(r'\Z(?ms)'):
+                regexp = regexp[:-7] + r'[[:space:]]'
         elif mode == 'regex':
             if regexp.startswith(r'/'):
                 regexp = '^' + regexp[1:]
@@ -857,7 +853,7 @@ class Judd(callbacks.Plugin):
         except TypeError:
             irc.error(r"Sorry, couldn't look up the file list.", Raise=True)
 
-        packages = PackageFileList()
+        packages = PackageFileList.PackageFileList()
         try:
             lines = output.split("\n")
             maxhits = 20

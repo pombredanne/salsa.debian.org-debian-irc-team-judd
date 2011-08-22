@@ -53,9 +53,9 @@ class PackageFileList:
         # (by number of path elements, /) come first.
         pprio = sorted(self.packages.keys(),
           key=lambda p: min(map(lambda f: f.count('/'), self.packages[p])))
-        for p in pprio:
+        for pack in pprio:
             #section,name = p.split('/')
-            info = p.split('/')
+            info = pack.split('/')
             if len(info) == 2:
                 name = info[1]
             elif len(info) == 3:
