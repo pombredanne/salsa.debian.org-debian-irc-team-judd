@@ -33,6 +33,10 @@ from supybot.test import *
 class DebianTestCase(PluginTestCase):
     plugins = ('Judd',)
 
+    def __init__(self, *args,  **kwargs):
+        PluginTestCase.__init__(self, *args, **kwargs)
+        self.timeout = 30.   # bump up the timeout to 30s
+
     def testVersion(self):
         self.assertNotError('versions libc6')                   # all versions; show oldstable->experimental
         self.assertNotError('versions libc6 --release sid')     # one version; only show sid
@@ -59,9 +63,9 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('info nosuchpackage')               # package not found; no such package in the archive
 
     def testArch(self):
-        self.assertNotError('arches libc6')                     # arch-dep package; lots of arches for libc6
-        self.assertNotError('arches python')                    # arch:all package; all
-        self.assertNotError('arches nosuchpackage')             # package not found; no such package in the archive
+        self.assertNotError('archs libc6')                      # arch-dep package; lots of arches for libc6
+        self.assertNotError('archs python')                     # arch:all package; all
+        self.assertNotError('archs nosuchpackage')              # package not found; no such package in the archive
 
     def testConflicts(self):
         self.assertNotError('conflicts python')                  # some conflicts; several packages
@@ -118,9 +122,18 @@ class DebianTestCase(PluginTestCase):
 
     def testCheckBuildDeps(self):
         self.assertNotError('checkbuilddeps eglibc --release sid')  # source package selection; build-deps are fulfilled
+        self.assertNotError('checkbuilddeps stage --release sid')   # source package selection; build-deps are uninstallable
         self.assertNotError('checkbuilddeps libc6')             # binary package selection; build-deps are fulfilled
         self.assertNotError('checkbuilddeps ffmpeg --release lenny-multimedia')  # fallback to official repo; all build-deps are fulfilled but only if lenny itself is included
         self.assertNotError('checkbuilddeps nosuchpackage')     # package not found; no such package in the archive
+
+    def testCheckInstall(self):
+        self.assertNotError('checkinstall libc6')               # installable package
+        self.assertNotError('checkinstall libc6 --release sid') # installable package, select release
+        self.assertNotError('checkinstall when')                # installable package, no dependencies
+        self.assertNotError('checkinstall openjdk-6-jre-headless --norecommends --release lenny') # installable package
+        self.assertNotError('checkinstall openjdk-6-jre-headless --release lenny') # missing recommends in lenny
+        self.assertNotError('checkinstall nosuchpackage')       # package not found; no such package in the archive
 
     def testCheckbackport(self):
         self.assertNotError('checkbackport debhelper')          # simple sid backport; all build-deps should be fulfilled

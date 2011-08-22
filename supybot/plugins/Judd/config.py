@@ -98,5 +98,11 @@ conf.registerChannelValue(Judd, 'bold',
                           registry.Boolean(True,
                           "Determines whether the plugin will use bold in the "
                           "responses to some of its commands."))
+conf.registerChannelValue(Judd, 'default_release',
+                         registry.String("stable",
+                         "default release to use for queries"))
+conf.registerChannelValue(Judd, 'default_arch',
+                         registry.String("i386",
+                         "default architecture to use for queries"))
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
