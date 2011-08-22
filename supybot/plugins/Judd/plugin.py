@@ -229,7 +229,7 @@ class Judd(callbacks.Plugin):
                                 getopts({ 'release':'something' } ),
                                 any( 'something' ) ] )
 
-    def rprovidesHelper( self, irc, msg, args, package, optlist, something ):
+    def rprovides( self, irc, msg, args, package, optlist, something ):
         """<packagename> [--arch <i386>] [--release <stable>]
 
         Show the packages that 'Provide' the specified virtual package
@@ -257,7 +257,7 @@ class Judd(callbacks.Plugin):
 
         irc.reply(reply)
 
-    rprovides = wrap(rprovidesHelper, ['something',
+    rprovides = wrap(rprovides, ['something',
                                       getopts( { 'arch':'something',
                                                  'release':'something' } ),
                                       any( 'something' ) ] )
@@ -679,7 +679,7 @@ class Judd(callbacks.Plugin):
 
     popcon = wrap(popcon, ['something'])
 
-    def uploaderHelper( self, irc, msg, args, package, version ):
+    def maint( self, irc, msg, args, package, version ):
         """<packagename> [<version>]
 
         Return the names of the person who uploaded the source package, the person who
@@ -710,10 +710,7 @@ class Judd(callbacks.Plugin):
             reply += " (non-maintainer upload)"
         irc.reply( reply )
 
-    uploader   = wrap(uploaderHelper, ['something', optional( 'something' )] )
-    changer    = wrap(uploaderHelper, ['something', optional( 'something' )] )
-    maint      = wrap(uploaderHelper, ['something', optional( 'something' )] )
-    maintainer = wrap(uploaderHelper, ['something', optional( 'something' )] )
+    maint      = wrap(maint, ['something', optional( 'something' )] )
 
     def recent(self, irc, msg, args, package, version):
         """<packagename>
