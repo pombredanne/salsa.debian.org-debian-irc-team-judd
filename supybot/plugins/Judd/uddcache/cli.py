@@ -38,7 +38,8 @@
 """ Command line interface to udd - output to stdout """
 
 import os
-import uddcache.commands
+import udd
+import commands
 
 
 class Cli():
@@ -83,9 +84,9 @@ class Cli():
                 'build-deps':   'builddeps',
                 }
         if initialise:
-            self.udd = uddcache.udd.Udd(config=config,
+            self.udd = udd.Udd(config=config,
                                                   distro=options.distro)
-            self.dispatcher = uddcache.commands.Commands(self.udd)
+            self.dispatcher = commands.Commands(self.udd)
             self.options = options
 
     def is_valid_command(self, command):

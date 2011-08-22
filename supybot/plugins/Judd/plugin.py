@@ -81,7 +81,7 @@ class Judd(callbacks.Plugin):
                         'password': self.registryValue('db_password')
                     }
         conf = uddcache.config.Config(confdict=confdict)
-#        self.udd = udd.Udd(conf)
+        #self.udd = uddcache.udd.Udd(conf)
         self.udd = uddcache.udd.Udd()
         self.dispatcher = uddcache.commands.Commands(self.udd)
 

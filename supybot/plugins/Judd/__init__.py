@@ -59,6 +59,12 @@ reload(plugin)  # In case we're being reloaded.
 
 import PackageFileList
 reload(PackageFileList)
+import uddcache.udd
+reload(uddcache.udd)
+import uddcache.commands
+reload(uddcache.commands)
+import uddcache.config
+reload(uddcache.config)
 
 if world.testing:
     import test

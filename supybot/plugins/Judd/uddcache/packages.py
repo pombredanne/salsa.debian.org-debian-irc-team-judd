@@ -35,7 +35,7 @@ import re
 import psycopg2
 import psycopg2.extras
 from psycopg2.extensions import adapt
-from uddcache.relations import *
+from relations import *
 
 
 class Release(object):

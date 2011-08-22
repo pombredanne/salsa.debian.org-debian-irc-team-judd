@@ -39,8 +39,8 @@ SolverHierarchy -- TODO: complete
 """
 
 import copy
-from uddcache.relations import *
-from uddcache.packages import *
+from relations import *
+from packages import *
 
 
 class Checker(object):

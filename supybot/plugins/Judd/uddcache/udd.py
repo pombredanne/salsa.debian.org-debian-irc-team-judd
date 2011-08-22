@@ -37,10 +37,10 @@
 
 import re
 import psycopg2
-import uddcache.database
-from uddcache.data import DebianData
-from uddcache.config import Config
-from uddcache.packages import *
+import database
+from data import DebianData
+from config import Config
+from packages import *
 
 
 class Udd():
@@ -88,7 +88,7 @@ class Udd():
             logfile = self.config.db_logging()
 
         # make the connection, logging to the file if requests
-        self.psql = uddcache.database.Connect(logfile, **args)
+        self.psql = database.Connect(logfile, **args)
 
     def BindRelease(self, release="lenny", arch="i386", **kwargs):
         """
