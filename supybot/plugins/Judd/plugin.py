@@ -64,7 +64,6 @@ import uddcache.config
 #    return release, arch
 
 
-
 class Judd(callbacks.Plugin):
     """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
     threaded = True
@@ -852,18 +851,21 @@ class Judd(callbacks.Plugin):
             irc.error("Sorry, couldn't look up file list.", Raise=True)
 
         try:
-            #print "Trying: zgrep -ie '%s' '%s'" % (regexp, contents)
-            output = subprocess.Popen(['zgrep', '-ie', regexp, contents],
+            #print "Trying: zgrep -iE -e '%s' '%s'" % (regexp, contents)
+            output = subprocess.Popen(['zgrep', '-iE', '-e', regexp, contents],
                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True).communicate()[0]
         except TypeError:
             irc.error(r"Sorry, couldn't look up the file list.", Raise=True)
 
         packages = PackageFileList()
         try:
-            for line in output.split("\n"):
-                if len(data) > 100:
-                    irc.error('There were more than 100 files matching your search, '
-                              'please narrow your search.', Raise=True)
+            lines = output.split("\n")
+            maxhits = 20
+            if len(lines) > maxhits:
+                irc.error('There were more than %s files matching your '
+                          'search; please narrow your search.' % maxhits,
+                          Raise=True)
+            for line in lines:
                 try:
                     (filename, pkg_list) = line.split()
                     if filename == 'FILE':

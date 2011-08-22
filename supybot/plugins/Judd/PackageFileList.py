@@ -49,10 +49,13 @@ class PackageFileList:
     def to_string(self, boldfn):
         """ Turn the list into a condensed one-line string output """
         s = []
-        for pack in self.packages.keys():
-            # either section/package (shells/bash) or
-            # component/section/package (non-free/editors/axe)
-            info = pack.split('/')
+        # sort the packages so that packages that contain the shortest paths
+        # (by number of path elements, /) come first.
+        pprio = sorted(self.packages.keys(),
+          key=lambda p: min(map(lambda f: f.count('/'), self.packages[p])))
+        for p in pprio:
+            #section,name = p.split('/')
+            info = p.split('/')
             if len(info) == 2:
                 name = info[1]
             elif len(info) == 3:

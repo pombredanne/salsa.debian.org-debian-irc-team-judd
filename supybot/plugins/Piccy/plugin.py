@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2009 Stuart Prescott
+# Copyright (c) 2009, 2011 Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -57,11 +57,12 @@ import subprocess
 release_map = { 'trunk'             : 'trunk',
                 'experimental'      : 'experimental',
                 'unstable'          : 'sid',
-                'testing'           : 'squeeze',
-                'stable-backports'  : 'lenny-backports',
-                'stable'            : 'lenny',
-                'oldstable1'        : 'etchnhalf',
-                'oldstable'         : 'etch' }
+                'testing'           : 'wheezy',
+                'stable-backports'  : 'squeeze-backports',
+                'stable'            : 'squeeze',
+                'oldstable-backports'  : 'lenny-backports',
+                'oldstable'            : 'lenny'
+               }
 
 class Piccy(callbacks.Plugin):
     """A plugin for matching PCI-Ids with kernel modules and for looking up kernel config options"""
@@ -288,7 +289,7 @@ class Piccy(callbacks.Plugin):
 
 
     def kernelVersionHelper(self, irc, msg, args, optlist):
-        """[--release <lenny>]
+        """[--release <squeeze>]
 
         Outputs the kernel versions in the archive, optionally restricted to
         one release. Note that semi-major releases like etchnhalf are treated

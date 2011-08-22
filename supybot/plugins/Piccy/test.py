@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2009, Stuart Prescott
+# Copyright (c) 2009,2011 Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('pciid 8086:27b9')        # multiple module matches ; intel-rng and iTCO_wdt
         self.assertNotError('pciid 8086:4229')        # multiple wikifaq matches ; wikifaq: iwlwifi iwlagn
         self.assertNotError('pciid 10de:1234')        # PCI_ID_ANY module ; nvidia device with PCI_ID_ANY in map for out-of-tree nvidia driver
-        self.assertNotError('pciid 1904:8139 --release etch')      # fallthru to sid ; RTL8139D has no match in etch, matches sc92031 in sid
+        #self.assertNotError('pciid 1904:8139 --release etch')      # fallthru to sid ; RTL8139D has no match in etch, matches sc92031 in sid
         self.assertNotError('pciid "[8086:4222]"')    # pciid wrapped in brackets ; 'PRO/Wireless 3945ABG [Golan] Network Connection'. Should include wikilink for iwlwifi.
         self.assertNotError('pciid "[8086:4222]" --release unstable') # check driver in sid ; 'PRO/Wireless 3945ABG [Golan] Network Connection'. Should include wikilink for iwlwifi.
         self.assertNotError('pciid "[1002:7145]"')    # non-free driver ; 'Radeon Mobility X1400' with in kernel ati-agp module and out-of-tree fglrx and wikilink for fglrx
@@ -87,7 +87,7 @@ class PiccyPluginTestCase(PluginTestCase):
         self.assertNotError('kconfig proc')      # case sensitive ; case-insensitive matching, several partial matches
         self.assertNotError('kconfig FIRMWARE')  # avoid comments ; shoudn't return comments with firmware
         self.assertNotError('kconfig foobar')    # no match ; fails to match
-        self.assertNotError('kconfig CONFIG_SMB_FS --release etch')  # match in release ; only set in etch
+        #self.assertNotError('kconfig CONFIG_SMB_FS --release etch')  # match in release ; only set in etch
         self.assertNotError('kconfig CONFIG_SMB_FS --release lenny') # match in release ; not set in lenny
 
     def testVersionList(self):

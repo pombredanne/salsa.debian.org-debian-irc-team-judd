@@ -1,7 +1,7 @@
 "Piccy" -- a PCI-Id plugin for supybot
 ======================================
 
-Copyright (c) 2009, Stuart Prescott
+Copyright (c) 2009-2011 Stuart Prescott
 Piccy is released under a BSD-style licence (below).
 
 
@@ -56,13 +56,13 @@ can either copy that into the configured data directory for Piccy or you can
 let "refreshdata" download the kernel module, unpack it into a temporary
 location and run depmod over it. Doing so requires that you are on a Debian
 system as "refreshdata" makes use of apt-cache and aptitude to obtain the
-necessary information about the packages that are available and the to 
+necessary information about the packages that are available and the to
 download the .deb files. At present, "refreshdata" will only look for kernels
 for the current architecture that apt would use (see dpkg-architecture) but
 the default package matching regular expression assumes that -686 kernels will
 be available.
 
-The kernel config files are shipped by Debian kernel packages as 
+The kernel config files are shipped by Debian kernel packages as
 /boot/config-$(uname -r) and are extracted by the "refreshdata" utility at
 the same time as the pcimap is obtained. You can always give Piccy some other
 kernel config file if you want.
@@ -116,6 +116,28 @@ Example usage
 
   kconfig SMB_FS
   kconfig SMB_FS --release etch
+
+
+Maintenance information
+=======================
+
+piccy oldstable removal:
+* stop importing oldoldstable (Piccy/kernels.list)
+* shift oldstable alias
+* delete oldstable entry from data/piccy/versions
+* delete oldstable data sets (rm data/piccy/versions/*etch*)
+
+piccy release actions:
+* shift stable alias
+* /msg $bot config supybot.plugins.Piccy.default_release squeeze
+* build new out-of-tree module map (refreshdata-extramodules in a chroot)
+* /msg $bot config supybot.plugins.Piccy.extra_module_maps squeeze-extras sid-extras
+
+piccy new testing actions
+* add new release to plugin.py and kernels.list
+* shift testing alias
+* reorder versions cache (data/piccy/versions; after triggering or waiting
+  for kernels to update)
 
 
 Licence
