@@ -574,7 +574,7 @@ class Judd(callbacks.Plugin):
 
         if badlist:
             irc.reply( "%s in %s/%s unsatisfiable dependencies: %s." % \
-                        ( package, release, arch, "i; ".join(badlist) ) )
+                        ( package, release, arch, "; ".join(badlist) ) )
         else:
             irc.reply( "%s in %s/%s: all dependencies satisfied." % \
                         ( package, release, arch) )
@@ -774,7 +774,7 @@ class Judd(callbacks.Plugin):
                 d = ds[0]
             else:
                 d = ""
-            irc.reply( "Bug #%d (%s) %s -- %s Severity: %s; Last Modified: %s" % ( bugno, row[1], row[0], d, row[2], row[4]) )
+            irc.reply( "Bug #%d (%s) %s -- %s; Severity: %s; Last Modified: %s" % ( bugno, row[1], row[0], d, row[2], row[4]) )
 
     bug = wrap(bug, ['int'] )
 
