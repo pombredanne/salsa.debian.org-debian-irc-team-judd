@@ -76,11 +76,20 @@ class config(unittest.TestCase):
         else:
             os.unsetenv('UDD_CACHE_CONFIG')
 
+    def testConfDict(self):
+        """Test loading config via a dict"""
+        origEnv = False
+        cd = {'database': 'quux', 'username': 'foobar'}
+        conf = Config(skipDefaultFiles=True, confdict=cd)
+        self.assert_(conf)
+        self.assertEqual(conf.get('database', 'database'), 'quux')
+        self.assertEqual(conf.get('database', 'username'), 'foobar')
+
     def testConfigGet(self):
         conf = Config()
-        self.assertEqual(conf.get('database', 'hostname', 'quux'),  'localhost')
-        self.assertEqual(conf.get('nosuchsection', 'hostname', 'quux'),  'quux')
-        self.assertEqual(conf.get('database', 'nosuchkey', 'quux'),  'quux')
+        self.assertEqual(conf.get('database', 'hostname', 'quux'), 'localhost')
+        self.assertEqual(conf.get('nosuchsection', 'hostname', 'quux'), 'quux')
+        self.assertEqual(conf.get('database', 'nosuchkey', 'quux'), 'quux')
 
     def testLogging(self):
         conf = Config()

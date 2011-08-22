@@ -61,12 +61,16 @@ import ConfigParser
 
 
 class Config:
-    def __init__(self, file=None, skipDefaultFiles=False):
+    def __init__(self, file=None, skipDefaultFiles=False, confdict=None):
         self.filename = file
         self.config = None
+        if not confdict:
+            self.confdict = {}
+        else:
+            self.confdict = confdict
         self._ReadConfig(skipDefaultFiles)
 
-    def _ReadConfig(self,  skipDefaultFiles=False):
+    def _ReadConfig(self, skipDefaultFiles=False):
         """
         Read in the database config for connecting to the UDD instance.
 
@@ -90,10 +94,12 @@ class Config:
                               self.filename)
             files.append(self.filename)
         files = self.config.read(files)
-        if not files:
+        if not files and not self.confdict:
             raise ValueError("No valid configuration was found to connect"
                             " to the database.")
-        #print files
+        if not self.config.has_section('database'):
+            self.config.add_section('database')
+        [self.config.set('database', opt, self.confdict[opt]) for opt in self.confdict.keys()]
 
     def db(self):
         """
@@ -116,7 +122,7 @@ class Config:
         """
         return self.get('database', 'logfile', None)
 
-    def get(self, section, value, default):
+    def get(self, section, value, default=None):
         try:
             return self.config.get(section, value)
         except:
