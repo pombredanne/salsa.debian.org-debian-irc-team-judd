@@ -64,17 +64,17 @@ class Relationship(object):
     def __init__(self, **kwargs):
         self.relation = kwargs.get('relation', None)
         """ textual representation of the entire relationship"""
-        self.package  = kwargs.get('package',  None)
+        self.package = kwargs.get('package', None)
         """ package name from relationship as a string """
         self.operator = kwargs.get('operator', None)
         """ version operator from the relationship as a string """
-        self.version  = kwargs.get('version',  None)
+        self.version = kwargs.get('version', None)
         """ version string from the relationship as a string """
-        self.arch     = self._archsplit(kwargs.get('arch', None))
+        self.arch = self._archsplit(kwargs.get('arch', None))
         """ architecture specification for the relationship as a list """
-        self.archIgnore  = False
+        self.archIgnore = False
         """ boolean: this relationship is to be ignored in this architecture"""
-        self.virtual     = False
+        self.virtual = False
         """ boolean: this relationship is satisfied only by virtual packages"""
         self.packagedata = None
         """ For relations satisfied by real packages: the Package object; for
@@ -112,10 +112,10 @@ class Relationship(object):
                   """, relationship)
         if not m:
             raise ValueError("Couldn't parse the relationship expression")
-        self.package  = m.group('package')
+        self.package = m.group('package')
         self.operator = m.group('operator')
-        self.version  = m.group('version')
-        self.arch     = self._archsplit(m.group('arch'))
+        self.version = m.group('version')
+        self.arch = self._archsplit(m.group('arch'))
 
     def isVersioned(self):
         return self.operator != None
@@ -170,10 +170,10 @@ class RelationshipOptions(list):
         """
         self.relation = options   # text representation
         self.satisfiedBy = None   # Relationship alternative that satisfies
-        self.satisfied   = False  # relationship is satisfied (boolean)
-        self.virtual     = False  # used virtual package to satisfy
-        self.package     = None   # Package object that satisfied
-        self.status      = None   # Extended status (SolverHierarchy)
+        self.satisfied = False  # relationship is satisfied (boolean)
+        self.virtual = False  # used virtual package to satisfy
+        self.package = None   # Package object that satisfied
+        self.status = None   # Extended status (SolverHierarchy)
         list.__init__(self)
         for rel in self._SplitOptions(options):
             #print "found rel=%s" % rel
@@ -375,8 +375,8 @@ class RelationshipStatus(PackageLists):
 
     def satisfied(self):
         """Check if there are any 'bad' or 'unchecked' relationships"""
-#        print "Looking at satisfied: %d %s" % (len(self.bad), len(self.bad)==0)
-        return len(self.unchecked)+len(self.bad) == 0
+        # print "Satisfied?: %d %s" % (len(self.bad), len(self.bad)==0)
+        return len(self.unchecked) + len(self.bad) == 0
 
     def __str__(self):
         """Convert to string form"""
@@ -402,11 +402,7 @@ class RelationshipStatus(PackageLists):
 
     def __nonzero__(self):
         """True (non-zero) if there are any packages in the list at all"""
-#        raise ValueError("Ugh")
-#        print "Looking at __nonzero__: %d %s" % (len(self.bad), len(self.bad)==0)
-#        return len(self.good)+len(self.unchecked)+len(self.bad) > 0
-        return len(self.good)+len(self.unchecked)+len(self.bad) > 0
-        #return len(self.unchecked)+len(self.bad) == 0
+        return len(self.good) + len(self.unchecked) + len(self.bad) > 0
 
 
 class BuildDepStatus(object):
@@ -417,9 +413,9 @@ class BuildDepStatus(object):
     """
     def __init__(self, bd=None, bdi=None):
         if bd != None:
-            self.bd  = bd
+            self.bd = bd
         else:
-            self.bd  = RelationshipStatus()
+            self.bd = RelationshipStatus()
         if bdi != None:
             self.bdi = bdi
         else:
@@ -439,7 +435,7 @@ class BuildDepStatus(object):
         """
         bdm = self.bd.good.ReleaseMap()
         bdim = self.bdi.good.ReleaseMap()
-        releases = dict([(k, []) for k in bdm.keys()+bdim.keys()])
+        releases = dict([(k, []) for k in bdm.keys() + bdim.keys()])
 
         [releases[r].extend(bdm[r]) for r in bdm.keys()]
         [releases[r].extend(bdim[r]) for r in bdim.keys()]

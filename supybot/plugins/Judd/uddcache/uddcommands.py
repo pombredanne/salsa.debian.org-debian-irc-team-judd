@@ -70,8 +70,8 @@ class UddCommands(Udd):
         for row in c.fetchall():
             pkgs.append(row)
 
-        pkgs.sort( lambda a,b:
-                    debian_support.version_compare(a['version'], b['version']) )
+        pkgs.sort(lambda a, b:
+                    debian_support.version_compare(a['version'], b['version']))
         return pkgs
 
     def info(self, package, release, arch):
@@ -84,9 +84,9 @@ class UddCommands(Udd):
                     WHERE p.package=%(package)s AND
                       (p.architecture=%(arch)s OR p.architecture='all') AND
                       p.release=%(release)s""",
-                   dict( package=package,
+                   dict(package=package,
                          arch=arch,
-                         release=release) )
+                         release=release))
 
         return c.fetchone()
 
@@ -96,8 +96,8 @@ class UddCommands(Udd):
         """
         c = self.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-        packagesql = package.replace( "*", "%" )
-        packagesql = packagesql.replace( "?", "_" )
+        packagesql = package.replace("*", "%")
+        packagesql = packagesql.replace("?", "_")
 
         if package.startswith('src:'):
             packagesql = packagesql[4:]
@@ -118,7 +118,7 @@ class UddCommands(Udd):
         c.execute(sql,
                   dict(package=packagesql,
                        arch=arch,
-                       release=release) )
+                       release=release))
         return c.fetchall()
 
     def archs(self, package, release):
@@ -130,8 +130,8 @@ class UddCommands(Udd):
                       FROM packages
                       WHERE package=%(package)s
                         AND release=%(release)s""",
-                   dict( package=package,
-                         release=release) )
+                   dict(package=package,
+                        release=release))
         return c.fetchall()
 
     def uploads(self, package, version="", max=0):
@@ -169,7 +169,7 @@ class UddCommands(Udd):
         c.execute(r"""SELECT insts, vote, olde, recent, nofiles
                       FROM popcon
                       WHERE package=%(package)s""",
-                  dict(package=package) )
+                  dict(package=package))
         return c.fetchone()
 
     def checkdeps(self, package, release, arch, relations):

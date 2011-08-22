@@ -47,7 +47,8 @@ Expected format is as follows:
 
 If working with a Judd instance, this can be generated from
 the supybot config file as follows:
-    (echo "[database]"; sed -nr 's/.*Judd\.db_(.*)$/\1/p' supybot.conf) > udd-cache.conf
+    (echo "[database]"; sed -nr 's/.*Judd\.db_(.*)$/\1/p' supybot.conf) \
+        > udd-cache.conf
 
 """
 
@@ -80,15 +81,18 @@ class UddConfig:
 
         if 'UDD_CACHE_CONFIG' in os.environ and os.environ['UDD_CACHE_CONFIG']:
             if not os.path.isfile(os.environ['UDD_CACHE_CONFIG']):
-                raise IOError("Configuration file not found: '%s'." % os.environ['UDD_CACHE_CONFIG'])
+                raise IOError("Configuration file not found: '%s'." %
+                              os.environ['UDD_CACHE_CONFIG'])
             files.append(os.environ['UDD_CACHE_CONFIG'])
         if self.filename:
             if not os.path.isfile(self.filename):
-                raise IOError("Configuration file not found '%s'." % self.filename)
+                raise IOError("Configuration file not found '%s'." %
+                              self.filename)
             files.append(self.filename)
         files = self.config.read(files)
         if not files:
-            raise ValueError("No valid configuration was found to connect to the database.")
+            raise ValueError("No valid configuration was found to connect"
+                            " to the database.")
         #print files
 
     def db(self):
@@ -98,11 +102,11 @@ class UddConfig:
         Returns a dict with these keys:value pairs.
         """
         conf = {
-                'hostname' : self.get('database', 'hostname', 'localhost'),
-                'port'     : self.get('database', 'port', '5432'),
-                'username' : self.get('database', 'username', None),
-                'password' : self.get('database', 'password', None),
-                'database' : self.get('database', 'database', 'udd'),
+                'hostname': self.get('database', 'hostname', 'localhost'),
+                'port':     self.get('database', 'port', '5432'),
+                'username': self.get('database', 'username', None),
+                'password': self.get('database', 'password', None),
+                'database': self.get('database', 'database', 'udd'),
                 }
         return conf
 

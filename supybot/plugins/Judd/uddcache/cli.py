@@ -140,7 +140,8 @@ class Cli():
 
     def info(self, command, package, args):
         """ show info (version, size, homepage, screenshot) about a package """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         p = self.udd.info(package, release, arch)
@@ -161,7 +162,8 @@ class Cli():
 
     def names(self, command, package, args):
         """ search for package names with wildcard (? and *) expressions """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         pkgs = self.udd.names(package, release, arch)
@@ -173,11 +175,11 @@ class Cli():
         for row in pkgs:
             if (row['component'] == 'main'):
                 replies.append("%s %s" % \
-                                (row['package'], row['version']) )
+                                (row['package'], row['version']))
             else:
                 replies.append("%s %s (%s)" % \
                                 (row['package'], row['version'],
-                                  row['component']) )
+                                  row['component']))
 
         print "%s in %s/%s:\n%s" % (package, release, arch, "\n".join(replies))
 
@@ -186,7 +188,8 @@ class Cli():
         Show for what architectures a package is available. By default,
         the current stable release is used.
         """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
 
         pkgs = self.udd.archs(package, release)
 
@@ -195,7 +198,7 @@ class Cli():
 
         replies = []
         for row in pkgs:
-            replies.append("%s (%s)" % (row[0], row[1]) )
+            replies.append("%s (%s)" % (row[0], row[1]))
         print "%s: %s" % (package, ", ".join(replies))
 
     def rprovides(self, command, package, args):
@@ -204,7 +207,8 @@ class Cli():
         ('reverse provides').
         By default, the current stable release and i386 are used.
         """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         p = self.udd.BindPackage(package, release, arch)
@@ -229,7 +233,8 @@ class Cli():
         in the given release and architecture. By default, the current
         stable release and i386 are used.
         """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         p = self.udd.BindPackage(package, release, arch)
@@ -250,7 +255,8 @@ class Cli():
         is derived.
         By default, the current stable release and i386 are used.
         """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         r = self.udd.BindRelease(release, arch)
@@ -266,7 +272,8 @@ class Cli():
         source package.
         By default, the current stable release and i386 are used.
         """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         p = self.udd.BindSourcePackage(package, release)
@@ -282,7 +289,8 @@ class Cli():
         or binary package build-depends.
         By default, the current stable release is used.
         """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         p = self.udd.BindSourcePackage(package, release)
         self._package_relation_lookup(p, release, 'build_depends')
         self._package_relation_lookup(p, release, 'build_depends_indep',
@@ -293,7 +301,8 @@ class Cli():
         Show all package relationships for this binary package.
         By default, the current stable release is used.
         """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
         p = self.udd.BindPackage(package, release, arch)
         self._package_relation_lookup(p, release, 'depends')
@@ -311,13 +320,15 @@ class Cli():
         Show one particular package relationship for this binary package.
         By default, the current stable release is used.
         """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
         p = self.udd.BindPackage(package, release, arch)
         self._package_relation_lookup(p, release, command)
 
     def recent(self, command, package, args):
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         p = self.udd.BindSourcePackage(package, release)
         uploads = self.udd.uploads(p, max=10)
         if not uploads:
@@ -331,7 +342,8 @@ class Cli():
                     u['changed_by_name'], u['signed_by_name'], nmu)
 
     def maint(self, command, package, args):
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         p = self.udd.BindSourcePackage(package, release)
         version = ""
         if args:
@@ -351,7 +363,8 @@ class Cli():
             print "NMU: yes"
 
     def popcon(self, command, package, args):
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         d = self.udd.popcon(package)
         if not d:
             return self.notfound(package)
@@ -373,7 +386,8 @@ class Cli():
 
         By default, the current stable release and i386 are used.
         """
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         relation = []
@@ -399,7 +413,8 @@ class Cli():
                     print "%s: satisfied" % label
 
     def checkinstall(self, command, package, args):
-        release = self.udd.data.clean_release_name(self.options.release, args=args)
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         status = self.udd.checkInstall(package, release, arch,
@@ -417,9 +432,11 @@ class Cli():
         By default, a backport from unstable to the current stable release
         and i386 are used.
         """
-        fromrelease = self.udd.data.clean_release_name(self.options.fromrelease,
+        fromrelease = self.udd.data.clean_release_name(
+                                        self.options.fromrelease,
                                         default='unstable')
-        torelease = self.udd.data.clean_release_name(self.options.torelease,
+        torelease = self.udd.data.clean_release_name(
+                                        self.options.torelease,
                                         default='stable')
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
@@ -428,7 +445,7 @@ class Cli():
         releases = self.udd.data.list_dependent_releases(torelease,
                                                      suffixes=['backports'])
 
-        pins = dict(zip(releases,reversed(range(len(releases)))))
+        pins = dict(zip(releases, reversed(range(len(releases)))))
         tr = self.udd.BindRelease(arch=arch,
                         release=releases, pins=pins)
 

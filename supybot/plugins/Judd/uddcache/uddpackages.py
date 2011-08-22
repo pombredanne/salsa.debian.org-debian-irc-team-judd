@@ -37,6 +37,7 @@ import psycopg2.extras
 from psycopg2.extensions import adapt
 from uddcache.uddrelations import *
 
+
 class Release(object):
     """ Class that represents the contents of a release
     i.e lists of binary and source packages """
@@ -58,20 +59,12 @@ class Release(object):
             package: name of the package (string)
             returns Package object
         """
-        # print "Known packages: %s" % ",".join(self.cache.keys())
-        # print "Want: '%s' %s" % (package, type(package))
-        # for p in self.cache.keys():
-        #   print "-> '%s': %s == %s (%s)" % (p, self.cache[p], self.cache.has_key(p), p == package)
         phash = self._mkpackagehash(package, operator, version)
         if not phash in self.cache:
-            # print "Cache miss for package %s in %s" % (package , self)
             self.cache[phash] = Package(self.dbconn, arch=self.arch, \
                                   release=self.release, package=package, \
                                   pins=self.pins,
                                   version=version, operator=operator)
-            # print "Now have %s" % self.cache[package]
-        # else:
-        #    print "Cache hit for package %s in %s" % (package , self)
         return self.cache[phash]
 
     def Source(self, package, autoBin2Src=True, version=None, operator=None):
@@ -100,8 +93,8 @@ class Release(object):
                       FROM packages
                       WHERE package=%(package)s
                         AND release IN %(release)s LIMIT 1""",
-                   dict( package=package,
-                         release=self.release) )
+                   dict(package=package,
+                         release=self.release))
         row = c.fetchone()
         if row:
             return row[0]
@@ -135,12 +128,13 @@ class Release(object):
                 "\t%d binary packages and %d source packages in cache." % \
                         (self.release, len(self.cache), len(self.scache))
 
+
 class AbstractPackage(object):
-    fields  = ['*']
-    table   = ''
-    column  = ''
-    pins    = []
-    data    = []
+    fields = ['*']
+    table = ''
+    column = ''
+    pins = []
+    data = []
 
     def __init__(self, dbconn, arch="i386", release="lenny", package=None,
                  pins=None, version=None, operator=None):
@@ -183,8 +177,6 @@ class AbstractPackage(object):
         self._Fetch()
 
     def _Fetch(self):
-        #print "Looking for %s in %s/%s." % (self.package, self.release, self.arch)
-        # TODO: have the "version" do something useful
         c = self.dbconn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         f = ','.join(self.fields)
         pin = ''
@@ -199,7 +191,6 @@ class AbstractPackage(object):
             verwhere = "AND version %s debversion(%s)" % \
                         (self.operator.replace('>>', '>').replace('<<', '<'),
                             adapt(self.version))
-        # print "Looking up: %s, %s, %s" % (self.package, self.arch, self.release)
         c.execute(r"""SELECT """ + f + """
                       FROM """ + self.table + """
                       WHERE """ + self.column + """=%(package)s
@@ -207,9 +198,9 @@ class AbstractPackage(object):
                         AND release IN %(release)s """ + verwhere + """
                       ORDER BY """ + pin + """version DESC
                       LIMIT 1""",
-                   dict( package=self.package,
+                   dict(package=self.package,
                          arch=self.arch,
-                         release=self.release) )
+                         release=self.release))
         self.data = c.fetchone()
 
     def Found(self):
@@ -242,11 +233,12 @@ class Package(AbstractPackage):
     def __init__(self, dbconn, arch="i386", release="lenny", package=None,
                  pins=None, version=None, operator=None):
         """
-        Bind a specified binary package from a releases, list of releases or tuple of releases
+        Bind a specified binary package from a releases, list of releases
+        or tuple of releases
 
         """
-        self.table   = 'packages'
-        self.column  = 'package'
+        self.table = 'packages'
+        self.column = 'package'
         self._ProvidersList = None
         self.installable = None
         AbstractPackage.__init__(self, dbconn, arch, release, package,
@@ -268,8 +260,8 @@ class Package(AbstractPackage):
 
     def ProvidersList(self):
         if self._ProvidersList == None:
-            # remove all characters from the package name that aren't legal in a
-            # package name i.e. not in:
+            # remove all characters from the package name that aren't legal in
+            # a package name i.e. not in:
             #    a-z0-9-.+
             # see §5.6.1 of Debian Policy "Source" for details.
             # http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Source
@@ -278,7 +270,8 @@ class Package(AbstractPackage):
             # (but - in package name is a word boundary)
             # \A is start string,        \Z is finish string
             # http://www.postgresql.org/docs/8.3/static/functions-matching.html
-            packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % re.escape(re.sub(r"[^a-z\d\-+.]", "", self.package))
+            packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % \
+                        re.escape(re.sub(r"[^a-z\d\-+.]", "", self.package))
             # print packagere
             c = self.dbconn.cursor()
             c.execute(r"""SELECT DISTINCT package
@@ -286,12 +279,12 @@ class Package(AbstractPackage):
                           WHERE provides ~ %(package)s
                             AND (architecture='all' OR architecture=%(arch)s)
                             AND release IN %(release)s""",
-                      dict( package=packagere,
+                      dict(package=packagere,
                             arch=self.arch,
-                            release=self.release) )
+                            release=self.release))
             pkgs = []
             for row in c.fetchall():
-                pkgs.append( row[0] )
+                pkgs.append(row[0])
             self._ProvidersList = pkgs
         return self._ProvidersList
 
@@ -359,7 +352,6 @@ class SourcePackage(AbstractPackage):
                                  pins=pins, version=version, operator=operator)
 
     def _Fetch(self):
-        #print "Looking for source %s in %s/%s." % (self.package, self.release, self.arch)
         c = self.dbconn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         f = ','.join(self.fields)
         c.execute(r"""SELECT """ + f + """
@@ -368,8 +360,8 @@ class SourcePackage(AbstractPackage):
                         AND release IN %(release)s
                       ORDER BY version DESC
                       LIMIT 1""",
-                   dict( package=self.package,
-                         release=self.release) )
+                   dict(package=self.package,
+                         release=self.release))
         self.data = c.fetchone()
 
     def Binaries(self):
@@ -378,9 +370,9 @@ class SourcePackage(AbstractPackage):
                       FROM packages
                       WHERE source=%(package)s
                         AND release IN %(release)s""",
-                   dict( package=self.package,
+                   dict(package=self.package,
                          arch=self.arch,
-                         release=self.release) )
+                         release=self.release))
         pkgs = []
         for row in c.fetchall():
             pkgs.append(row[0])
@@ -397,4 +389,3 @@ class SourcePackage(AbstractPackage):
 
     def BuildDependsIndepList(self):
         return self.RelationshipOptionsList('build_depends_indep')
-

@@ -32,6 +32,7 @@
 
 """ Static classes describing the data that is available """
 
+
 class AvailableData:
     """ Base class for available data across all distros """
     release_map = {}
@@ -97,7 +98,8 @@ class AvailableData:
         return arch
 
     @classmethod
-    def list_dependent_releases(cls, release, suffixes=None, include_self=True):
+    def list_dependent_releases(cls, release, suffixes=None,
+                                include_self=True):
         """
         List the releases that should also be included in the dependency
         analysis
@@ -124,16 +126,17 @@ class AvailableData:
             rels.append("sid")
         return rels
 
+
 class DebianData(AvailableData):
     """ Debian-specific data """
     release_map = {
-                    'rc-buggy':'experimental',
-                    'unstable':'sid',
-                    'testing':'wheezy',
-                    'stable':'squeeze',
-                    'stable-backports':'squeeze-backports',
-                    'oldstable':'lenny',
-                    'oldstable-backports':'lenny-backports'
+                    'rc-buggy':            'experimental',
+                    'unstable':            'sid',
+                    'testing':             'wheezy',
+                    'stable':              'squeeze',
+                    'stable-backports':    'squeeze-backports',
+                    'oldstable':           'lenny',
+                    'oldstable-backports': 'lenny-backports'
                 }
     releases = [
                     'lenny',
@@ -155,6 +158,6 @@ class DebianData(AvailableData):
                     'experimental',
                 ]
 
-    arches = [ 'alpha', 'amd64', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64',
+    arches = ['alpha', 'amd64', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64',
                'kfreebsd-amd64', 'kfreebsd-i386',
-               'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
+               'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all']

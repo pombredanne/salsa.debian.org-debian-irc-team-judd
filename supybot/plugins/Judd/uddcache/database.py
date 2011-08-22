@@ -46,7 +46,7 @@ def Connect(logfile, **kwargs):
                         connection_factory=WrappingLoggingConnection,
                         **kwargs
                      )
-        logging.basicConfig(filename=logfile,level=logging.DEBUG)
+        logging.basicConfig(filename=logfile, level=logging.DEBUG)
         db_logger = logging.getLogger('psql')
         #fh = open(logfile, "a") # append to the log file
         #psql.initialize(fh)
@@ -103,12 +103,12 @@ class WrappingLoggingConnection(psycopg2.extras.LoggingConnection):
         self._check()
         # default to creating a LoggingCursor
         if cursor_factory is None:
-            cursor_factory=psycopg2.extras.LoggingCursor
+            cursor_factory = psycopg2.extras.LoggingCursor
         if name is None:
             c = psycopg2.extensions.connection.cursor(self,
                                     cursor_factory=cursor_factory)
         else:
-            c= psycopg2.extensions.connection.cursor(self, name,
+            c = psycopg2.extensions.connection.cursor(self, name,
                                     cursor_factory=cursor_factory)
 
         # wrap the execute and callproc methods of the cursor with

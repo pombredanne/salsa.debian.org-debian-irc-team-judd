@@ -51,7 +51,8 @@ class RelationChecker(object):
     CheckBuildDeps -- check that build-deps are satisfied for a package
     CheckInstall -- check that a package is installable
     CheckRelationArch -- determine if a relationship pertains to give arch
-    CheckRelationshipOptionsList -- determine if a list of relationships is satisfied
+    CheckRelationshipOptionsList -- determine if a list of relationships is
+                                satisfied
     RelationSatisfied -- check an individual relationship
 
     Typical usage:
@@ -142,7 +143,8 @@ class RelationChecker(object):
                     for vpackage in relation.satisfiedBy.packagedata.ProvidersList():
                         status = self.CheckInstall(vpackage,
                                                     recommends, _level + 1)
-                        if status: break
+                        if status:
+                            break
                     relation.status = status
         return s
 
@@ -187,15 +189,15 @@ class RelationChecker(object):
         for opts in relationlist:
             #print "Considering fragment %s" % str(opts)
             satisfied = False
-            for item in opts: # item is a RelationshipOptions object
+            for item in opts:    # item is a RelationshipOptions object
                 #print "== part %s (%d)" % (type(item), len(opts))
                 satisfied = self.RelationSatisfied(item)
                 if satisfied:
-                    opts.satisfiedBy = item ###########
-                    opts.virtual     = item.virtual
-                    opts.satisfied   = True
-                    #opts.package     = item.packagedata  #######
-                    opts.archIgnore  = item.archIgnore
+                    opts.satisfiedBy = item
+                    opts.virtual = item.virtual
+                    opts.satisfied = True
+                    #opts.package = item.packagedata  #######
+                    opts.archIgnore = item.archIgnore
                     break
             if not satisfied:
                 #print "%s not satisfied" % opts
@@ -244,7 +246,6 @@ class RelationChecker(object):
                     return True
             return False
 
-
     def RelationSatisfied(self, rel):
         """Check if a relationship is satisfied in the current release
             rel: a Relationship object
@@ -276,9 +277,12 @@ class RelationChecker(object):
         # http://www.debian.org/doc/debian-policy/ch-relationships.html
         relOK = True
         if rel.operator:
-            depver = debian_support.Version(rel.version)  # version from dep line
-            aver   = debian_support.Version(version)      # version in archive
-            #print "    versions comparison %s %s %s %s" % (rel.package, aver, rel.operator, depver)
+            # version from dep line
+            depver = debian_support.Version(rel.version)
+            # version in archive
+            aver = debian_support.Version(version)
+            #print "    versions comparison %s %s %s %s" % \
+            #               (rel.package, aver, rel.operator, depver)
             if rel.operator == ">>":    # strictly greater than
                 relOK = aver > depver
             elif rel.operator == ">=":  # greater than or equal to
@@ -324,11 +328,11 @@ class SolverHierarchy(object):
         package:    name of the package (string)
         level:      level number of this node in the hierarchy (integer)
         """
-        self.depends    = RelationshipStatus()
+        self.depends = RelationshipStatus()
         self.recommends = RelationshipStatus()
-        self.package    = package
-        self.level      = level
-        self._types     = ['depends', 'recommends']
+        self.package = package
+        self.level = level
+        self._types = ['depends', 'recommends']
 
     def get(self, name):
         """Programmatic access to a RelationshipStatus object
@@ -417,4 +421,3 @@ class SolverHierarchy(object):
 #        s = [strline(self.depends, "Depends"),
 #             strline(self.recommends, "Recommends")]
 #        return "\n".join(filter(None, s))
-

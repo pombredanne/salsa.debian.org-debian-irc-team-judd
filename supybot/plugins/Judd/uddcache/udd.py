@@ -74,11 +74,11 @@ class Udd():
 
     def _connect(self, logfile):
         arg_mapping = {
-                            'database' : 'database',
-                            'hostname' : 'host',
-                            'port'     : 'port',
-                            'password' : 'password',
-                            'username' : 'user',
+                            'database': 'database',
+                            'hostname': 'host',
+                            'port':     'port',
+                            'password': 'password',
+                            'username': 'user',
                         }
         args = {}
         c = self.config.db()
@@ -115,4 +115,3 @@ class Udd():
         r = Release(self.psql, release=release)
         p = r.Source(package)
         return p
-
