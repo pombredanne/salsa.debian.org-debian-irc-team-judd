@@ -432,7 +432,7 @@ class Cli():
 
         r = self.udd.BindRelease(arch=arch, release=release)
         status = self.dispatcher.checkBackport(package, r, r)
-        print "Build-depenency check for %s in %s/%s:" % \
+        print "Build-dependency check for %s in %s/%s:" % \
                 (package, release, arch)
         print "Checked: %s" % ", ".join(r.release)
 

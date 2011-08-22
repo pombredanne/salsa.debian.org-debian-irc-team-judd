@@ -186,6 +186,12 @@ class cliTests(unittest.TestCase):
         self.cli.options.deptype = ['suggests', 'depends']
         self.assert_(self.cli.checkdeps("checkdeps", "dpkg", []) is None)
 
+    def testcheckbuilddeps(self):
+        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "eglibc", []) is None)
+        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "libdvdcss", ["squeeze-multimedia"]) is None)
+        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "stage", ["amd64", "sid"]) is None)
+        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "nosuchpackage", []) is None)
+
     def testcheckinstall(self):
         self.assert_(self.cli.checkinstall("checkinstall", "libc6", []) is None)
         self.assert_(self.cli.checkinstall("checkinstall", "ffmpeg", ["lenny-multimedia"]) is None)
