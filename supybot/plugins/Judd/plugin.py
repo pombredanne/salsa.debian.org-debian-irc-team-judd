@@ -809,7 +809,8 @@ class Judd(callbacks.Plugin):
         packages = self.getContents(irc, release, arch, regexp)
 
         if len(packages) == 0:
-            irc.reply('No packages were found with that file.')
+            irc.reply('No packages in %s/%s were found with that file.' % \
+                  (release, arch))
         else:
             s = packages.to_string(self.bold)
             irc.reply("%s in %s/%s: %s" % (glob, release, arch, s))
