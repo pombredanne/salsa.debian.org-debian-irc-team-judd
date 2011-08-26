@@ -1,5 +1,5 @@
-###
 # -*- coding: utf-8 -*-
+###
 #
 # Copyright (c) 2007,2008, Mike O'Connor
 # Copyright (c) 2010-2011  Stuart Prescott
@@ -108,10 +108,11 @@ class Judd(callbacks.Plugin):
         packages are searched; prefix the packagename with "src:" to search
         source packages.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
                                     args=something, default=None)
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         pkgs = self.dispatcher.versions(package, release, arch)
         if not pkgs:
@@ -141,10 +142,11 @@ class Judd(callbacks.Plugin):
         Search package names with * and ? as wildcards.
         The current stable release and i386 are searched by default.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         pkgs = self.dispatcher.names(package, release, arch)
         if not pkgs:
@@ -175,10 +177,11 @@ class Judd(callbacks.Plugin):
         in the specified release and architecture. By default, the current
         stable release and i386 are used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         p = self.dispatcher.info(package, release, arch)
         if p:
@@ -210,10 +213,11 @@ class Judd(callbacks.Plugin):
         Show for what architectures a package is available. By default, the current
         stable release is used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         pkgs = self.dispatcher.archs(package, release)
 
@@ -236,10 +240,11 @@ class Judd(callbacks.Plugin):
         ('reverse provides').
         By default, the current stable release and i386 are used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         p = self.udd.BindPackage(package, release, arch)
         if p.IsVirtual():
@@ -269,10 +274,11 @@ class Judd(callbacks.Plugin):
         in the given release and architecture. By default, the current
         stable release and i386 are used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         p = self.udd.BindPackage(package, release, arch)
 
@@ -306,10 +312,11 @@ class Judd(callbacks.Plugin):
         is derived.
         By default, the current stable release and i386 are used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         r = self.udd.BindRelease(release, arch)
         p = r.bin2src(package)
@@ -330,8 +337,9 @@ class Judd(callbacks.Plugin):
         source package.
         By default, the current stable release and i386 are used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
 #        arch = self.udd.data.clean_arch_name(optlist=optlist,
 #                                    args=something, default=self.default_arch())
 
@@ -354,8 +362,9 @@ class Judd(callbacks.Plugin):
         or binary package build-depends.
         By default, the current stable release is used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
                                     args=something, default=None)
 
@@ -394,10 +403,11 @@ class Judd(callbacks.Plugin):
         if not relation in knownRelations:
             irc.error("Sorry, unknown error determining package relationships.")
 
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         p = self.udd.BindPackage(package, release, arch)
 
@@ -477,10 +487,11 @@ class Judd(callbacks.Plugin):
         By default, all dependency types with the current stable release and
         i386 are used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         relation = []
         for opt in optlist:
@@ -520,10 +531,11 @@ class Judd(callbacks.Plugin):
         By default, recommended packages are checked too and the current
         stable release and i386 are used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         withrecommends = True
         for (option,arg) in optlist:
@@ -581,10 +593,11 @@ class Judd(callbacks.Plugin):
         specified release and host architecture.
         By default, the current stable release and i386 are used.
         """
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         r = self.udd.BindRelease(arch=arch, release=release)
         status = self.dispatcher.checkBackport(package, r, r)
@@ -610,14 +623,15 @@ class Judd(callbacks.Plugin):
         By default, a backport from unstable to the current stable release
         and i386 are used.
         """
+        channel = msg.args[0]
         fromrelease = self.udd.data.clean_release_name(optlist=optlist,
                                     optname='fromrelease',
                                     args=None, default=self.udd.data.devel_release)
         torelease = self.udd.data.clean_release_name(optlist=optlist,
                                     optname='torelease',
-                                    args=None, default=self.default_release())
+                                    args=None, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         fr = self.udd.BindRelease(arch=arch, release=fromrelease)
         # FIXME: should torelease do fallback to allow --to-release lenny-multimedia etc?
@@ -769,10 +783,11 @@ class Judd(callbacks.Plugin):
         """
         # Based on the file command in the Debian plugin by James Vega
 
+        channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release())
+                                    args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch())
+                                    args=something, default=self.default_arch(channel))
 
         mode = 'glob'
         for (option, arg) in optlist:
@@ -877,11 +892,12 @@ class Judd(callbacks.Plugin):
             return ircutils.bold(s)
         return s
 
-    def default_release(self):
-        return self.registryValue('default_release', dynamic.channel)
+    def default_release(self, channel):
+        #print dynamic.channel
+        return self.registryValue('default_release', channel)
 
-    def default_arch(self):
-        return self.registryValue('default_arch', dynamic.channel)
+    def default_arch(self, channel):
+        return self.registryValue('default_arch', channel)
 
 Class = Judd
 
