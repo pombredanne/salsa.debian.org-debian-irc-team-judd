@@ -828,7 +828,7 @@ class Judd(callbacks.Plugin):
                   (release, arch))
         else:
             s = packages.to_string(self.bold)
-            irc.reply("%s in %s/%s: %s" % (glob, release, arch, s))
+            irc.reply("Search for %s in %s/%s: %s" % (glob, release, arch, s))
 
     file = wrap(file, ['something',
                         getopts({'arch':'something',
