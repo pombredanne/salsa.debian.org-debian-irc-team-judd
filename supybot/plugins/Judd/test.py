@@ -149,9 +149,9 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('popcon nosuchpackage')             # package not found; no such package in the archive
 
     def testMaintainer(self):
-        self.assertNotError('maintainer perl')                  # show maintainer; maintianer, uploader and changer
-        self.assertNotError('maintainer python-pyx')            # auto bin2src test; maintianer, uploader and changer for source package pyx
-        self.assertNotError('maintainer nosuchpackage')         # package not found; no such package in the archive
+        self.assertNotError('maint perl')                  # show maintainer; maintianer, uploader and changer
+        self.assertNotError('maint python-pyx')            # auto bin2src test; maintianer, uploader and changer for source package pyx
+        self.assertNotError('maint nosuchpackage')         # package not found; no such package in the archive
 
     def testRecent(self):
         self.assertNotError('recent perl')                      # show recent upload; last 10 uploads of perl
