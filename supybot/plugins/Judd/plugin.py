@@ -72,15 +72,25 @@ class Judd(callbacks.Plugin):
         self.__parent = super(Judd, self)
         self.__parent.__init__(irc)
 
-        confdict = {
+        conffile = os.path.join(os.path.dirname(__file__), 'udd-cache.conf')
+        if os.path.isfile(conffile) and self.registryValue('use_conf_file'):
+            self.log.debug("Using file udd-db configuration: %s", conffile)
+            uddconf = uddcache.config.Config(file=conffile)
+        else:
+            self.log.debug("Using registry udd-db configuration")
+            sqllog = os.path.join(conf.supybot.directories.log(),
+                     self.registryValue('db_querylog'))
+            self.log.debug("UDD SQL Query logfile: %s",  sqllog)
+            confdict = {
                         'database': self.registryValue('db_database'),
                         'hostname': self.registryValue('db_hostname'),
                         'port': self.registryValue('db_port'),
                         'username': self.registryValue('db_username'),
-                        'password': self.registryValue('db_password')
+                        'password': self.registryValue('db_password'),
+                        'logfile': sqllog
                     }
-        conf = uddcache.config.Config(confdict=confdict)
-        self.udd = uddcache.udd.Udd(conf)
+            uddconf = uddcache.config.Config(confdict=confdict)
+        self.udd = uddcache.udd.Udd(uddconf)
         #self.udd = uddcache.udd.Udd()
         self.dispatcher = uddcache.commands.Commands(self.udd)
 

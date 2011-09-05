@@ -88,6 +88,15 @@ conf.registerGlobalValue(Judd, 'db_port',
 conf.registerGlobalValue(Judd, 'db_database',
                          registry.String("udd",
                          "postgres to use", private=True))
+conf.registerGlobalValue(Judd, 'db_querylog',
+                         registry.String("udd-query.log",
+                         "logfile in which sql queries should be logged; "
+                         "if a relative path is used, "
+                         "it is relative to supybot.directories.logs"))
+conf.registerGlobalValue(Judd, 'use_conf_file',
+                         registry.Boolean(True,
+                         "use the udd-cache.conf file in the plugin directory "
+                         "if present"))
 conf.registerGlobalValue(Judd, 'base_path',
                          registry.String("judd",
                          "base path to the data files; "

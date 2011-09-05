@@ -46,10 +46,12 @@ def Connect(logfile, **kwargs):
                         connection_factory=WrappingLoggingConnection,
                         **kwargs
                      )
-        logging.basicConfig(filename=logfile, level=logging.DEBUG)
         db_logger = logging.getLogger('psql')
-        #fh = open(logfile, "a") # append to the log file
-        #psql.initialize(fh)
+        db_logger.setLevel(logging.DEBUG)
+        fh = logging.FileHandler(logfile)
+        formatter = logging.Formatter('[%(asctime)-15s] %(name)s:%(levelname)s %(message)s')
+        fh.setFormatter(formatter)
+        db_logger.addHandler(fh)
         psql.initialize(db_logger)
     else:
         psql = psycopg2.connect(**kwargs)
