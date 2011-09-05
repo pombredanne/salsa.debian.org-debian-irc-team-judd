@@ -117,15 +117,15 @@ class Judd(callbacks.Plugin):
 
         Show the available versions of a package in the optionally specified
         release and for the given architecture.
-        All current releases and i386 are searched by default. By default, binary
-        packages are searched; prefix the packagename with "src:" to search
-        source packages.
+        All current releases and i386 are searched by default. By default,
+        binary packages are searched; prefix the packagename with "src:" to
+        search source packages.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=None)
+                            args=something, default=None)
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                            args=something, default=self.default_arch(channel))
 
         pkgs = self.dispatcher.versions(package, release, arch)
         if not pkgs:
@@ -135,19 +135,20 @@ class Judd(callbacks.Plugin):
         for row in pkgs:
             if (row['component'] == 'main'):
                 replies.append("%s %s" % \
-                                ("%s:" % self.bold(row['release']), row['version']))
+                    ("%s:" % self.bold(row['release']),
+                    row['version']))
             else:
                 replies.append("%s %s" % \
-                                ("%s/%s:" % (self.bold(row['release']), row['component']),
-                                  row['version']))
+                    ("%s/%s:" % (self.bold(row['release']), row['component']),
+                    row['version']))
 
         irc.reply("Package: %s on %s -- %s" % (package, arch,
                             "; ".join(replies)))
 
     versions = wrap(versions, ['something',
-                                getopts( { 'arch':'something',
-                                           'release':'something' } ),
-                                any( 'something' ) ] )
+                                getopts({'arch':'something',
+                                        'release':'something'}),
+                                any('something')])
 
     def names(self, irc, msg, args, package, optlist, something):
         """<pattern> [--arch <i386>] [--release <stable>]
@@ -157,9 +158,9 @@ class Judd(callbacks.Plugin):
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
         pkgs = self.dispatcher.names(package, release, arch)
         if not pkgs:
@@ -176,14 +177,15 @@ class Judd(callbacks.Plugin):
                                 (self.bold(row['package']), row['version'],
                                   row['component']))
 
-        irc.reply("Search for %s in %s/%s: %s" % (package, release, arch, "; ".join(replies)))
+        irc.reply("Search for %s in %s/%s: %s" % \
+                            (package, release, arch, "; ".join(replies)))
 
     names = wrap(names, ['something',
-                          getopts( { 'arch':'something',
-                                     'release':'something' } ),
-                          any( 'something' ) ] )
+                          getopts({'arch':'something',
+                                   'release':'something'}),
+                          any('something')])
 
-    def info(self, irc, msg, args, package, optlist, something ):
+    def info(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>]
 
         Show the short description and some other brief details about a package
@@ -192,45 +194,46 @@ class Judd(callbacks.Plugin):
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
-        p = self.dispatcher.info(package, release, arch)
-        if p:
-            ds = p['description'].splitlines()
-            if ds:
-                d = ds[0]
+        pinfo = self.dispatcher.info(package, release, arch)
+        if pinfo:
+            description = pinfo['description'].splitlines()
+            if description:
+                description = description[0]
             else:
-                d = ""
-            reply = "Package %s (%s, %s) in %s/%s: %s. Version: %s; Size: %0.1fk; Installed: %dk" % \
-                      ( package, p['section'], p['priority'],
-                        release, arch, d,
-                        p['version'], p['size'] / 1024.0, p['installed_size'] )
-            if p['homepage']:    # homepage field
-                reply += "; Homepage: %s" % p['homepage']
-            if p['screenshot_url']:    # screenshot url from screenshots.debian.net
-                reply += "; Screenshot: %s" % p['screenshot_url']
+                description = ""
+            reply = "Package %s (%s, %s) in %s/%s: %s. Version: %s; " \
+                    "Size: %0.1fk; Installed: %dk" % \
+                      (package, pinfo['section'], pinfo['priority'],
+                        release, arch, description,
+                        pinfo['version'],
+                        pinfo['size'] / 1024.0, pinfo['installed_size'])
+            if pinfo['homepage']:    # homepage field
+                reply += "; Homepage: %s" % pinfo['homepage']
+            # screenshot url from screenshots.debian.net
+            if pinfo['screenshot_url']:
+                reply += "; Screenshot: %s" % pinfo['screenshot_url']
             irc.reply(reply)
         else:
             return self.notfound(irc, package, release, arch)
 
     info = wrap(info, ['something',
-                        getopts( { 'arch':'something',
-                                   'release':'something' } ),
-                        any( 'something' ) ] )
+                        getopts({'arch':'something',
+                                 'release':'something'}),
+                        any('something')])
 
-    def archs(self, irc, msg, args, package, optlist, something ):
+    def archs(self, irc, msg, args, package, optlist, something):
         """<packagename> [--release <stable>]
 
-        Show for what architectures a package is available. By default, the current
-        stable release is used.
+        Show for what architectures a package is available. By default, the
+        current stable release is used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
-        arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_release(channel))
 
         pkgs = self.dispatcher.archs(package, release)
 
@@ -240,13 +243,14 @@ class Judd(callbacks.Plugin):
         replies = []
         for row in pkgs:
             replies.append("%s (%s)" % (row[0], row[1]))
-        irc.reply("Package %s in %s: %s" % (package, release, ", ".join(replies)))
+        irc.reply("Package %s in %s: %s" % (package, release,
+                                            ", ".join(replies)))
 
     archs  = wrap(archs, ['something',
-                                getopts({ 'release':'something' } ),
-                                any( 'something' ) ] )
+                                getopts({'release':'something'}),
+                                any('something')])
 
-    def rprovides( self, irc, msg, args, package, optlist, something ):
+    def rprovides(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>]
 
         Show the packages that 'Provide' the specified virtual package
@@ -255,18 +259,18 @@ class Judd(callbacks.Plugin):
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
-        p = self.udd.BindPackage(package, release, arch)
-        if p.IsVirtual():
+        pack = self.udd.BindPackage(package, release, arch)
+        if pack.IsVirtual():
             reply = "Package %s in %s/%s is provided by: %s." % \
-                    (package, release, arch, ", ".join(p.ProvidersList()))
-            if p.Found():
+                    (package, release, arch, ", ".join(pack.ProvidersList()))
+            if pack.Found():
                 reply += " %s is also a real package." % package
         else:
-            if p.Found():
+            if pack.Found():
                 reply = "In %s/%s, %s is a real package." % \
                             (release, arch, package)
             else:
@@ -276,11 +280,11 @@ class Judd(callbacks.Plugin):
         irc.reply(reply)
 
     rprovides = wrap(rprovides, ['something',
-                                      getopts( { 'arch':'something',
-                                                 'release':'something' } ),
-                                      any( 'something' ) ] )
+                                      getopts({'arch':'something',
+                                               'release':'something'}),
+                                      any('something')])
 
-    def provides(self, irc, msg, args, package, optlist, something ):
+    def provides(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>]
 
         Show the list of "provided" packages for the specified binary package
@@ -289,16 +293,16 @@ class Judd(callbacks.Plugin):
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
-        p = self.udd.BindPackage(package, release, arch)
+        pack = self.udd.BindPackage(package, release, arch)
 
-        if p.Found():
-            if p.data['provides']:
+        if pack.Found():
+            if pack.data['provides']:
                 irc.reply("Package %s in %s/%s provides: %s." % \
-                            (package, release, arch, p.data['provides']))
+                            (package, release, arch, pack.data['provides']))
             else:
                 irc.reply("Package %s in %s/%s provides no additional packages." % \
                             (package, release, arch))
@@ -306,19 +310,19 @@ class Judd(callbacks.Plugin):
             return self.notfound(irc, package, release, arch)
 
     provides = wrap(provides, ['something',
-                              getopts( { 'arch':'something',
-                                         'release':'something' } ),
-                              any( 'something' ) ] )
+                              getopts({'arch':'something',
+                                       'release':'something'}),
+                              any('something')])
 
-    def danke( self, irc, msg, args ):
+    def danke(self, irc, msg, args):
         """
         Someone is trying to speak esperanto to me
         """
-        irc.reply( "ne dankinde" )
+        irc.reply("ne dankinde")
 
-    danke = wrap( danke, [] )
+    danke = wrap(danke, [])
 
-    def src( self, irc, msg, args, package, optlist, something ):
+    def src(self, irc, msg, args, package, optlist, something):
         """<packagename> [--release <stable>]
 
         Show the name of the source package from which a given binary package
@@ -327,23 +331,25 @@ class Judd(callbacks.Plugin):
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
-        r = self.udd.BindRelease(release, arch)
-        p = r.bin2src(package)
-        if p:
-            irc.reply("Package %s in %s -- source: %s" % (package, release, p))
+        rel = self.udd.BindRelease(release, arch)
+        pack = rel.bin2src(package)
+        if pack:
+            irc.reply("Package %s in %s -- source: %s" %
+                        (package, release, pack))
         else:
             return self.notfound(irc, package, release, arch,
-                            message="Sorry, there is no record of a source package for the binary package '%s'%s.")
+                            message="Sorry, there is no record of a "
+                            "source package for the binary package '%s'%s.")
 
     src = wrap(src, ['something',
-                        getopts( { 'release':'something' } ),
-                        any( 'something' ) ] )
+                        getopts({'release':'something'}),
+                        any('something')])
 
-    def binaries( self, irc, msg, args, package, optlist, something ):
+    def binaries(self, irc, msg, args, package, optlist, something):
         """<packagename> [--release <stable>]
 
         Show the name of the binary package(s) that are derived from a given
@@ -352,23 +358,23 @@ class Judd(callbacks.Plugin):
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
 #        arch = self.udd.data.clean_arch_name(optlist=optlist,
-#                                    args=something, default=self.default_arch())
+#                        args=something, default=self.default_arch())
 
-        p = self.udd.BindSourcePackage(package, release)
+        pack = self.udd.BindSourcePackage(package, release)
 
-        if p.Found():
+        if pack.Found():
             irc.reply("Source %s in %s: Binaries: %s" % \
-                      (package, release, ", ".join(p.Binaries())))
+                      (package, release, ", ".join(pack.Binaries())))
         else:
             return self.notfound(irc, package, release, None)
 
     binaries = wrap(binaries, ['something',
-                              getopts( { 'release':'something' } ),
-                              any( 'something' ) ] )
+                              getopts({'release':'something'}),
+                              any('something')])
 
-    def builddep( self, irc, msg, args, package, optlist, something ):
+    def builddep(self, irc, msg, args, package, optlist, something):
         """<packagename> [--release <stable>]
 
         Show the name of the binary packages on which a given source package
@@ -377,15 +383,15 @@ class Judd(callbacks.Plugin):
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=None)
+                        args=something, default=None)
 
         # FIXME: make b-d list arch-specific
-        p = self.udd.BindSourcePackage(package, release)
-        if p.Found():
-            bd = p.BuildDepends()
-            bdi = p.BuildDependsIndep()
+        pack = self.udd.BindSourcePackage(package, release)
+        if pack.Found():
+            bd = pack.BuildDepends()
+            bdi = pack.BuildDependsIndep()
             irc.reply("Package %s in %s-- %s." %
                       (package, release,
                         "; ".join(
@@ -394,8 +400,8 @@ class Judd(callbacks.Plugin):
             return self.notfound(irc, package, release, arch)
 
     builddep = wrap(builddep, ['something',
-                                getopts( { 'release':'something' } ),
-                                any( 'something' )] )
+                                getopts({'release':'something'}),
+                                any('something')])
 
     def relationshipHelper(self, irc, msg, args, package, optlist, something, relation):
         """Does the dirty work for each of the functions that show
@@ -414,24 +420,24 @@ class Judd(callbacks.Plugin):
                            'enhances' ]
 
         if not relation in knownRelations:
-            irc.error("Sorry, unknown error determining package relationships.")
+            irc.error("Sorry, unknown error determining package relationship.")
 
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
-        p = self.udd.BindPackage(package, release, arch)
+        pack = self.udd.BindPackage(package, release, arch)
 
-        if p.Found():
-            irc.reply( "Package %s in %s/%s -- %s: %s." % \
+        if pack.Found():
+            irc.reply("Package %s in %s/%s -- %s: %s." % \
                       (package, release, arch,
-                        relation, p.RelationEntry(relation)) )
+                        relation, pack.RelationEntry(relation)))
         else:
             return self.notfound(irc, package, release, arch)
 
-    def conflicts( self, irc, msg, args, package, optlist, something ):
+    def conflicts(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>]
 
         Show the binary packages listed as conflicting with a given binary
@@ -440,11 +446,11 @@ class Judd(callbacks.Plugin):
         """
         self.relationshipHelper(irc, msg, args, package, optlist, something, 'conflicts')
 
-    conflicts = wrap(conflicts, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ),
-                                 any( 'something' )] )
+    conflicts = wrap(conflicts, ['something', getopts({'arch':'something',
+                                                       'release':'something'}),
+                                 any('something')])
 
-    def depends( self, irc, msg, args, package, optlist, something ):
+    def depends(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>]
 
         Show the packages that are listed as 'Depends' for a given package.
@@ -452,11 +458,11 @@ class Judd(callbacks.Plugin):
         """
         self.relationshipHelper(irc, msg, args, package, optlist, something, 'depends')
 
-    depends = wrap(depends, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ),
-                                 any( 'something' )] )
+    depends = wrap(depends, ['something', getopts({'arch':'something',
+                                                   'release':'something'}),
+                                 any('something')])
 
-    def recommends( self, irc, msg, args, package, optlist, something ):
+    def recommends(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>]
 
         Show the packages that are listed as 'Recommends' for a given package.
@@ -464,11 +470,11 @@ class Judd(callbacks.Plugin):
         """
         self.relationshipHelper(irc, msg, args, package, optlist, something, 'recommends')
 
-    recommends = wrap(recommends, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ),
-                                   any( 'something' )] )
+    recommends = wrap(recommends, ['something', getopts({'arch':'something',
+                                                    'release':'something'}),
+                                   any('something')])
 
-    def suggests( self, irc, msg, args, package, optlist, something ):
+    def suggests(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>]
 
         Show the packages that are listed as 'Suggests' for a given package.
@@ -476,11 +482,11 @@ class Judd(callbacks.Plugin):
         """
         self.relationshipHelper(irc, msg, args, package, optlist, something, 'suggests')
 
-    suggests = wrap(suggests, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ),
-                               any( 'something' ) ] )
+    suggests = wrap(suggests, ['something', getopts({'arch':'something',
+                                                    'release':'something'}),
+                               any('something')])
 
-    def enhances( self, irc, msg, args, package, optlist, something ):
+    def enhances(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>]
 
         Show the packages that are listed as 'Enhances' for a given package.
@@ -488,11 +494,11 @@ class Judd(callbacks.Plugin):
         """
         self.relationshipHelper(irc, msg, args, package, optlist, something, 'enhances')
 
-    enhances = wrap(enhances, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ),
-                               any( 'something' ) ] )
+    enhances = wrap(enhances, ['something', getopts({'arch':'something',
+                                                    'release':'something'}),
+                               any('something')])
 
-    def checkdeps( self, irc, msg, args, package, optlist, something ):
+    def checkdeps(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>] [--type depends|recommends|suggests|conflicts]
 
         Check that the dependencies listed by a package are satisfiable for the
@@ -502,9 +508,9 @@ class Judd(callbacks.Plugin):
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
         relation = []
         for opt in optlist:
@@ -524,31 +530,31 @@ class Judd(callbacks.Plugin):
                 badlist.append("%s: %s" % (self.bold(rel.title()), str(status[rel].bad)))
 
         if badlist:
-            irc.reply( "Package %s in %s/%s unsatisfiable dependencies: %s." % \
-                        ( package, release, arch, "; ".join(badlist) ) )
+            irc.reply("Package %s in %s/%s unsatisfiable dependencies: %s." %
+                        (package, release, arch, "; ".join(badlist)))
         else:
-            irc.reply( "Package %s in %s/%s: all dependencies satisfied." % \
-                        ( package, release, arch) )
+            irc.reply("Package %s in %s/%s: all dependencies satisfied." %
+                        (package, release, arch))
 
     checkdeps = wrap(checkdeps, ['something',
-                                  getopts( { 'arch':'something',
-                                             'release':'something',
-                                             'type':'something' } ),
-                                  any( 'something' ) ] )
+                                  getopts({'arch':'something',
+                                           'release':'something',
+                                           'type':'something'}),
+                                  any('something')])
 
-    def checkinstall( self, irc, msg, args, package, optlist, something ):
+    def checkinstall(self, irc, msg, args, package, optlist, something):
         """<packagename> [--arch <i386>] [--release <stable>] [--norecommends]
 
-        Check that the package is installable (i.e. dependencies checked recursively)
-        within the specified release and architecture.
+        Check that the package is installable (i.e. dependencies checked
+        recursively) within the specified release and architecture.
         By default, recommended packages are checked too and the current
         stable release and i386 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
         withrecommends = True
         for (option,arg) in optlist:
@@ -565,21 +571,23 @@ class Judd(callbacks.Plugin):
         if solverh.depends.satisfied:
             details.append("all Depends are satisfied")
         else:
-            details.append("%d packages in the Depends chain are uninstallable" % len(solverh.depends.bad))
+            details.append("%d packages in the Depends chain are uninstallable"
+                            % len(solverh.depends.bad))
         if withrecommends:
             if solverh.recommends.satisfied:
                 details.append("all Recommends are satisfied")
             else:
-                details.append("%d packages in the Recommends chain are uninstallable" % len(solverh.recommends.bad))
+                details.append("%d packages in the Recommends chain are "
+                                "uninstallable" % len(solverh.recommends.bad))
 
         irc.reply("Package %s on %s/%s: %s" % \
                     (package, release, arch, "; ".join(details)))
 
     checkinstall = wrap(checkinstall, ['something',
-                                        getopts( { 'arch':'something',
-                                                  'release':'something',
-                                                  'norecommends':'' } ),
-                                        any( 'something' ) ] )
+                                        getopts({'arch':'something',
+                                                 'release':'something',
+                                                 'norecommends':'' }),
+                                        any('something')])
 
     def _buildDepsFormatter(self, bd, bdi):
         def formatRel(rel, longname):
@@ -595,25 +603,27 @@ class Judd(callbacks.Plugin):
 
     def _builddeps_status_formatter(self, status):
         if not status.AllFound():
-            return u"unsatisfiable build dependencies: %s." % ";".join(self._buildDepsFormatter(status.bd.bad, status.bdi.bad))
+            return u"unsatisfiable build dependencies: %s." % \
+                    ";".join(self._buildDepsFormatter(status.bd.bad,
+                                                      status.bdi.bad))
         return u"all build-dependencies satisfied."
 
 
-    def checkbuilddeps( self, irc, msg, args, package, optlist, something ):
+    def checkbuilddeps(self, irc, msg, args, package, optlist, something):
         """<packagename> [--release <stable>] [--arch <i386>]
 
-        Check that the build-dependencies listed by a package are satisfiable for the
-        specified release and host architecture.
+        Check that the build-dependencies listed by a package are satisfiable
+        for the specified release and host architecture.
         By default, the current stable release and i386 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
-        r = self.udd.BindRelease(arch=arch, release=release)
-        status = self.dispatcher.checkBackport(package, r, r)
+        rel = self.udd.BindRelease(arch=arch, release=release)
+        status = self.dispatcher.checkBackport(package, rel, rel)
 
         if not status:
             return self.notfound(irc, package, None, None)
@@ -623,11 +633,11 @@ class Judd(callbacks.Plugin):
                         self._builddeps_status_formatter(status)))
 
     checkbuilddeps = wrap(checkbuilddeps, ['something',
-                                            getopts( {'arch':'something',
-                                                      'release':'something'} ),
-                                            any( 'something' ) ] )
+                                            getopts({'arch':'something',
+                                                     'release':'something'}),
+                                            any('something')])
 
-    def checkbackport( self, irc, msg, args, package, optlist, something):
+    def checkbackport(self, irc, msg, args, package, optlist, something):
         """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <i386>]
 
         Check that the build-dependencies listed by a package in the release
@@ -638,13 +648,13 @@ class Judd(callbacks.Plugin):
         """
         channel = msg.args[0]
         fromrelease = self.udd.data.clean_release_name(optlist=optlist,
-                                    optname='fromrelease',
-                                    args=None, default=self.udd.data.devel_release)
+                            optname='fromrelease',
+                            args=None, default=self.udd.data.devel_release)
         torelease = self.udd.data.clean_release_name(optlist=optlist,
-                                    optname='torelease',
-                                    args=None, default=self.default_release(channel))
+                            optname='torelease',
+                            args=None, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                            args=something, default=self.default_arch(channel))
 
         fr = self.udd.BindRelease(arch=arch, release=fromrelease)
         # FIXME: should torelease do fallback to allow --to-release lenny-multimedia etc?
@@ -661,16 +671,16 @@ class Judd(callbacks.Plugin):
             return self.notfound(irc, package, fromrelease, arch)
 
         irc.reply((u"Backporting package %s in %s→%s/%s: %s" % \
-                        (package, fromrelease, torelease, arch,
-                        self._builddeps_status_formatter(status))).encode('UTF-8'))
+                    (package, fromrelease, torelease, arch,
+                    self._builddeps_status_formatter(status))).encode('UTF-8'))
 
     checkbackport = wrap(checkbackport, ['something',
-                                          getopts( {'arch':'something',
-                                                    'fromrelease':'something',
-                                                    'torelease':'something' } ),
-                                         any( 'something' ) ] )
+                                          getopts({'arch':'something',
+                                                   'fromrelease':'something',
+                                                   'torelease':'something'}),
+                                         any('something')])
 
-    def bug( self, irc, msg, args, bugno ):
+    def bug(self, irc, msg, args, bugno):
         """
         Show information about a bug in a given pacage.
         Usage: "bug bugnumber"
@@ -689,7 +699,7 @@ class Judd(callbacks.Plugin):
 
     bug = wrap(bug, ['int'] )
 
-    def popcon( self, irc, msg, args, package ):
+    def popcon(self, irc, msg, args, package):
         """<packagename>
 
         Show the popcon (popularity contents) data for a given binary package.
@@ -706,13 +716,14 @@ class Judd(callbacks.Plugin):
 
     popcon = wrap(popcon, ['something'])
 
-    def maint( self, irc, msg, args, package, version ):
+    def maint(self, irc, msg, args, package, version):
         """<packagename> [<version>]
 
-        Return the names of the person who uploaded the source package, the person who
-        changed the package prior to upload and the maintainer of the specified
-        source package. If version is omitted, the most recent upload is used.
-        Imperfect binary-to-source package mapping will be tried too.
+        Return the names of the person who uploaded the source package, the
+        person who changed the package prior to upload and the maintainer of
+        the specified source package. If version is omitted, the most recent
+        upload is used. Imperfect binary-to-source package mapping will be
+        attempted.
         """
 
         release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
@@ -722,9 +733,10 @@ class Judd(callbacks.Plugin):
         uploads = self.dispatcher.uploads(p, max=1, version=version)
         if not uploads:
             if version:
-                irc.reply("Sorry, there is no record of '%s', version '%s'." % (package,version))
+                irc.reply("Sorry, there is no record of '%s', version '%s'." %
+                                    (package, version))
             else:
-                irc.reply("Sorry, there is no record of '%s'." % package )
+                irc.reply("Sorry, there is no record of '%s'." % package)
             return
 
         u = uploads[0]
@@ -735,9 +747,9 @@ class Judd(callbacks.Plugin):
                     u['changed_by_name'], u['maintainer_name'])
         if u['nmu']:
             reply += " (non-maintainer upload)"
-        irc.reply( reply )
+        irc.reply(reply)
 
-    maint      = wrap(maint, ['something', optional( 'something' )] )
+    maint      = wrap(maint, ['something', optional('something')])
 
     def recent(self, irc, msg, args, package, version):
         """<packagename>
@@ -756,13 +768,14 @@ class Judd(callbacks.Plugin):
         if uploads:
             reply = "Package %s recent uploads: %s." % \
                         (package, ", ".join(uploads))
-            irc.reply( reply )
+            irc.reply(reply)
         else:
-            irc.reply( "Sorry, there is no record of source package '%s'." % package )
+            irc.reply("Sorry, there is no record of source package '%s'." %
+                            package)
 
-    recent   = wrap(recent, ['something', optional( 'something' )] )
+    recent   = wrap(recent, ['something', optional('something')])
 
-    def rcbugs( self, irc, msg, args, package ):
+    def rcbugs(self, irc, msg, args, package):
         """
         Return the release critical bugs for a given package.
         Usage: "rcbugs packagename"
@@ -798,9 +811,9 @@ class Judd(callbacks.Plugin):
 
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
-                                    args=something, default=self.default_release(channel))
+                        args=something, default=self.default_release(channel))
         arch = self.udd.data.clean_arch_name(optlist=optlist,
-                                    args=something, default=self.default_arch(channel))
+                        args=something, default=self.default_arch(channel))
 
         mode = 'glob'
         for (option, arg) in optlist:

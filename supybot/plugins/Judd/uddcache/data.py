@@ -137,7 +137,8 @@ class DebianData(AvailableData):
                     'stable':              'squeeze',
                     'stable-backports':    'squeeze-backports',
                     'oldstable':           'lenny',
-                    'oldstable-backports': 'lenny-backports'
+                    'oldstable-backports': 'lenny-backports',
+                    'oldstable-backports-sloppy': 'lenny-backports-sloppy'
                 }
 
     releases = [
