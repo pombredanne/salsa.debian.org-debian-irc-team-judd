@@ -40,6 +40,13 @@ import logging
 
 
 def Connect(logfile, **kwargs):
+    """Create a psycopg2 database connection that logs all SQL
+
+    logfile: filename to log into
+    kwargs: as per psycopg2.connect()
+
+    The statement log also includes statement execution time.
+    """
     psql = None
     if logfile:
         psql = psycopg2.connect(
