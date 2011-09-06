@@ -392,10 +392,10 @@ class Judd(callbacks.Plugin):
         if pack.Found():
             bd = pack.BuildDepends()
             bdi = pack.BuildDependsIndep()
-            irc.reply("Package %s in %s-- %s." %
+            irc.reply("Package %s in %s -- %s." %
                       (package, release,
                         "; ".join(
-                        self._buildDepsFormatter(bd, bdi))))
+                        self._builddeps_formatter(bd, bdi))))
         else:
             return self.notfound(irc, package, release, arch)
 
@@ -403,7 +403,7 @@ class Judd(callbacks.Plugin):
                                 getopts({'release':'something'}),
                                 any('something')])
 
-    def relationshipHelper(self, irc, msg, args, package, optlist, something, relation):
+    def relationship_helper(self, irc, msg, args, package, optlist, something, relation):
         """Does the dirty work for each of the functions that show
         "conflicts", "depends", "recommends", "suggests", "enhances".
 
@@ -413,13 +413,13 @@ class Judd(callbacks.Plugin):
         Show the packages that are listed as 'Depends' for a given package.
         By default, the current stable release and i386 are used.
         """
-        knownRelations = [ 'conflicts',
+        known_relations = [ 'conflicts',
                            'depends',
                            'recommends',
                            'suggests',
                            'enhances' ]
 
-        if not relation in knownRelations:
+        if not relation in known_relations:
             irc.error("Sorry, unknown error determining package relationship.")
 
         channel = msg.args[0]
@@ -444,7 +444,7 @@ class Judd(callbacks.Plugin):
         package.
         By default, the current stable release and i386 are used.
         """
-        self.relationshipHelper(irc, msg, args, package, optlist, something, 'conflicts')
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'conflicts')
 
     conflicts = wrap(conflicts, ['something', getopts({'arch':'something',
                                                        'release':'something'}),
@@ -456,7 +456,7 @@ class Judd(callbacks.Plugin):
         Show the packages that are listed as 'Depends' for a given package.
         By default, the current stable release and i386 are used.
         """
-        self.relationshipHelper(irc, msg, args, package, optlist, something, 'depends')
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'depends')
 
     depends = wrap(depends, ['something', getopts({'arch':'something',
                                                    'release':'something'}),
@@ -468,7 +468,7 @@ class Judd(callbacks.Plugin):
         Show the packages that are listed as 'Recommends' for a given package.
         By default, the current stable release and i386 are used.
         """
-        self.relationshipHelper(irc, msg, args, package, optlist, something, 'recommends')
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'recommends')
 
     recommends = wrap(recommends, ['something', getopts({'arch':'something',
                                                     'release':'something'}),
@@ -480,7 +480,7 @@ class Judd(callbacks.Plugin):
         Show the packages that are listed as 'Suggests' for a given package.
         By default, the current stable release and i386 are used.
         """
-        self.relationshipHelper(irc, msg, args, package, optlist, something, 'suggests')
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'suggests')
 
     suggests = wrap(suggests, ['something', getopts({'arch':'something',
                                                     'release':'something'}),
@@ -492,14 +492,14 @@ class Judd(callbacks.Plugin):
         Show the packages that are listed as 'Enhances' for a given package.
         By default, the current stable release and i386 are used.
         """
-        self.relationshipHelper(irc, msg, args, package, optlist, something, 'enhances')
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'enhances')
 
     enhances = wrap(enhances, ['something', getopts({'arch':'something',
                                                     'release':'something'}),
                                any('something')])
 
     def checkdeps(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>] [--type depends|recommends|suggests|conflicts]
+        """<packagename> [--arch <i386>] [--release <stable>] [--type depends|recommends|suggests]
 
         Check that the dependencies listed by a package are satisfiable for the
         specified release and architecture.
@@ -513,9 +513,14 @@ class Judd(callbacks.Plugin):
                         args=something, default=self.default_arch(channel))
 
         relation = []
-        for opt in optlist:
-            if opt in self.udd.data.relations:
-                relation.append(dep)
+        for (option, arg) in optlist:
+            if option == 'type':
+                if arg in self.udd.data.relations:
+                    relation.append(arg)
+                else:
+                    irc.error("Unknown relationship type.")
+                    return
+
         if not relation:
             relation = self.udd.data.relations
 
@@ -557,7 +562,7 @@ class Judd(callbacks.Plugin):
                         args=something, default=self.default_arch(channel))
 
         withrecommends = True
-        for (option,arg) in optlist:
+        for (option, arg) in optlist:
             if option == 'norecommends':
                 withrecommends = False
 
@@ -589,25 +594,27 @@ class Judd(callbacks.Plugin):
                                                  'norecommends':'' }),
                                         any('something')])
 
-    def _buildDepsFormatter(self, bd, bdi):
+    def _builddeps_formatter(self, bd, bdi):
+        """Format a pair of build-depends lists (build-dep, build-dep-indep)"""
         def formatRel(rel, longname):
+            """Format the individual relation"""
             if rel:
                 return u"%s: %s" % (self.bold(longname), unicode(rel))
             return None
 
-        l = [
+        sbuild = [
                formatRel(bd,  'Build-Depends'),
                formatRel(bdi, 'Build-Depends-Indep')
             ]
-        return filter(None, l)
+        return [item for item in sbuild if item]
 
     def _builddeps_status_formatter(self, status):
+        """Format a build-deps status object"""
         if not status.AllFound():
             return u"unsatisfiable build dependencies: %s." % \
-                    ";".join(self._buildDepsFormatter(status.bd.bad,
+                    ";".join(self._builddeps_formatter(status.bd.bad,
                                                       status.bdi.bad))
         return u"all build-dependencies satisfied."
-
 
     def checkbuilddeps(self, irc, msg, args, package, optlist, something):
         """<packagename> [--release <stable>] [--arch <i386>]
@@ -697,7 +704,7 @@ class Judd(callbacks.Plugin):
                 d = ""
             irc.reply( "Bug #%d (%s) %s -- %s; Severity: %s; Last Modified: %s" % ( bugno, row[1], row[0], d, row[2], row[4]) )
 
-    bug = wrap(bug, ['int'] )
+    #bug = wrap(bug, ['int'] )
 
     def popcon(self, irc, msg, args, package):
         """<packagename>
@@ -705,14 +712,14 @@ class Judd(callbacks.Plugin):
         Show the popcon (popularity contents) data for a given binary package.
         http://popcon.debian.org/FAQ
         """
-        d = self.dispatcher.popcon(package)
-        if not d:
+        popdata = self.dispatcher.popcon(package)
+        if not popdata:
             return self.notfound(irc, package, None, None)
 
         irc.reply("Popcon data for %s: inst: %d, vote: %d, "
                     "old: %d, recent: %d, nofiles: %d" %
-                    (package, d['insts'], d['vote'], d['olde'],
-                            d['recent'], d['nofiles']))
+                    (package, popdata['insts'], popdata['vote'],
+                    popdata['olde'], popdata['recent'], popdata['nofiles']))
 
     popcon = wrap(popcon, ['something'])
 
@@ -729,8 +736,8 @@ class Judd(callbacks.Plugin):
         release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
                             default=self.udd.data.devel_release)
 
-        p = self.udd.BindSourcePackage(package, release)
-        uploads = self.dispatcher.uploads(p, max=1, version=version)
+        pack = self.udd.BindSourcePackage(package, release)
+        uploads = self.dispatcher.uploads(pack, max=1, version=version)
         if not uploads:
             if version:
                 irc.reply("Sorry, there is no record of '%s', version '%s'." %
@@ -795,7 +802,7 @@ class Judd(callbacks.Plugin):
 
         irc.reply( reply )
 
-    rcbugs = wrap(rcbugs, ['something'] )
+    #rcbugs = wrap(rcbugs, ['something'] )
 
     def file(self, irc, msg, args, glob, optlist, something):
         """<pattern> [--arch <i386>] [--release <stable>] [--regex | --exact]
@@ -847,7 +854,7 @@ class Judd(callbacks.Plugin):
 
         self.log.debug("RE=%s" % regexp)
 
-        packages = self.getContents(irc, release, arch, regexp)
+        packages = self._get_contents_file(irc, release, arch, regexp)
 
         if len(packages) == 0:
             irc.reply('No packages in %s/%s were found with that file.' % \
@@ -866,7 +873,7 @@ class Judd(callbacks.Plugin):
                        optional('something')
                        ])
 
-    def getContents(self, irc, release, arch, regexp):
+    def _get_contents_file(self, irc, release, arch, regexp):
         """
         Find the packages that provide files matching a particular regexp.
         """
@@ -914,15 +921,17 @@ class Judd(callbacks.Plugin):
         return packages
 
     def bold(self, s):
+        """return the string in bold markup if required"""
         if self.registryValue('bold', dynamic.channel):
             return ircutils.bold(s)
         return s
 
     def default_release(self, channel):
-        #print dynamic.channel
+        """the release that is the default for the current channel"""
         return self.registryValue('default_release', channel)
 
     def default_arch(self, channel):
+        """the architecture that is the default for the current channel"""
         return self.registryValue('default_arch', channel)
 
 Class = Judd
