@@ -120,6 +120,9 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('checkdeps openjdk-6-jre-headless')  # check release selection; all relations fulfilled
         self.assertNotError('checkdeps ffmpeg --release lenny-multimedia')  # check release fallback; all relations fulfilled only if fallback to main archive
         self.assertNotError('checkdeps nosuchpackage')          # package not found; no such package in the archive
+        self.assertNotError('checkdeps libc6 --type depends')   # check relation type; check that depends are selectable
+        self.assertNotError('checkdeps libc6 --type recommends')  # check relation type; check that recommends are selectable
+        self.assertError('checkdeps dpkg --type nosuchrelation')  # package not found; no such package in the archive
 
     def testCheckBuildDeps(self):
         self.assertNotError('checkbuilddeps eglibc --release sid')  # source package selection; build-deps are fulfilled
