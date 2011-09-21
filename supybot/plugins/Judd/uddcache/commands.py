@@ -38,7 +38,10 @@ from udd import Udd
 from packages import *
 from relations import *
 from resolver import *
-from debian import debian_support
+try:
+    from debian import debian_support
+except:
+    from debian_bundle import debian_support
 
 
 class Commands(object):
