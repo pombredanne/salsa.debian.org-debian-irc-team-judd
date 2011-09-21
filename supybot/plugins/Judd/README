@@ -1,4 +1,4 @@
-Judd: A supybot plugin to view into the Ulimate Debian Database
+Judd: A supybot plugin to view into the Ultimate Debian Database
 ===============================================================
 
 
@@ -47,4 +47,34 @@ judd new testing actions
 * add new (testing) release to plugin.py
 * shift testing alias
 * mkcontentslinks
+
+
+Miscellaneous configuration options for the bot
+===============================================
+
+The following commands are highly recommended for the bot:
+
+load Alias
+defaultcapability add -Alias.add
+defaultcapability add -Alias.remove
+alias add whatprovides rprovides $*
+alias add source src $*
+alias add maintainer maint $*
+alias add uploader maint $*
+alias add changer maint $*
+alias add arches archs $*
+alias add version versions $*
+
+defaultplugin source Alias
+defaultplugin version Alias
+
+defaultplugin source Alias
+defaultplugin version Alias
+
+alias add bot echo No, I'm not a bot, I'm a frontend to a database.
+
+In #debian-next:
+----------------
+config channel supybot.plugins.Judd.default_release testing
+
 
