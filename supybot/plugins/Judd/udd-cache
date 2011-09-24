@@ -88,7 +88,7 @@ def main():
                     "package can be fulfilled. See also --type.")
     commands.add_option("--checkinstall",
                 help="check whether a package and all its dependencies are "
-                    "installable; see also --withrecommends")
+                    "installable; see also --with-recommends")
     commands.add_option("--checkbuilddeps",
                 help="check whether the declared build-dependencies can"
                     "be fulfilled.")
@@ -122,7 +122,8 @@ def main():
     dependencies = OptionGroup(parser, "Dependency Options",
                     "These options apply to commands that look at the "
                     "dependency resolution or dependency checking.")
-    dependencies.add_option("--with-recommends", "-r", dest='withrecommends',
+    dependencies.add_option("--with-recommends", "--withrecommends", "-r",
+                  dest='withrecommends',
                   action='store_true',
                   help="include recommended packages in the "
                         "dependency analysis")
