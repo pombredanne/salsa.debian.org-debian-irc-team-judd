@@ -448,10 +448,12 @@ class Cli():
                                                    args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        solverh = self.dispatcher.checkInstall(package, release, arch,
-                              self.options.withrecommends)
-        if solverh:
-            print solverh
+        flatlist, solverh = self.dispatcher.checkInstall(package, release,
+                                    arch, self.options.withrecommends)
+        if flatlist:
+            print flatlist
+            if self.options.verbose:
+                print solverh
         else:
             return self.notfound(package, release, arch)
 

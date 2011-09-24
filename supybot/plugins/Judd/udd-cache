@@ -49,9 +49,6 @@ def main():
                     "queries on architectures and releases that are would "
                     "not otherwise be available in your local apt cache. ",
                 epilog="")
-#    parser.add_option("-v", "--verbose",
-#                      action="store_true", dest="verbose", default=False,
-#                      help="include additional information in output")
 
     # Commands
     commands = PosOptionGroup(parser, "Commands",
@@ -116,6 +113,9 @@ def main():
     common.add_option("--config", dest='config',
                   metavar="FILE", default=None,
                   help="the UDD database connection configuration file")
+    common.add_option("-v", "--verbose",
+                      action="store_true", dest="verbose", default=False,
+                      help="include additional information in output")
     parser.add_option_group(common)
 
     # Options for dependency analysis and checking

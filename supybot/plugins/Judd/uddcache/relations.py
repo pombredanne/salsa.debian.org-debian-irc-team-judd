@@ -395,6 +395,7 @@ class RelationshipStatus(PackageLists):
              strline(u"Unchecked", self.unchecked)]
         ps = []
         for p in self.good:
+            # recurse into SolverHierarchy objects if they exist
             if p.status:
                 ps.append(unicode(p.status))
         s.extend(ps)

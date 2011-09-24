@@ -353,6 +353,7 @@ class SolverHierarchy(object):
         self.package = package
         self.level = level
         self._types = ['depends', 'recommends']
+        self._last_level = True
 
     def get(self, name):
         """Programmatic access to a RelationshipStatus object
@@ -395,10 +396,10 @@ class SolverHierarchy(object):
         # 'bad' and 'unchecked' relations are handled by the recursive flatten
 
         # ensure that the tree-links are not present in the new hierarchy
-        for rel in "depends", "recommends":
-            for state in "good", "bad", "unchecked":
-                for r in s.get(rel).get(state):
-                    r.status = None
+#        for rel in "depends", "recommends":
+#            for state in "good", "bad", "unchecked":
+#                for r in s.get(rel).get(state):
+#                    r.status = None
 
         if self.level == 0:
             # remove packages from the "Recommends" list that are already in
@@ -413,31 +414,65 @@ class SolverHierarchy(object):
                     s.recommends.good.remove(relation)
         return s
 
+    def chains(self):
+        """ Turn the hierarchy into a list of relationship chains
+
+        The hierarchy:
+                A
+               / \
+              B   C
+        becomes [ [A, Depends(B)], [A, Recommends(C)] ]
+        """
+        chains = []
+#        if self.level == 0:
+        chains.append([self.package])
+        #import pdb;pdb.set_trace()
+        for p in self.depends.good:
+            if p.status:
+                for pchain in p.status.chains():
+                    newchains = []
+                    for c in chains:
+                        print self.level, "have chain ",  c
+                        print self.level, "adding chain ", pchain
+                        cclone = c[:]
+                        cclone.extend(pchain)
+                        newchains.append(cclone)
+                    chains = newchains
+                    print self.level, ; print chains
+        print "%s: %s" % (self.level, "; ".join([", ".join(c) for c in chains]))
+        return chains
+
     def __str__(self):
         return unicode(self).encode("UTF-8")
 
     def __unicode__(self):
-        """
-        """
+        """ Generate a unicode tree-like representation of the hierarchy """
 
         def indent(text, sep="  "):
             return u"".join(sep + line for line in text.splitlines(True))
 
-        def strline(rlist, label):
+        def strline(rlist, label, last=False):
             if self.level < 0:
                 s = rlist.PackageSets()
                 return u"%s:\n%s" % (label, indent(str(s), "  "))
             s = unicode(rlist)
             if s:
-                return u"├─[%d] %s for %s:\n%s" % \
-                            (self.level, label, self.package,
-                                    indent(s, u"│   "))
+                tree_tee = u"├─"
+                tree_trunk =  u"│"
+                if last:
+                    tree_tee = u"└─"
+                    tree_trunk =  u" "
+                return u"%s[%d] %s for %s:\n%s" % \
+                            (tree_tee, self.level, label, self.package,
+                                    indent(s, u"%s   " % tree_trunk))
+        if self.level >= 0:
+            for p in [ps for ps in self.depends.good if ps.status][:-1] + \
+                     [ps for ps in self.recommends.good if ps.status][:-1]:
+                    p.status._last_level = False
         s = []
         if self.depends:
-            s.append(strline(self.depends, "Depends"))
+            s.append(strline(self.depends, "Depends",
+                             self._last_level and not self.recommends))
         if self.recommends:
-            s.append(strline(self.recommends, "Recommends"))
+            s.append(strline(self.recommends, "Recommends", self._last_level))
         return u"\n".join(s)
-#        s = [strline(self.depends, "Depends"),
-#             strline(self.recommends, "Recommends")]
-#        return "\n".join(filter(None, s))

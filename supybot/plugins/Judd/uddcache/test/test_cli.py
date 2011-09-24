@@ -66,6 +66,7 @@ class cliTests(unittest.TestCase):
                 self.fromrelease = 'unstable'
                 self.torelease = 'stable'
                 self.withrecommends = True
+                self.verbose = False
         # gobble all stdout so that the tests can just be run without output
         # this is crude: it would be better to test that the output was correct
         # rather than just testing that the program doesn't crash on running
