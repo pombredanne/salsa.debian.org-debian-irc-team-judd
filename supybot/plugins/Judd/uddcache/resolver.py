@@ -116,7 +116,6 @@ class Checker(object):
                     opts.satisfiedBy = item
                     opts.virtual = item.virtual
                     opts.satisfied = True
-                    #opts.package = item.packagedata  #######
                     opts.archIgnore = item.archIgnore
                     break
             if not satisfied:
@@ -423,24 +422,31 @@ class SolverHierarchy(object):
               B   C
         becomes [ [A, Depends(B)], [A, Recommends(C)] ]
         """
-        chains = []
-#        if self.level == 0:
-        chains.append([self.package])
-        #import pdb;pdb.set_trace()
+        newchains = DependencyChainList()
+        def addchains(package, packchain):
+            if not package.status:
+                newchains.append(packchain)
+                return
+
+            nextchains = package.status.chains()
+            if not nextchains:
+                newchains.append(packchain)
+                return
+
+            for pchain in nextchains:
+                pcclone = DependencyChain(chain=packchain)
+                pcclone.extend(pchain)
+                newchains.append(pcclone)
+
         for p in self.depends.good:
-            if p.status:
-                for pchain in p.status.chains():
-                    newchains = []
-                    for c in chains:
-                        print self.level, "have chain ",  c
-                        print self.level, "adding chain ", pchain
-                        cclone = c[:]
-                        cclone.extend(pchain)
-                        newchains.append(cclone)
-                    chains = newchains
-                    print self.level, ; print chains
-        print "%s: %s" % (self.level, "; ".join([", ".join(c) for c in chains]))
-        return chains
+            packchain = DependencyChain(Depends(p.satisfiedBy.packagedata))
+            addchains(p, packchain)
+        for p in self.recommends.good:
+            packchain = DependencyChain(Recommends(p.satisfiedBy.packagedata))
+            addchains(p, packchain)
+        if self.level == 0:
+            newchains.set_base(self.package)
+        return newchains
 
     def __str__(self):
         return unicode(self).encode("UTF-8")

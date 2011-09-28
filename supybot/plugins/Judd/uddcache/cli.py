@@ -70,7 +70,8 @@ class Cli():
                 'checkdeps':    self.checkdeps,
                 'checkbuilddeps': self.checkbuilddeps,
                 'checkinstall': self.checkinstall,
-                'checkbackport': self.checkbackport
+                'checkbackport': self.checkbackport,
+                'why':          self.why
                 }
         self.command_aliases = {
                 'show':         'info',
@@ -491,6 +492,39 @@ class Cli():
             return self.notfound(package)
 
         self._builddeps_status_formatter(status)
+
+    def why(self, command, package, args):
+        """
+        Find all the dependency chains that link two packages
+
+        Generates a list of dependency chains that go from package1 to
+        package2 in the specified release and architecture. Recommends
+        are optionally included in the dependency analysis too. Note that
+        this function will look for *all* dependency chains not just the
+        shortest/strongest one that is available.
+        """
+        release = self.udd.data.clean_release_name(self.options.release,
+                                                   args=args)
+        arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
+
+        if not args:
+            raise ValueError("No second package specified for command 'why'")
+
+        package2 = args.pop(0)
+        chains = self.dispatcher.why(package, package2, release, arch,
+                              self.options.withrecommends)
+
+        if not chains is None:
+            if chains:
+                print "Packages %s and %s are linked by %d chains." \
+                        % (package, package2, len(chains))
+                for c in chains:
+                    print str(c)
+            else:
+                print "No dependency chain could be found between %s and %s" \
+                        % (package, package2)
+        else:
+            return self.notfound(package, release, arch)
 
     @classmethod
     def _builddeps_status_formatter(self, status):

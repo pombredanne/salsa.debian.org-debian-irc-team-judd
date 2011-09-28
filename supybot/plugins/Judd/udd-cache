@@ -89,6 +89,9 @@ def main():
     commands.add_option("--checkinstall",
                 help="check whether a package and all its dependencies are "
                     "installable; see also --with-recommends")
+    commands.add_option("--why",
+                help="look for relationship links between two packages; "
+                    "see also --with-recommends")
     commands.add_option("--checkbuilddeps",
                 help="check whether the declared build-dependencies can"
                     "be fulfilled.")

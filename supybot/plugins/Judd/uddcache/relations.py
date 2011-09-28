@@ -172,7 +172,6 @@ class RelationshipOptions(list):
         self.satisfiedBy = None   # Relationship alternative that satisfies
         self.satisfied = False  # relationship is satisfied (boolean)
         self.virtual = False  # used virtual package to satisfy
-        self.package = None   # Package object that satisfied
         self.status = None   # Extended status (SolverHierarchy)
         list.__init__(self)
         for rel in self._SplitOptions(options):
@@ -184,7 +183,6 @@ class RelationshipOptions(list):
 
     def __str__(self):
         return self.relation
-
 
 class RelationshipOptionsList(list):
     """
@@ -453,3 +451,95 @@ class BuildDepStatus(object):
         """Compile a string listing of the build-dependencies"""
         return "Build-Depends: %s\nBuild-Depends-Indep: %s\n" % \
                 (self.bd, self.bdi)
+
+
+class PackageRelationship(object):
+    def __init__(self, packagedata):
+        self.packagedata = packagedata
+        self._relation_marker = ""
+        self._unicode_relation_marker = ""
+
+    def __str__(self):
+        return "%s%s" % (self._relation_marker, self.packagedata.package)
+
+    def __unicode__(self):
+        return u"%s%s" % (self._unicode_relation_marker, self.packagedata.package)
+
+
+class Depends(PackageRelationship):
+    def __init__(self, packagedata):
+        super(Depends, self).__init__(packagedata)
+        self._relation_marker = "=>"
+        self._unicode_relation_marker = u"⇒"
+        self.distance = 1
+
+
+class Recommends(PackageRelationship):
+    def __init__(self, packagedata):
+        super(Recommends, self).__init__(packagedata)
+        self._relation_marker = "->"
+        self._unicode_relation_marker = u"→"
+        self.distance = 1000
+
+
+class DependencyChain(list):
+    def __init__(self, relation=None, chain=None, base=None, *args):
+        super(DependencyChain, self).__init__(*args)
+        if relation:
+            self.append(relation)
+        if chain:
+            self.extend(chain)
+        self.base = base
+
+    def truncated(self, name):
+        """returns a truncated list up to the specified package name"""
+        newlist = DependencyChain()
+        newlist.base = self.base
+        if self.contains(name):
+            for p in self:
+                newlist.append(p)
+                if p.packagedata.package == name:
+                    break
+        return newlist
+
+    def contains(self, name):
+        """check if the list contains the specified package name"""
+        return len([x for x in self if x.packagedata.package == name])
+
+    def distance(self):
+        x = 0
+        for p in self:
+            x += p.distance
+        return x
+
+    def __str__(self):
+        return "%s%s" % (str(self.base), "".join(str(p) for p in self))
+
+
+class DependencyChainList(list):
+
+    def set_base(self, base):
+        for c in self:
+            c.base = base
+
+    def unique(self):
+        """return a de-duplicated list"""
+        newlist = DependencyChainList()
+        c = set()
+        for p in self:
+            pkey = str(p)
+            if not pkey in c:
+                newlist.append(p)
+            c.add(pkey)
+        return newlist
+
+    def truncated(self, name):
+        """ return a list of DependencyChains where the chain is truncated"""
+        return DependencyChainList([c.truncated(name)
+                                    for c in self if c.contains(name)])
+
+    def sorted(self):
+        """ return a list in order of relationship tightness """
+        L = [(chain.distance(), chain) for chain in self]
+        L.sort()
+        return DependencyChainList([chain for (distance, chain) in L])

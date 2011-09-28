@@ -266,6 +266,13 @@ class SolverHierarchyTests(unittest.TestCase):
         self.assert_(f)
         self.assert_(len(f.depends))
 
+    def testChains(self):
+        self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
+        s = self.checker.Check('pyxplot', True)
+        c = s.chains()
+        self.assert_(c)
+        self.assert_(len(c))
+
     def testStr(self):
         self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
         s = self.checker.Check('perl', True)

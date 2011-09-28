@@ -221,3 +221,30 @@ class Commands(object):
             return None
 
         return relchecker.Check(s)
+
+    def why(self, package1, package2, release, arch, withrecommends):
+        """
+        Find all the dependency chains between two packages
+
+        Generates a list of dependency chains that go from package1 to
+        package2 in the specified release and architecture. Recommends
+        are optionally included in the dependency analysis too. Note that
+        this function will look for *all* dependency chains not just the
+        shortest/strongest one that is available.
+
+        BUGS: Provides and optional dependencies ("a | b") are not handled
+        except for accepting the first available package to satisfy them.
+
+        BUGS: check that package2 exists before doing expensive work?
+        """
+        releases = self.udd.data.list_dependent_releases(release)
+        r = Release(self.udd.psql, arch=arch, release=releases)
+        relchecker = InstallChecker(r)
+        solverh = relchecker.Check(package1, withrecommends)
+
+        if not solverh:
+            return None
+
+        chains = solverh.chains()
+        chains = chains.truncated(package2).unique().sorted()
+        return chains
