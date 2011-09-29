@@ -572,6 +572,7 @@ class Judd(callbacks.Plugin):
         if not solverh:
             return self.notfound(irc, package, release, arch)
 
+        solverh = solverh.flatten()
         details = []
         if solverh.depends.satisfied:
             details.append("all Depends are satisfied")
@@ -589,6 +590,53 @@ class Judd(callbacks.Plugin):
                     (package, release, arch, "; ".join(details)))
 
     checkinstall = wrap(checkinstall, ['something',
+                                        getopts({'arch':'something',
+                                                 'release':'something',
+                                                 'norecommends':'' }),
+                                        any('something')])
+
+    def why(self, irc, msg, args, package1, package2, optlist, something):
+        """<package1> <package2> [--arch <i386>] [--release <stable>] [--norecommends]
+
+        Find dependency chains  between the two packages within the specified
+        release and architecture.
+        By default, recommended packages are checked too and the current
+        stable release and i386 are used.
+        """
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
+
+        withrecommends = True
+        for (option, arg) in optlist:
+            if option == 'norecommends':
+                withrecommends = False
+
+        chains = self.dispatcher.why(package1, package2, release, arch,
+                                              withrecommends)
+
+        if chains is None:
+            return self.notfound(irc, package1, release, arch)
+
+        details = ""
+        if chains:
+            chaintext = []
+            for c in chains:
+                chaintext.append(unicode(c))
+            details = "Packages %s and %s in %s/%s " \
+                        "are linked by %d chains: %s" % \
+                            (package1, package2, release, arch,
+                                len(chains),  "; ".join(chaintext))
+        else:
+            details= "No dependency chain found between "\
+                        "packages %s and %s in %s/%s." % \
+                            (package1, package2, release, arch)
+
+        irc.reply(details.encode('UTF-8'))
+
+    why= wrap(why, ['something', 'something',
                                         getopts({'arch':'something',
                                                  'release':'something',
                                                  'norecommends':'' }),

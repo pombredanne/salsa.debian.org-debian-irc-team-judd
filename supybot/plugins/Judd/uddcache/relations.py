@@ -470,7 +470,7 @@ class Depends(PackageRelationship):
     def __init__(self, packagedata):
         super(Depends, self).__init__(packagedata)
         self._relation_marker = "=>"
-        self._unicode_relation_marker = u"⇒"
+        self._unicode_relation_marker = u" ▶ " # u"⇒"
         self.distance = 1
 
 
@@ -478,7 +478,7 @@ class Recommends(PackageRelationship):
     def __init__(self, packagedata):
         super(Recommends, self).__init__(packagedata)
         self._relation_marker = "->"
-        self._unicode_relation_marker = u"→"
+        self._unicode_relation_marker = u" ▷ " # u"→"
         self.distance = 1000
 
 
@@ -514,6 +514,9 @@ class DependencyChain(list):
 
     def __str__(self):
         return "%s%s" % (str(self.base), "".join(str(p) for p in self))
+
+    def __unicode__(self):
+        return "%s%s" % (str(self.base), "".join(unicode(p) for p in self))
 
 
 class DependencyChainList(list):

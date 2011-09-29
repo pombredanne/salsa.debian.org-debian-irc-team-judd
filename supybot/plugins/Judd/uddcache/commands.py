@@ -203,10 +203,8 @@ class Commands(object):
         solverh = relchecker.Check(package, withrecommends)
 
         if not solverh:
-            return None, None
-
-        s = solverh.flatten()
-        return s, solverh
+            return None
+        return solverh
 
     def checkBackport(self, package, fromrelease, torelease):
         """

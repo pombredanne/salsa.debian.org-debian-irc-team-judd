@@ -449,8 +449,10 @@ class Cli():
                                                    args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        flatlist, solverh = self.dispatcher.checkInstall(package, release,
+        solverh = self.dispatcher.checkInstall(package, release,
                                     arch, self.options.withrecommends)
+
+        flatlist = solverh.flatten()
         if flatlist:
             print flatlist
             if self.options.verbose:
@@ -519,7 +521,7 @@ class Cli():
                 print "Packages %s and %s are linked by %d chains." \
                         % (package, package2, len(chains))
                 for c in chains:
-                    print str(c)
+                    print unicode(c).encode('UTF-8')
             else:
                 print "No dependency chain could be found between %s and %s" \
                         % (package, package2)
