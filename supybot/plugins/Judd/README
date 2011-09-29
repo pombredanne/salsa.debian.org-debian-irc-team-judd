@@ -64,9 +64,8 @@ alias add uploader maint $*
 alias add changer maint $*
 alias add arches archs $*
 alias add version versions $*
-
-defaultplugin source Alias
-defaultplugin version Alias
+alias add v versions $*
+alias add i info $*
 
 defaultplugin source Alias
 defaultplugin version Alias
