@@ -391,6 +391,134 @@ class RelationshipStatusTests(unittest.TestCase):
         s.unchecked.append('pkg')
         self.assert_(s)
 
+class MockPackage(object):
+    def __init__(self, name):
+        self.package = name
+
+class DependsTest(unittest.TestCase):
+    def testInit(self):
+        d = Depends(MockPackage('foo'))
+        self.assert_(d)
+        self.assertEqual(d.packagedata.package, 'foo')
+
+    def testStr(self):
+        d = Depends(MockPackage('foo'))
+        self.assertEqual(str(d), '=>foo')
+
+    def testUnicode(self):
+        d = Depends(MockPackage('foo'))
+        self.assertIn('foo', unicode(d))
+
+
+class RecommendsTest(unittest.TestCase):
+    def testInit(self):
+        d = Recommends(MockPackage('foo'))
+        self.assert_(d)
+        self.assertEqual(d.packagedata.package, 'foo')
+
+    def testStr(self):
+        d = Recommends(MockPackage('foo'))
+        self.assertEqual(str(d), '->foo')
+
+    def testUnicode(self):
+        d = Recommends(MockPackage('foo'))
+        self.assertIn('foo', unicode(d))
+
+
+class DependencyChainTest(unittest.TestCase):
+    def testInit(self):
+        self.assertFalse(DependencyChain())
+        self.assert_(DependencyChain(relation=Depends('a'), base="z"))
+        self.assert_(DependencyChain(chain=[Depends('a'), Depends('b')]))
+        self.assertEqual(len(DependencyChain(chain=[Depends('a'), Depends('b')])), 2)
+
+    def testTruncated(self):
+        c = DependencyChain(chain=[Depends(MockPackage(x)) for x in ['a', 'b', 'c', 'd', 'e']])
+        self.assertEqual(len(c.truncated('a')), 1)
+        self.assertEqual(len(c.truncated('d')), 4)
+        self.assertEqual(len(c.truncated('f')), 0)
+
+    def testContains(self):
+        c = DependencyChain(chain=[Depends(MockPackage(x)) for x in ['a', 'b', 'c', 'd', 'e']])
+        self.assert_(c.contains('a'))
+        self.assertFalse(c.contains('f'))
+
+    def testDistance(self):
+        c = DependencyChain(chain=[Depends(MockPackage(x)) for x in ['a', 'b', 'c', 'd', 'e']])
+        self.assertEquals(c.distance(), 5)
+        c = DependencyChain(chain=[Recommends(MockPackage(x)) for x in ['a', 'b', 'c', 'd', 'e']])
+        self.assertEquals(c.distance(), 5000)
+        c = DependencyChain(chain=[Depends(MockPackage('a')), Recommends(MockPackage('b')), Depends(MockPackage('c'))])
+        self.assertEquals(c.distance(), 1002)
+
+    def testStr(self):
+        names = ['aaa', 'bbbb', 'ccccc', 'ddddddd', 'eee']
+        c = DependencyChain(chain=[Depends(MockPackage(x)) for x in names])
+        for n in names:
+            self.assertIn(n, str(c))
+        c.base = "test"
+        self.assertIn("test", str(c))
+
+    def testUnicode(self):
+        names = ['aaa', 'bbbb', 'ccccc', 'ddddddd', 'eee']
+        c = DependencyChain(chain=[Depends(MockPackage(x)) for x in names])
+        for n in names:
+            self.assertIn(n, unicode(c))
+        c.base = "test"
+        self.assertIn("test", unicode(c))
+
+
+class DependencyChainListTest(unittest.TestCase):
+    def testUnique(self):
+        names = ['aaa', 'bbbb', 'ccccc', 'ddddddd', 'eee', 'ff', 'ggggg']
+        cl = DependencyChainList([
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[3:5]]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[:4]]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[3:5]])
+            ])
+        self.assertEqual(len(cl), 4)
+        self.assertEqual(len(cl.unique()), 3)
+
+    def testTruncated(self):
+        names = ['aaa', 'bbbb', 'ccccc', 'ddddddd', 'eee', 'ff', 'ggggg']
+        cl = DependencyChainList([
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[3:5]]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[:4]]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[3:5]])
+            ])
+        self.assertEqual(len(cl.truncated('ccccc')), 2)
+
+    def testSorted(self):
+        names = ['aaa', 'bbbb', 'ccccc', 'ddddddd', 'eee', 'ff', 'ggggg']
+        cl = DependencyChainList([
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[3:5]]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[:4]]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[3:5]])
+            ])
+        cls = cl.sorted()
+        self.assertEqual(len(cls[0]), 2)
+        self.assertEqual(len(cls[3]), 7)
+
+        cl.append(DependencyChain(chain=[Depends(MockPackage('a')), Recommends(MockPackage('b')), Depends(MockPackage('c'))]))
+        cls = cl.sorted()
+        self.assertEqual(len(cls[0]), 2)
+        self.assertEqual(len(cls[4]), 3)
+
+    def testSetBase(self):
+        names = ['aaa', 'bbbb', 'ccccc', 'ddddddd', 'eee', 'ff', 'ggggg']
+        cl = DependencyChainList([
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[3:5]]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[:4]]),
+              DependencyChain(chain=[Depends(MockPackage(x)) for x in names[3:5]])
+            ])
+        cl.set_base("foo")
+        for c in cl:
+            self.assertEqual(c.base, "foo")
+
 ###########################################################
 if __name__ == "__main__":
     unittest.main()

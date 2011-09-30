@@ -452,13 +452,14 @@ class Cli():
         solverh = self.dispatcher.checkInstall(package, release,
                                     arch, self.options.withrecommends)
 
+        if not solverh:
+            return self.notfound(package, release, arch)
+
         flatlist = solverh.flatten()
         if flatlist:
             print flatlist
             if self.options.verbose:
                 print solverh
-        else:
-            return self.notfound(package, release, arch)
 
     def checkbackport(self, command, package, args):
         """

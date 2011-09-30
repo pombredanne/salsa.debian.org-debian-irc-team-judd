@@ -193,10 +193,19 @@ class cliTests(unittest.TestCase):
         self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "stage", ["amd64", "sid"]) is None)
         self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "nosuchpackage", []) is None)
 
+    @unittest.skipUnless(includeSlowTests, 'slow test')
     def testcheckinstall(self):
         self.assert_(self.cli.checkinstall("checkinstall", "libc6", []) is None)
         self.assert_(self.cli.checkinstall("checkinstall", "ffmpeg", ["lenny-multimedia"]) is None)
         self.assert_(self.cli.checkinstall("checkinstall", "nosuchpackage", []) is None)
+        self.cli.options.verbose = True
+        self.assert_(self.cli.checkinstall("checkinstall", "libc6", []) is None)
+
+    @unittest.skipUnless(includeSlowTests, 'slow test')
+    def testwhy(self):
+        self.assert_(self.cli.why("why", "dpkg", ["libc6"]) is None)
+        self.assert_(self.cli.why("why", "dpkg", ["dolphin"]) is None)
+        self.assert_(self.cli.why("why", "nosuchpackage", ["nosuchpackage"]) is None)
 
     @unittest.skipUnless(includeSlowTests, 'slow test')
     def testcheckbackport(self):

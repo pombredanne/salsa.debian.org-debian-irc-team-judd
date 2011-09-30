@@ -127,6 +127,17 @@ class commands(unittest.TestCase):
         self.assertFalse(self.dispatcher.checkInstall('nosuchpackage', 'lenny', 'i386', True))
 
     @unittest.skipUnless(includeSlowTests, 'slow test')
+    def testWhy(self):
+        """Test existence of package dependency chains"""
+        # TODO: it would be nice to actually test the accuracy of the tests
+        self.assert_(self.dispatcher.why('dpkg', 'libc6', 'squeeze', 'i386', False))
+        self.assertFalse(self.dispatcher.why('dpkg', 'dolphin', 'squeeze','i386', False))
+        self.assertFalse(self.dispatcher.why('dpkg', 'libc6-i686', 'squeeze', 'i386', False))
+        self.assert_(self.dispatcher.why('dpkg', 'libc6-i686', 'squeeze', 'i386', True))
+        self.assertEqual(self.dispatcher.why('dpkg', 'nosuchpackage', 'squeeze', 'i386', False), [])
+        self.assertEqual(self.dispatcher.why('nosuchpackage', 'dpkg', 'squeeze', 'i386', False), None)
+
+    @unittest.skipUnless(includeSlowTests, 'slow test')
     def testCheckBackport(self):
         """Test 'simple sid backport' procedure on packages"""
         # TODO: it would be nice to actually test the accuracy of the tests
