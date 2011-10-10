@@ -147,6 +147,15 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('checkbackport python-pyx')         # bin2src autoselection; simple backport
         self.assertNotError('checkbackport nosuchpackage')      # package not found; no such package in the archive
 
+    def testWhy(self):
+        self.assertNotError('why dpkg libc6')                   # many links; several links found
+        self.assertNotError('why dpkg libc6.1 --arch ia64')     # many links; requires right arch
+        self.assertNotError('why dpkg libc6-i686')              # one link; recommends used in link
+        self.assertNotError('why dpkg libc6-i686 --norecommends') # no link; no link without recommends
+        self.assertNotError('why nosuchpackage nosuchpackage')  # package not found; no such package in the archive
+        self.assertNotError('why dpkg nosuchpackage')           # package not found; no such package in the archive
+        self.assertNotError('why nosuchpackage dpkg')           # package not found; no such package in the archive
+
     def testPopcon(self):
         self.assertNotError('popcon perl')                      # list popcon; popular package
         self.assertNotError('popcon nosuchpackage')             # package not found; no such package in the archive
