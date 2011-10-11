@@ -73,12 +73,10 @@ class Commands(object):
                        arch=arch,
                        release=release))
 
-        pkgs = []
-        for row in c.fetchall():
-            pkgs.append(row)
+        pkgs = c.fetchall()
+        if not pkgs:
+            raise PackageNotFoundError(package)
 
-#        pkgs.sort(lambda a, b:
-#                    debian_support.version_compare(a['version'], b['version']))
         return pkgs
 
     def info(self, package, release, arch):
@@ -95,7 +93,10 @@ class Commands(object):
                          arch=arch,
                          release=release))
 
-        return c.fetchone()
+        pkg = c.fetchone()
+        if not pkg:
+            raise PackageNotFoundError(package)
+        return pkg
 
     def names(self, package, release, arch):
         """
@@ -139,7 +140,10 @@ class Commands(object):
                         AND release=%(release)s""",
                    dict(package=package,
                         release=release))
-        return c.fetchall()
+        archs = c.fetchall()
+        if not archs:
+            raise PackageNotFoundError(package)
+        return archs
 
     def uploads(self, package, version="", max=0):
         """
@@ -164,7 +168,10 @@ class Commands(object):
                   dict(package=p,
                        version=version,
                        max=max))
-        return c.fetchall()
+        ups = c.fetchall()
+        if not ups:
+            raise PackageNotFoundError(package)
+        return ups
 
     def popcon(self, package):
         """
@@ -177,7 +184,10 @@ class Commands(object):
                       FROM popcon
                       WHERE package=%(package)s""",
                   dict(package=package))
-        return c.fetchone()
+        data = c.fetchone()
+        if not data:
+            raise PackageNotFoundError(package)
+        return data
 
     def checkdeps(self, package, release, arch, relations):
         """
@@ -190,9 +200,8 @@ class Commands(object):
 
         statusdict = {}
         for rel in relations:
+            # raises PackageNotFoundError if package not found
             status = relchecker.Check(package, rel)
-            if status == None:
-                return None
             statusdict[rel] = status
         return statusdict
 
@@ -200,10 +209,8 @@ class Commands(object):
         releases = self.udd.data.list_dependent_releases(release)
         r = Release(self.udd.psql, arch=arch, release=releases)
         relchecker = InstallChecker(r)
+        # raises PackageNotFoundError if package not found
         solverh = relchecker.Check(package, withrecommends)
-
-        if not solverh:
-            return None
         return solverh
 
     def checkBackport(self, package, fromrelease, torelease):
@@ -215,9 +222,7 @@ class Commands(object):
         relchecker = BuildDepsChecker(torelease)
 
         s = fromrelease.Source(package)
-        if not s.Found():
-            return None
-
+        # raises PackageNotFoundError if package not found
         return relchecker.Check(s)
 
     def why(self, package1, package2, release, arch, withrecommends):
@@ -238,10 +243,8 @@ class Commands(object):
         releases = self.udd.data.list_dependent_releases(release)
         r = Release(self.udd.psql, arch=arch, release=releases)
         relchecker = InstallChecker(r)
+        # raises PackageNotFoundError if package not found
         solverh = relchecker.Check(package1, withrecommends)
-
-        if not solverh:
-            return None
 
         chains = solverh.chains()
         chains = chains.truncated(package2).unique().sorted()

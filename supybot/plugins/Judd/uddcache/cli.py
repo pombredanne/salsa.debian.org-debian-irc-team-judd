@@ -40,7 +40,7 @@
 import os
 import udd
 import commands
-
+from packages import PackageNotFoundError
 
 class Cli():
     """ Run a specified command sending output to stdout """
@@ -126,8 +126,9 @@ class Cli():
                                    args=args, default=None)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        pkgs = self.dispatcher.versions(package, release, arch)
-        if not pkgs:
+        try:
+            pkgs = self.dispatcher.versions(package, release, arch)
+        except PackageNotFoundError:
             return self.notfound(package, release, arch)
 
         replies = []
@@ -149,21 +150,22 @@ class Cli():
                                                    args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        p = self.dispatcher.info(package, release, arch)
-        if p:
-            print "Package: %s (%s, %s)" % \
-                            (package, p['section'], p['priority'])
-            print "Release: %s/%s" % (release, arch)
-            print "Version: %s" % p['version']
-            print "Size: %0.1fk" % (p['size'] / 1024.0)
-            print "Installed-Size: %dk" % p['installed_size']
-            if p['homepage']:
-                print "Homepage: %s" % p['homepage']
-            if p['screenshot_url']:
-                print "Screenshot: %s" % p['screenshot_url']
-            print "Description: %s" % p['description']
-        else:
+        try:
+            p = self.dispatcher.info(package, release, arch)
+        except PackageNotFoundError:
             return self.notfound(package, release, arch)
+
+        print "Package: %s (%s, %s)" % \
+                        (package, p['section'], p['priority'])
+        print "Release: %s/%s" % (release, arch)
+        print "Version: %s" % p['version']
+        print "Size: %0.1fk" % (p['size'] / 1024.0)
+        print "Installed-Size: %dk" % p['installed_size']
+        if p['homepage']:
+            print "Homepage: %s" % p['homepage']
+        if p['screenshot_url']:
+            print "Screenshot: %s" % p['screenshot_url']
+        print "Description: %s" % p['description']
 
     def names(self, command, package, args):
         """ search for package names with wildcard (? and *) expressions """
@@ -196,9 +198,9 @@ class Cli():
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
 
-        pkgs = self.dispatcher.archs(package, release)
-
-        if not pkgs:
+        try:
+            pkgs = self.dispatcher.archs(package, release)
+        except PackageNotFoundError:
             return self.notfound(package, release)
 
         replies = []
@@ -265,11 +267,13 @@ class Cli():
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         r = self.udd.BindRelease(release, arch)
-        p = r.bin2src(package)
-        if p:
-            print "Source: %s" % p
-        else:
+
+        try:
+            p = r.bin2src(package)
+        except PackageNotFoundError:
             return self.notfound(package, release, arch)
+
+        print "Source: %s" % p
 
     def binaries(self, command, package, args):
         """
@@ -281,12 +285,12 @@ class Cli():
                                                    args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        p = self.udd.BindSourcePackage(package, release)
-
-        if p.Found():
-            print "Binaries: %s" % ", ".join(p.Binaries())
-        else:
+        try:
+            p = self.udd.BindSourcePackage(package, release)
+        except PackageNotFoundError:
             return self.notfound(package, release, arch)
+
+        print "Binaries: %s" % ", ".join(p.Binaries())
 
     def builddeps(self, command, package, args):
         """
@@ -296,7 +300,12 @@ class Cli():
         """
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
-        p = self.udd.BindSourcePackage(package, release)
+
+        try:
+            p = self.udd.BindSourcePackage(package, release)
+        except PackageNotFoundError:
+            return self.notfound(package, release)
+
         self._package_relation_lookup(p, release, 'build_depends')
         self._package_relation_lookup(p, release, 'build_depends_indep',
                                      skipErrors=True, skipHeaders=True)
@@ -334,10 +343,12 @@ class Cli():
     def recent(self, command, package, args):
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
-        p = self.udd.BindSourcePackage(package, release)
-        uploads = self.dispatcher.uploads(p, max=10)
-        if not uploads:
+        try:
+            p = self.udd.BindSourcePackage(package, release)
+        except PackageNotFoundError:
             return self.notfound(package)
+
+        uploads = self.dispatcher.uploads(p, max=10)
         format = "%-20s %-10s %-20s %-20s %s"
         print format % ('version', 'date', 'changer', 'signer', 'nmu')
         for u in uploads:
@@ -349,13 +360,16 @@ class Cli():
     def maint(self, command, package, args):
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
-        p = self.udd.BindSourcePackage(package, release)
+        try:
+            p = self.udd.BindSourcePackage(package, release)
+        except PackageNotFoundError:
+            return self.notfound(package)
+
         version = ""
         if args:
             version = args.pop(0)
+
         uploads = self.dispatcher.uploads(p, max=1, version=version)
-        if not uploads:
-            return self.notfound(package)
         u = uploads[0]
         print "Version: %s" % u['version']
         print "Date: %s" % u['date'].date()
@@ -370,9 +384,11 @@ class Cli():
     def popcon(self, command, package, args):
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
-        d = self.dispatcher.popcon(package)
-        if not d:
+        try:
+            d = self.dispatcher.popcon(package)
+        except PackageNotFoundError:
             return self.notfound(package)
+
         print "Popcon data for %s:" % package
         print "  installed: %d" % d['insts']
         print "  vote:      %d" % d['vote']
@@ -403,9 +419,9 @@ class Cli():
         if not relation:
             relation = self.udd.data.relations
 
-        status = self.dispatcher.checkdeps(package, release, arch, relation)
-
-        if status == None:
+        try:
+            status = self.dispatcher.checkdeps(package, release, arch, relation)
+        except PackageNotFoundError:
             return self.notfound(package, release, arch)
 
         for rel in self.udd.data.relations:
@@ -433,13 +449,15 @@ class Cli():
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
         r = self.udd.BindRelease(arch=arch, release=release)
-        status = self.dispatcher.checkBackport(package, r, r)
+
+        try:
+            status = self.dispatcher.checkBackport(package, r, r)
+        except PackageNotFoundError:
+            return self.notfound(package)
+
         print "Build-dependency check for %s in %s/%s:" % \
                 (package, release, arch)
         print "Checked: %s" % ", ".join(r.release)
-
-        if not status:
-            return self.notfound(package)
 
         self._builddeps_status_formatter(status)
 
@@ -449,17 +467,16 @@ class Cli():
                                                    args=args)
         arch = self.udd.data.clean_arch_name(self.options.arch, args=args)
 
-        solverh = self.dispatcher.checkInstall(package, release,
+        try:
+            solverh = self.dispatcher.checkInstall(package, release,
                                     arch, self.options.withrecommends)
-
-        if not solverh:
+        except PackageNotFoundError:
             return self.notfound(package, release, arch)
 
         flatlist = solverh.flatten()
-        if flatlist:
-            print flatlist
-            if self.options.verbose:
-                print solverh
+        print flatlist
+        if self.options.verbose:
+            print solverh
 
     def checkbackport(self, command, package, args):
         """
@@ -486,13 +503,14 @@ class Cli():
         tr = self.udd.BindRelease(arch=arch,
                         release=releases, pins=pins)
 
-        status = self.dispatcher.checkBackport(package, fr, tr)
+        try:
+            status = self.dispatcher.checkBackport(package, fr, tr)
+        except PackageNotFoundError:
+            return self.notfound(package)
+
         print "Backport check for %s in %s->%s/%s:" % \
                 (package, fromrelease, torelease, arch,)
         print "Checked: %s" % ", ".join(tr.release)
-
-        if not status:
-            return self.notfound(package)
 
         self._builddeps_status_formatter(status)
 
@@ -512,22 +530,22 @@ class Cli():
 
         if not args:
             raise ValueError("No second package specified for command 'why'")
-
         package2 = args.pop(0)
-        chains = self.dispatcher.why(package, package2, release, arch,
-                              self.options.withrecommends)
 
-        if not chains is None:
-            if chains:
-                print "Packages %s and %s are linked by %d chains." \
-                        % (package, package2, len(chains))
-                for c in chains:
-                    print unicode(c).encode('UTF-8')
-            else:
-                print "No dependency chain could be found between %s and %s" \
-                        % (package, package2)
-        else:
+        try:
+            chains = self.dispatcher.why(package, package2, release, arch,
+                              self.options.withrecommends)
+        except PackageNotFoundError:
             return self.notfound(package, release, arch)
+
+        if chains:
+            print "Packages %s and %s are linked by %d chains." \
+                    % (package, package2, len(chains))
+            for c in chains:
+                print unicode(c).encode('UTF-8')
+        else:
+            print "No dependency chain could be found between %s and %s" \
+                    % (package, package2)
 
     @classmethod
     def _builddeps_status_formatter(self, status):

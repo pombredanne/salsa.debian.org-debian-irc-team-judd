@@ -82,8 +82,9 @@ class Release(object):
                                   version=version, operator=operator)
             if autoBin2Src and not self.scache[phash].Found():
                 p = self.bin2src(package)
-                if p:
-                    return self.Source(p, False)
+                return self.Source(p, False)
+        if not self.scache[phash].Found():
+            raise PackageNotFoundError(package)
         return self.scache[phash]
 
     def bin2src(self, package):
@@ -99,7 +100,7 @@ class Release(object):
         if row:
             return row[0]
         else:
-            return
+            raise PackageNotFoundError(package)
 
     def arch_applies(self, proposed):
         def kern_arch_split(archspec):
@@ -213,7 +214,7 @@ class AbstractPackage(object):
 
     def RelationEntry(self, relation, combinePreDepends=True):
         if not self.Found():
-            raise LookupError("Requested package does not exist")
+            raise PackageNotFoundError(self.package)
         if relation == 'depends' and combinePreDepends:
             rs = [self.data['depends'], self.data['pre_depends']]
             return ",".join(filter(None, rs))
@@ -389,3 +390,13 @@ class SourcePackage(AbstractPackage):
 
     def BuildDependsIndepList(self):
         return self.RelationshipOptionsList('build_depends_indep')
+
+
+class PackageNotFoundError(LookupError):
+    """Exception raised when a package is assumed to exist but doesn't"""
+
+    def __init__(self, package):
+        self.package = package
+
+    def __str__(self):
+        return "Package was not found: %s" % self.package

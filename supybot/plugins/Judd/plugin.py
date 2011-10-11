@@ -57,6 +57,8 @@ import PackageFileList
 import uddcache.udd
 import uddcache.commands
 import uddcache.config
+from uddcache.packages import PackageNotFoundError
+
 #
 #def parse_standard_options(optlist, args=None):
 #    release = clean_release_name(optlist=optlist, args=args)
@@ -127,8 +129,9 @@ class Judd(callbacks.Plugin):
         arch = self.udd.data.clean_arch_name(optlist=optlist,
                             args=something, default=self.default_arch(channel))
 
-        pkgs = self.dispatcher.versions(package, release, arch)
-        if not pkgs:
+        try:
+            pkgs = self.dispatcher.versions(package, release, arch)
+        except PackageNotFoundError:
             return self.notfound(irc, package, release, arch)
 
         replies = []
@@ -162,8 +165,9 @@ class Judd(callbacks.Plugin):
         arch = self.udd.data.clean_arch_name(optlist=optlist,
                         args=something, default=self.default_arch(channel))
 
-        pkgs = self.dispatcher.names(package, release, arch)
-        if not pkgs:
+        try:
+            pkgs = self.dispatcher.names(package, release, arch)
+        except PackageNotFoundError:
             return self.notfound(irc, package, release, arch,
                              message="No packages matching %s were found%s.")
 
@@ -198,27 +202,28 @@ class Judd(callbacks.Plugin):
         arch = self.udd.data.clean_arch_name(optlist=optlist,
                         args=something, default=self.default_arch(channel))
 
-        pinfo = self.dispatcher.info(package, release, arch)
-        if pinfo:
-            description = pinfo['description'].splitlines()
-            if description:
-                description = description[0]
-            else:
-                description = ""
-            reply = "Package %s (%s, %s) in %s/%s: %s. Version: %s; " \
-                    "Size: %0.1fk; Installed: %dk" % \
-                      (package, pinfo['section'], pinfo['priority'],
-                        release, arch, description,
-                        pinfo['version'],
-                        pinfo['size'] / 1024.0, pinfo['installed_size'])
-            if pinfo['homepage']:    # homepage field
-                reply += "; Homepage: %s" % pinfo['homepage']
-            # screenshot url from screenshots.debian.net
-            if pinfo['screenshot_url']:
-                reply += "; Screenshot: %s" % pinfo['screenshot_url']
-            irc.reply(reply)
-        else:
+        try:
+            pinfo = self.dispatcher.info(package, release, arch)
+        except PackageNotFoundError:
             return self.notfound(irc, package, release, arch)
+
+        description = pinfo['description'].splitlines()
+        if description:
+            description = description[0]
+        else:
+            description = ""
+        reply = "Package %s (%s, %s) in %s/%s: %s. Version: %s; " \
+                "Size: %0.1fk; Installed: %dk" % \
+                  (package, pinfo['section'], pinfo['priority'],
+                    release, arch, description,
+                    pinfo['version'],
+                    pinfo['size'] / 1024.0, pinfo['installed_size'])
+        if pinfo['homepage']:    # homepage field
+            reply += "; Homepage: %s" % pinfo['homepage']
+        # screenshot url from screenshots.debian.net
+        if pinfo['screenshot_url']:
+            reply += "; Screenshot: %s" % pinfo['screenshot_url']
+        irc.reply(reply)
 
     info = wrap(info, ['something',
                         getopts({'arch':'something',
@@ -235,9 +240,9 @@ class Judd(callbacks.Plugin):
         release = self.udd.data.clean_release_name(optlist=optlist,
                         args=something, default=self.default_release(channel))
 
-        pkgs = self.dispatcher.archs(package, release)
-
-        if not pkgs:
+        try:
+            pkgs = self.dispatcher.archs(package, release)
+        except PackageNotFoundError:
             return self.notfound(irc, package, release, None)
 
         replies = []
@@ -336,14 +341,14 @@ class Judd(callbacks.Plugin):
                         args=something, default=self.default_arch(channel))
 
         rel = self.udd.BindRelease(release, arch)
-        pack = rel.bin2src(package)
-        if pack:
-            irc.reply("Package %s in %s -- source: %s" %
-                        (package, release, pack))
-        else:
+        try:
+            pack = rel.bin2src(package)
+        except PackageNotFoundError:
             return self.notfound(irc, package, release, arch,
                             message="Sorry, there is no record of a "
                             "source package for the binary package '%s'%s.")
+
+        irc.reply("Package %s in %s -- source: %s" % (package, release, pack))
 
     src = wrap(src, ['something',
                         getopts({'release':'something'}),
@@ -362,13 +367,13 @@ class Judd(callbacks.Plugin):
 #        arch = self.udd.data.clean_arch_name(optlist=optlist,
 #                        args=something, default=self.default_arch())
 
-        pack = self.udd.BindSourcePackage(package, release)
-
-        if pack.Found():
-            irc.reply("Source %s in %s: Binaries: %s" % \
-                      (package, release, ", ".join(pack.Binaries())))
-        else:
+        try:
+            pack = self.udd.BindSourcePackage(package, release)
+        except PackageNotFoundError:
             return self.notfound(irc, package, release, None)
+
+        irc.reply("Source %s in %s: Binaries: %s" % \
+                      (package, release, ", ".join(pack.Binaries())))
 
     binaries = wrap(binaries, ['something',
                               getopts({'release':'something'}),
@@ -388,16 +393,17 @@ class Judd(callbacks.Plugin):
                         args=something, default=None)
 
         # FIXME: make b-d list arch-specific
-        pack = self.udd.BindSourcePackage(package, release)
-        if pack.Found():
-            bd = pack.BuildDepends()
-            bdi = pack.BuildDependsIndep()
-            irc.reply("Package %s in %s -- %s." %
-                      (package, release,
-                        "; ".join(
-                        self._builddeps_formatter(bd, bdi))))
-        else:
+        try:
+            pack = self.udd.BindSourcePackage(package, release)
+        except PackageNotFoundError:
             return self.notfound(irc, package, release, arch)
+
+        bd = pack.BuildDepends()
+        bdi = pack.BuildDependsIndep()
+        irc.reply("Package %s in %s -- %s." %
+                  (package, release,
+                    "; ".join(
+                    self._builddeps_formatter(bd, bdi))))
 
     builddep = wrap(builddep, ['something',
                                 getopts({'release':'something'}),
@@ -524,9 +530,9 @@ class Judd(callbacks.Plugin):
         if not relation:
             relation = self.udd.data.relations
 
-        status = self.dispatcher.checkdeps(package, release, arch, relation)
-
-        if status == None:
+        try:
+            status = self.dispatcher.checkdeps(package, release, arch, relation)
+        except PackageNotFoundError:
             return self.notfound(irc, package, release, arch)
 
         badlist = []
@@ -566,10 +572,10 @@ class Judd(callbacks.Plugin):
             if option == 'norecommends':
                 withrecommends = False
 
-        solverh = self.dispatcher.checkInstall(package, release, arch,
+        try:
+            solverh = self.dispatcher.checkInstall(package, release, arch,
                                               withrecommends)
-
-        if not solverh:
+        except PackageNotFoundError:
             return self.notfound(irc, package, release, arch)
 
         solverh = solverh.flatten()
@@ -614,10 +620,10 @@ class Judd(callbacks.Plugin):
             if option == 'norecommends':
                 withrecommends = False
 
-        chains = self.dispatcher.why(package1, package2, release, arch,
+        try:
+            chains = self.dispatcher.why(package1, package2, release, arch,
                                               withrecommends)
-
-        if chains is None:
+        except PackageNotFoundError:
             return self.notfound(irc, package1, release, arch)
 
         details = ""
@@ -678,9 +684,10 @@ class Judd(callbacks.Plugin):
                         args=something, default=self.default_arch(channel))
 
         rel = self.udd.BindRelease(arch=arch, release=release)
-        status = self.dispatcher.checkBackport(package, rel, rel)
 
-        if not status:
+        try:
+            status = self.dispatcher.checkBackport(package, rel, rel)
+        except PackageNotFoundError:
             return self.notfound(irc, package, None, None)
 
         irc.reply("Package %s in %s/%s: %s" % \
@@ -720,9 +727,9 @@ class Judd(callbacks.Plugin):
         tr = self.udd.BindRelease(arch=arch,
                         release=releases, pins=pins)
 
-        status = self.dispatcher.checkBackport(package, fr, tr)
-
-        if not status:
+        try:
+            status = self.dispatcher.checkBackport(package, fr, tr)
+        except PackageNotFoundError:
             return self.notfound(irc, package, fromrelease, arch)
 
         irc.reply((u"Backporting package %s in %s→%s/%s: %s" % \
@@ -760,8 +767,9 @@ class Judd(callbacks.Plugin):
         Show the popcon (popularity contents) data for a given binary package.
         http://popcon.debian.org/FAQ
         """
-        popdata = self.dispatcher.popcon(package)
-        if not popdata:
+        try:
+            popdata = self.dispatcher.popcon(package)
+        except PackageNotFoundError:
             return self.notfound(irc, package, None, None)
 
         irc.reply("Popcon data for %s: inst: %d, vote: %d, "
@@ -784,9 +792,10 @@ class Judd(callbacks.Plugin):
         release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
                             default=self.udd.data.devel_release)
 
-        pack = self.udd.BindSourcePackage(package, release)
-        uploads = self.dispatcher.uploads(pack, max=1, version=version)
-        if not uploads:
+        try:
+            pack = self.udd.BindSourcePackage(package, release)
+            uploads = self.dispatcher.uploads(pack, max=1, version=version)
+        except PackageNotFoundError:
             if version:
                 irc.reply("Sorry, there is no record of '%s', version '%s'." %
                                     (package, version))
@@ -816,17 +825,18 @@ class Judd(callbacks.Plugin):
         release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
                             default=self.udd.data.devel_release)
 
-        p = self.udd.BindSourcePackage(package, release)
-        uploads = self.dispatcher.uploads(p, max=10, version=version)
-
-        uploads = ["%s %s" % (self.bold(u['version']), u['date'].date()) for u in uploads]
-        if uploads:
-            reply = "Package %s recent uploads: %s." % \
-                        (package, ", ".join(uploads))
-            irc.reply(reply)
-        else:
+        try:
+            p = self.udd.BindSourcePackage(package, release)
+            uploads = self.dispatcher.uploads(p, max=10, version=version)
+        except PackageNotFoundError:
             irc.reply("Sorry, there is no record of source package '%s'." %
                             package)
+            return
+
+        uploads = ["%s %s" % (self.bold(u['version']), u['date'].date()) for u in uploads]
+        reply = "Package %s recent uploads: %s." % \
+                    (package, ", ".join(uploads))
+        irc.reply(reply)
 
     recent   = wrap(recent, ['something', optional('something')])
 
@@ -936,9 +946,11 @@ class Judd(callbacks.Plugin):
             re_obj = re.compile(regexp, re.I)
         except re.error, e:
             irc.error(format('Error in regexp: %s', e), Raise=True)
+            return
 
         if not os.path.isfile(contents):
             irc.error("Sorry, couldn't look up file list.", Raise=True)
+            return
 
         try:
             #print "Trying: zgrep -iE -e '%s' '%s'" % (regexp, contents)
@@ -946,6 +958,7 @@ class Judd(callbacks.Plugin):
                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True).communicate()[0]
         except TypeError:
             irc.error(r"Sorry, couldn't look up the file list.", Raise=True)
+            return
 
         packages = PackageFileList.PackageFileList()
         try:

@@ -201,11 +201,11 @@ class cliTests(unittest.TestCase):
         self.cli.options.verbose = True
         self.assert_(self.cli.checkinstall("checkinstall", "libc6", []) is None)
 
-    @unittest.skipUnless(includeSlowTests, 'slow test')
     def testwhy(self):
         self.assert_(self.cli.why("why", "dpkg", ["libc6"]) is None)
         self.assert_(self.cli.why("why", "dpkg", ["dolphin"]) is None)
         self.assert_(self.cli.why("why", "nosuchpackage", ["nosuchpackage"]) is None)
+        self.assertRaises(ValueError, self.cli.why, "why", "nosuchpackage", [])
 
     @unittest.skipUnless(includeSlowTests, 'slow test')
     def testcheckbackport(self):

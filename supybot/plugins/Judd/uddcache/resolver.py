@@ -87,7 +87,7 @@ class Checker(object):
         """
         p = self.release.Package(package)
         if not p.Found():
-            return None
+            raise PackageNotFoundError(package)
         status = self.CheckRelationshipOptionsList(
                                     p.RelationshipOptionsList(relation))
         if relation == 'conflicts':
@@ -254,8 +254,8 @@ class InstallChecker(Checker):
             return
         self._checkInstallCache[package] = True
         s.depends = super(InstallChecker, self).Check(package, 'depends')
-        if s.depends == None:   # package not found
-            return None
+        assert(s.depends != None)
+
         if recommends:
             s.recommends = super(InstallChecker, self).Check(package, 'recommends')
         reltypes = ['depends']
@@ -307,7 +307,7 @@ class BuildDepsChecker(Checker):
         if type(package) == str:
             s = self.release.Source(package)
         if not (s and s.Found()) and not (bdList or bdiList):
-            return None
+            raise ValueError("A valid package or bdList/bdiList missing")
         if not bdList and s:
             bdList = s.BuildDependsList()
         if not bdiList and s:

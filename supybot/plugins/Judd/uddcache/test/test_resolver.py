@@ -165,8 +165,7 @@ class CheckerTests(unittest.TestCase):
         self.assert_(c)
         self.assert_(len(c.bad) > 0)
         # non-existent package
-        c = self.checker.Check(package="no-such-package")
-        self.assert_(c == None)
+        self.assertRaises(PackageNotFoundError, self.checker.Check, package="no-such-package")
         # conflicts in a package
         c = self.checker.Check(package="dpkg", relation="conflicts")
         self.assert_(c)
@@ -205,7 +204,7 @@ class BuildDepCheckerTests(unittest.TestCase):
         self.assert_(len(b.bd.good) > 0)
         self.assert_(len(b.bd.bad) == 0)
         # non-existent package
-        self.assertFalse(self.checker.Check(package="no-such-package"))
+        self.assertRaises(PackageNotFoundError, self.checker.Check, package="no-such-package")
         # bd and bdi lists
         p = self.udd.BindSourcePackage(package="libc6")
         bd = p.RelationshipOptionsList("build_depends")
@@ -217,6 +216,8 @@ class BuildDepCheckerTests(unittest.TestCase):
         self.assert_(b)
         self.assert_(len(b.bd.good) > 0)
         self.assert_(len(b.bdi.good) > 0)
+        self.assertRaises(ValueError, self.checker.Check)
+        self.assertRaises(ValueError, self.checker.Check, bdList=[])
 
 
 class InstallCheckerTests(unittest.TestCase):
@@ -229,7 +230,7 @@ class InstallCheckerTests(unittest.TestCase):
         """Test installability of packages"""
         # FIXME: it would be good to check if these results are right
         self.assert_(self.checker.Check('libc6'))
-        self.assert_(self.checker.Check('nosuchpackage') is None)
+        self.assertRaises(PackageNotFoundError, self.checker.Check, 'nosuchpackage')
         self.assert_(self.checker.Check('perl', True))
         self.assert_(self.checker.Check('openjdk-6-jre-headless', True))   # missing recommended package
 

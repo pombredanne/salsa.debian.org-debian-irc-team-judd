@@ -97,9 +97,9 @@ class ReleaseTests(unittest.TestCase):
         rd = Release(self.udd.psql, release='sid')
         self.assert_(rd.Source('eglibc'))
         self.assert_(rd.Source('eglibc').Found())
-        self.assertFalse(rd.Source('nosuchpackage').Found())
+        self.assertRaises(PackageNotFoundError, rd.Source, 'nosuchpackage')
         self.assert_(rd.Source('libc6').Found())
-        self.assertFalse(rd.Source('libc6', autoBin2Src=False).Found())
+        self.assertRaises(PackageNotFoundError, rd.Source, 'libc6', autoBin2Src=False)
 
     def testArchApplies(self):
         """Test matching arch names and wildcard archs"""
@@ -298,6 +298,15 @@ class SourcePackageTests(unittest.TestCase):
         ps = SourcePackage(self.udd.psql, package="perl", arch="i386", release="sid")
         self.assertFalse(ps.BuildDependsIndep())
         self.assertFalse(ps.BuildDependsIndepList())
+
+
+class PackageNotFoundErrorTests(unittest.TestCase):
+    def testInit(self):
+        self.assert_(PackageNotFoundError("packagename"))
+
+    def testStr(self):
+        e = PackageNotFoundError("packagename")
+        self.assertTrue("packagename" in str(e))
 
 ###########################################################
 if __name__ == "__main__":
