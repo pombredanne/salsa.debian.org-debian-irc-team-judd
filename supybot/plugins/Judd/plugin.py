@@ -668,7 +668,8 @@ class Judd(callbacks.Plugin):
             return u"unsatisfiable build dependencies: %s." % \
                     ";".join(self._builddeps_formatter(status.bd.bad,
                                                       status.bdi.bad))
-        return u"all build-dependencies satisfied."
+        return u"all build-dependencies satisfied using %s." % \
+                    ', '.join(status.ReleaseMap().keys())
 
     def checkbuilddeps(self, irc, msg, args, package, optlist, something):
         """<packagename> [--release <stable>] [--arch <i386>]
@@ -700,7 +701,7 @@ class Judd(callbacks.Plugin):
                                             any('something')])
 
     def checkbackport(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <i386>]
+        """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <i386>] [--verbose]
 
         Check that the build-dependencies listed by a package in the release
         specified as "fromrelease" are satisfiable for in "torelease" for the
@@ -736,10 +737,22 @@ class Judd(callbacks.Plugin):
                     (package, fromrelease, torelease, arch,
                     self._builddeps_status_formatter(status))).encode('UTF-8'))
 
+        verbose = [option for (option, arg) in optlist if option == 'verbose']
+        if verbose:
+            rm = status.ReleaseMap()
+            reply = []
+            for release in rm.keys():
+                packages = rm[release]
+                reply.append("%s: %s" % (self.bold(release), ",".join([str(p) for p in packages])))
+
+            irc.reply("; ".join(reply), to=msg.nick, private=True)
+
+
     checkbackport = wrap(checkbackport, ['something',
                                           getopts({'arch':'something',
                                                    'fromrelease':'something',
-                                                   'torelease':'something'}),
+                                                   'torelease':'something',
+                                                   'verbose':''}),
                                          any('something')])
 
     def bug(self, irc, msg, args, bugno):

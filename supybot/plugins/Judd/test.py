@@ -145,6 +145,8 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('checkbackport iceweasel --torelease lenny')  # backport not possible; impossible build-deps even with backports
         self.assertNotError('checkbackport xserver-xorg-video-intel') # from/to release selection; only possible backport with backports
         self.assertNotError('checkbackport python-pyx')         # bin2src autoselection; simple backport
+        self.assertNotError('checkbackport debhelper --verbose') # verbose output; single release used
+        self.assertNotError('checkbackport heartbeat --verbose') # verbose output; multiple releases used
         self.assertNotError('checkbackport nosuchpackage')      # package not found; no such package in the archive
 
     def testWhy(self):
