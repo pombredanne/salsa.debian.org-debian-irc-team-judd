@@ -37,6 +37,7 @@ class contents_dict(dict):
 
     def __init__(self):
         self.separator = "; "
+        self.results_truncated = False
 
     def add(self, filename, packagelist):
         """ Add a file and set of packages containing that file"""
@@ -44,6 +45,10 @@ class contents_dict(dict):
             if not pack in self.keys():
                 self[pack] = []
             self[pack].append(filename)
+
+    def update(self, source):
+        self.results_truncated |= source.results_truncated
+        super(contents_dict, self).update(source)
 
     def to_string(self, boldfn):
         """ Turn the list into a condensed one-line string output """

@@ -37,6 +37,10 @@ class DebianTestCase(PluginTestCase):
     def __init__(self, *args,  **kwargs):
         PluginTestCase.__init__(self, *args, **kwargs)
         self.timeout = 30.   # bump up the timeout to 30s
+        # don't delete data prior to running the tests
+        self.cleanConfDir = False
+        self.cleanDataDir = False
+
 
     def testVersion(self):
         self.assertNotError('versions libc6')                   # all versions; show oldstable->experimental
@@ -179,9 +183,11 @@ class DebianTestCase(PluginTestCase):
     def testFile(self):
         # TODO: test other architectures and releases as well
         self.assertNotError('file /usr/bin/perl')               # absolute file exists ; /usr/bin/perl in perl
+        self.assertNotError('file /usr/bin/perl --release sid') # absolute file exists in sid; /usr/bin/perl in perl
+        self.assertNotError('file /lib/firmware/3com/typhoon.bin --release sid') # absolute file exists in sid/non-free; lib/firmware/3com/typhoon.bin in firmware-linux-nonfree
         self.assertNotError('file bin/perl')                    # fragment file exists ; /usr/bin/perl in perl
         self.assertNotError('file *bin/perl*')                  # fragment file exists ; /usr/bin/perl in perl, /usr/bin/perldoc in perldoc
-        self.assertNotError('file nvidia-glx')                  # fragment file exists in non-free; various nvidia package should match this
+        self.assertNotError('file *bin/*')                      # small file fragment ; should trip "truncated" message
         self.assertNotError('file /nosuchpackage')              # fragment doesn't exist ; no package contains
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

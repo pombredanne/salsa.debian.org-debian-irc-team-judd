@@ -31,6 +31,7 @@ import re
 import subprocess
 import contents_dict
 
+
 class contents_file(object):
     """ abstraction of a Contents file """
     def __init__(self, base, release, arch, sections=None):
@@ -44,12 +45,22 @@ class contents_file(object):
         self.maxhits = 20
 
     def search(self, regexp):
+        self.results_truncated = False
         packages = contents_dict.contents_dict()
+        errors = []
         for s in self.sections:
             filename = 'debian-%s/%s/Contents-%s.gz' % \
                         (self.release, s, self.arch)
             filepath = os.path.join(self.base, filename)
-            packages.update(self._search_file(filepath, regexp))
+            try:
+                packages.update(self._search_file(filepath, regexp))
+            except IOError, e:
+                errors.append(str(e))
+            except ContentsError, e:
+                errors.append(str(e))
+        if len(errors) == len(self.sections):
+            raise ContentsError("Errors occurred trying to process request "
+                                "[%d]: %s" % (len(errors), "|".join(errors)))
         return packages
 
     def _search_file(self, filepath, regexp):
@@ -63,7 +74,7 @@ class contents_file(object):
             raise ContentsError('Error in regexp: %s' % e, e)
 
         if not os.path.isfile(filepath):
-            raise ContentsError('Could not look up file list')
+            raise IOError('File %s not found.' % filepath)
 
         try:
             #print "Trying: zgrep -iE -e '%s' '%s'" % (regexp, contents)
@@ -78,10 +89,8 @@ class contents_file(object):
         try:
             lines = output.split("\n")
             if len(lines) > self.maxhits:
-                raise ContentsError('There were more than %s files matching '
-                                'your search; please narrow your search.' % \
-                                self.maxhits)
-            for line in lines:
+                packages.results_truncated = True
+            for line in lines[:self.maxhits]:
                 try:
                     (filename, pkg_list) = line.split()
                     if filename == 'FILE':

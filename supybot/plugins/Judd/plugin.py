@@ -46,13 +46,8 @@ import psycopg2.extras
 
 
 import os
-#import gzip
-#import time
-#import popen2
 import fnmatch
-import subprocess
-#from supybot.utils.iter import all, imap, ifilter
-import PackageFileList
+import debcontents.contents_file
 
 import uddcache.udd
 import uddcache.commands
@@ -925,14 +920,31 @@ class Judd(callbacks.Plugin):
 
         self.log.debug("RE=%s" % regexp)
 
-        packages = self._get_contents_file(irc, release, arch, regexp)
+        path = os.path.join(conf.supybot.directories.data(),
+                            self.registryValue('base_path'))
+
+        contents = debcontents.contents_file.contents_file(path, release, arch,
+                                            ['main', 'contrib', 'non-free'])
+
+        try:
+            packages = contents.search(regexp)
+        except debcontents.contents_file.ContentsError, e:
+            self.log.error("File search for '%s' produced re '%s' "
+                            "and errors: %s",  glob, regexp, e)
+            irc.error("Sorry, an error occurred trying to search for that "
+                        "file. Further details have been logged.")
+            return
 
         if len(packages) == 0:
             irc.reply('No packages in %s/%s were found with that file.' % \
                   (release, arch))
         else:
             s = packages.to_string(self.bold)
-            irc.reply("Search for %s in %s/%s: %s" % (glob, release, arch, s))
+            truncated =  ""
+            if packages.results_truncated:
+                truncated = "[truncated] "
+            irc.reply("Search for %s in %s/%s: %s%s" % \
+                      (glob, release, arch, truncated, s))
 
     file = wrap(file, ['something',
                         getopts({'arch':'something',
@@ -943,56 +955,6 @@ class Judd(callbacks.Plugin):
                                 }),
                        optional('something')
                        ])
-
-    def _get_contents_file(self, irc, release, arch, regexp):
-        """
-        Find the packages that provide files matching a particular regexp.
-        """
-        # Abstracted out to permit substitution with a db etc
-
-        path     = self.registryValue('base_path')
-        data     = conf.supybot.directories.data()
-        filename = 'debian-%s/Contents-%s.gz' % (release, arch)
-        contents = os.path.join(data, path, filename)
-
-        try:
-            re_obj = re.compile(regexp, re.I)
-        except re.error, e:
-            irc.error(format('Error in regexp: %s', e), Raise=True)
-            return
-
-        if not os.path.isfile(contents):
-            irc.error("Sorry, couldn't look up file list.", Raise=True)
-            return
-
-        try:
-            #print "Trying: zgrep -iE -e '%s' '%s'" % (regexp, contents)
-            output = subprocess.Popen(['zgrep', '-iE', '-e', regexp, contents],
-                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True).communicate()[0]
-        except TypeError:
-            irc.error(r"Sorry, couldn't look up the file list.", Raise=True)
-            return
-
-        packages = PackageFileList.PackageFileList()
-        try:
-            lines = output.split("\n")
-            maxhits = 20
-            if len(lines) > maxhits:
-                irc.error('There were more than %s files matching your '
-                          'search; please narrow your search.' % maxhits,
-                          Raise=True)
-            for line in lines:
-                try:
-                    (filename, pkg_list) = line.split()
-                    if filename == 'FILE':
-                        # This is the last line before the actual files.
-                        continue
-                except ValueError:  # Unpack list of wrong size.
-                    continue        # We've not gotten to the files yet.
-                packages.add(filename, pkg_list.split(','))
-        finally:
-            pass
-        return packages
 
     def bold(self, s):
         """return the string in bold markup if required"""
