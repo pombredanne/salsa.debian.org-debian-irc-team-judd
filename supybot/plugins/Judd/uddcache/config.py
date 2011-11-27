@@ -83,16 +83,16 @@ class Config(object):
             files.append(os.path.expanduser('~/.udd-cache.conf'))
             files.append('udd-cache.conf')
 
-        if 'UDD_CACHE_CONFIG' in os.environ and os.environ['UDD_CACHE_CONFIG']:
-            if not os.path.isfile(os.environ['UDD_CACHE_CONFIG']):
-                raise IOError("Configuration file not found: '%s'." %
-                              os.environ['UDD_CACHE_CONFIG'])
-            files.append(os.environ['UDD_CACHE_CONFIG'])
         if self.filename:
             if not os.path.isfile(self.filename):
                 raise IOError("Configuration file not found '%s'." %
                               self.filename)
             files.append(self.filename)
+        if 'UDD_CACHE_CONFIG' in os.environ and os.environ['UDD_CACHE_CONFIG']:
+            if not os.path.isfile(os.environ['UDD_CACHE_CONFIG']):
+                raise IOError("Configuration file not found: '%s'." %
+                              os.environ['UDD_CACHE_CONFIG'])
+            files.append(os.environ['UDD_CACHE_CONFIG'])
         files = self.config.read(files)
         if not files and not self.confdict:
             raise ValueError("No valid configuration was found to connect"
