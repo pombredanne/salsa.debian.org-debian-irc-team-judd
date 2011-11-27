@@ -41,7 +41,7 @@ import database
 from data import DebianData
 from config import Config
 from packages import *
-
+import bts
 
 class Udd():
     """
@@ -112,3 +112,9 @@ class Udd():
         r = Release(self.psql, release=release)
         p = r.Source(package)
         return p
+
+    def Bts(self, include_archived=True):
+        """
+        Create a new bug tracker
+        """
+        return bts.Bts(self.psql, include_archived)

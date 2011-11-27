@@ -41,6 +41,7 @@ import os
 import udd
 import commands
 from packages import PackageNotFoundError
+from bts import BugNotFoundError
 
 class Cli():
     """ Run a specified command sending output to stdout """
@@ -71,7 +72,16 @@ class Cli():
                 'checkbuilddeps': self.checkbuilddeps,
                 'checkinstall': self.checkinstall,
                 'checkbackport': self.checkbackport,
-                'why':          self.why
+                'why':          self.why,
+                'bug':          self.bug,
+                'rcbugs':       self.rcbugs,
+                'rm':           self.rm,
+                'wnpp':         self.wnpp,
+                'rfp':          self.wnpp,
+                'itp':          self.wnpp,
+                'rfa':          self.wnpp,
+                'ita':          self.wnpp,
+                'orphan':       self.wnpp,
                 }
         self.command_aliases = {
                 'show':         'info',
@@ -604,3 +614,40 @@ class Cli():
                format_rel(bdstatus.bdi.get(data), 'Build-Depends-Indep')
             ]
         return filter(None, l)
+
+    def bug(self, command, bugnumber, args):
+        bugnumber = int(bugnumber)
+        try:
+            bug = self.dispatcher.bug(bugnumber, self.options.verbose)
+        except BugNotFoundError:
+            print "Sorry, bug %d was not found." % bugnumber
+            return
+        print bug
+
+    def rm(self, command, package, args):
+        try:
+            bug = self.dispatcher.rm(package)
+        except BugNotFoundError:
+            print "Sorry, no removal bug for %s was found." % package
+            return
+        print bug[0]
+
+    def wnpp(self, command, package, args):
+        bugtype = command.upper()
+        if bugtype == 'ORPHAN':
+            bugtype = 'O'
+        if bugtype == 'WNPP':
+            bugtype = None
+        try:
+            bugs = self.dispatcher.wnpp(package, bugtype)
+        except BugNotFoundError:
+            print "Sorry, no WNPP bug for %s was found." % package
+            return
+        print "\n".join([str(b) for b in bugs])
+
+    def rcbugs(self, command, package, args):
+        bugs = self.dispatcher.rcbugs(package)
+        if not bugs:
+            print "No release critical bugs were found for '%s'." % package
+            return
+        print "\n".join([str(b) for b in bugs])

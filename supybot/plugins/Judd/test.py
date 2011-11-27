@@ -173,8 +173,16 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('recent nosuchpackage')             # package not found; no such package in the archive
 
     def testBugs(self):
-        # this is known to be broken at present
-        pass
+        self.assertNotError('bug 599019')                       # open bug; open and important
+        self.assertNotError('bug 584031')                       # archived bug; archived and grave
+        self.assertNotError('bug 644230')                       # pending upload bug; see "open" and "pending"
+        self.assertNotError('bug 9999999')                      # bug not found; no such bug in the bts
+
+    def testRcBugs(self):
+        self.assertNotError('rcbugs pyxplot')                   # no rc bugs; none found
+        self.assertNotError('rcbugs eglibc')                    # rc bugs; match via source package name
+        self.assertNotError('rcbugs libc6')                    # rc bugs; match via binary package name
+        self.assertNotError('rcbugs nosuchpackage')             # package not found; no such package in the archive
 
     def testFile(self):
         # TODO: test other architectures and releases as well

@@ -40,20 +40,21 @@ __version__ = 0.1
 
 def main():
 #    parser = PosOptionParser()
-    usage = "usage: %prog command package [options]"
+    usage = "usage: %prog command package|bug [options]"
     parser = OptionParser(usage=usage,
                 version="%%prog %s" % __version__,
                 description="%prog queries an "
                     "Ultimate Debian Database instance"
                     "to make it possible to perform simple package-related "
-                    "queries on architectures and releases that are would "
-                    "not otherwise be available in your local apt cache. ",
+                    "queries on architectures and releases that would "
+                    "not otherwise be available in your local apt cache. "
+                    "The bug database can also be queried.",
                 epilog="")
 
     # Commands
     commands = PosOptionGroup(parser, "Commands",
                 "Exactly one of these commands must be specified to "
-                "determine what %prog will do.")
+                "determine what the program will do.")
     commands.add_option("--info",
                 help="display basic package info about a package; "
                     "like 'apt-cache show'")
@@ -99,6 +100,14 @@ def main():
                 help="check whether the build-depends listed for a package "
                     "allow it to be backported from one release to another. "
                     "See --fromrelease --torelease")
+    commands.add_option("--bug",
+                help="display information about a bug.")
+    commands.add_option("--rm",
+                help="display information about a package removal bug.")
+    commands.add_option("--wnpp",
+                help="display information about a WNPP bug for a package. "
+                    "rfp, ita, itp and orphan can be used to search for "
+                    "specific types of WNPP bug.")
     parser.add_option_group(commands)
 
     # Common options

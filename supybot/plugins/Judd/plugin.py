@@ -58,6 +58,7 @@ import uddcache.udd
 import uddcache.commands
 import uddcache.config
 from uddcache.packages import PackageNotFoundError
+from uddcache.bts import BugNotFoundError
 
 #
 #def parse_standard_options(optlist, args=None):
@@ -755,25 +756,6 @@ class Judd(callbacks.Plugin):
                                                    'verbose':''}),
                                          any('something')])
 
-    def bug(self, irc, msg, args, bugno):
-        """
-        Show information about a bug in a given pacage.
-        Usage: "bug bugnumber"
-        """
-        c = self.psql.cursor()
-        c.execute( "SELECT package, status, severity, title, last_modified FROM bugs WHERE id=%(bugno)s limit 1", dict( bugno=bugno ) )
-
-        row = c.fetchone()
-        if row:
-            ds = row[3].splitlines()
-            if ds:
-                d = ds[0]
-            else:
-                d = ""
-            irc.reply( "Bug #%d (%s) %s -- %s; Severity: %s; Last Modified: %s" % ( bugno, row[1], row[0], d, row[2], row[4]) )
-
-    #bug = wrap(bug, ['int'] )
-
     def popcon(self, irc, msg, args, package):
         """<packagename>
 
@@ -853,27 +835,58 @@ class Judd(callbacks.Plugin):
 
     recent   = wrap(recent, ['something', optional('something')])
 
-    def rcbugs(self, irc, msg, args, package):
-        """
-        Return the release critical bugs for a given package.
-        Usage: "rcbugs packagename"
-        """
+    def bug(self, irc, msg, args, bugno):
+        """<number>
 
-        c = self.psql.cursor()
+        Show information about a bug from the Debian Bug Tracking System.
+        """
+        try:
+            bug = self.dispatcher.bug(bugno, True)
+        except BugNotFoundError:
+            irc.reply("Sorry, the requested bug was not found.")
+            return
 
-        if package.startswith( 'src:' ):
-            package = package[4:]
-            c.execute( "SELECT id FROM bugs inner join packages on packages.package=bugs.package WHERE packages.source=%(package)s AND severity in ('critical', 'grave', 'serious' ) and status not in ('done,fixed') order by bugs.id", dict( package=package ) )
+        title = bug.title.splitlines()
+        if title:
+            title = title[0]
         else:
-            c.execute( "SELECT id FROM bugs WHERE package=%(package)s AND severity in ('critical', 'grave', 'serious' ) and status not in ('done,fixed') order by bugs.id", dict( package=package ) )
+            title = ""
 
-        reply = "RC bugs in %s:" % package
-        for row in c.fetchall():
-            reply += " %d" % row[0]
+        status = [bug.readable_status]
+        [status.append(t) for t in bug.tags if t not in status]
 
-        irc.reply( reply )
+        irc.reply((u"Bug http://bugs.debian.org/%d in %s (%s): «%s»; "
+                    "Severity: %s; Last Modified: %s." % \
+                    (bugno, bug.package, ", ".join(status), title,
+                    bug.severity, bug.last_modified)
+                  ).encode('UTF-8'))
 
-    #rcbugs = wrap(rcbugs, ['something'] )
+    #todo: support #bugno too
+    bug = wrap(bug, ['int'] )
+
+    def rcbugs(self, irc, msg, args, package):
+        """<package>
+
+        List the release critical bugs for a given source package. Binary
+        package names will be mapped to source package names.
+        """
+        bugs = self.dispatcher.rcbugs(package, True)
+        if not bugs:
+            irc.reply("No release critical bugs were found in "
+                        "package '%s'." % package)
+            return
+
+        buglist = []
+        for bug in bugs:
+            status = [bug.readable_status]
+            [status.append(t) for t in bug.tags if t not in status]
+            buglist.append("#%d (%s)" % (bug.id, ", ".join(status)))
+
+        irc.reply((u"Release critical bugs in package %s (%d): %s" % \
+                    (package, len(bugs), ", ".join(buglist))
+                  ).encode('UTF-8'))
+
+    rcbugs = wrap(rcbugs, ['something'] )
 
     def file(self, irc, msg, args, glob, optlist, something):
         """<pattern> [--arch <i386>] [--release <stable>] [--regex | --exact]

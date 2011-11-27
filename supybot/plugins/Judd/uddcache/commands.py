@@ -249,3 +249,58 @@ class Commands(object):
         chains = solverh.chains()
         chains = chains.truncated(package2).unique().sorted()
         return chains
+
+    def bug(self, bugnumber, verbose):
+        """
+        Retrieve information about a particular bug
+        """
+        tracker = self.udd.Bts()
+        b = tracker.bug(bugnumber)
+        if verbose:
+            tracker.get_bugs_tags([b])
+        return b
+
+    def rm(self, package):
+        """
+        Retrieve information about a package removal bug
+        """
+        tracker = self.udd.Bts()
+        return tracker.get_bugs({'package': 'ftp.debian.org',
+                                'title': 'RM: %s ' % package,
+                                'sort': 'id DESC',
+                                'limit': 1})
+
+    def wnpp(self, package, bugtype=None):
+        """
+        Retrieve information about a package removal bug
+        """
+        tracker = self.udd.Bts(False)
+        filter = {
+                    'package': 'wnpp',
+                    'sort': 'id DESC'
+                }
+        if bugtype:
+            filter['title'] = '%s: %s ' % (bugtype, package)
+        else:
+            filter['title'] = r'\y%s\y' % (package)
+        return tracker.get_bugs(filter)
+
+    def rcbugs(self, package, verbose=True):
+        """
+        Retrieve all open release critical bugs for a package
+        """
+        try:
+            p = self.udd.BindSourcePackage(package,
+                                           self.udd.data.devel_release)
+            source = p.package
+        except PackageNotFoundError:
+            source = package
+        tracker = self.udd.Bts(False) # only consider unarchived bugs
+        bugs = tracker.get_bugs({
+                        'source': source,
+                        'severity': ('critical', 'grave', 'serious'),
+                        'status': ('forwarded', 'pending', 'pending-fixed')
+                    })
+        if verbose:
+            tracker.get_bugs_tags(bugs)
+        return bugs
