@@ -277,7 +277,8 @@ class Commands(object):
         tracker = self.udd.Bts(False)
         filter = {
                     'package': 'wnpp',
-                    'sort': 'id DESC'
+                    'sort': 'id DESC',
+                    'status': ('forwarded', 'pending', 'pending-fixed')
                 }
         if bugtype:
             filter['title'] = '%s: %s ' % (bugtype, package)
