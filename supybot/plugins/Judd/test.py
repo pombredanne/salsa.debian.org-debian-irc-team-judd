@@ -36,7 +36,7 @@ class DebianTestCase(PluginTestCase):
 
     def __init__(self, *args,  **kwargs):
         PluginTestCase.__init__(self, *args, **kwargs)
-        self.timeout = 30.   # bump up the timeout to 30s
+        self.timeout = 60.   # bump up the timeout to 60s
 
     def testVersion(self):
         self.assertNotError('versions libc6')                   # all versions; show oldstable->experimental
@@ -177,6 +177,12 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('bug 584031')                       # archived bug; archived and grave
         self.assertNotError('bug 644230')                       # pending upload bug; see "open" and "pending"
         self.assertNotError('bug 9999999')                      # bug not found; no such bug in the bts
+        self.assertNotError('bug ktikz')                        # no bugs; no bugs found
+        self.assertNotError('bug qtikz')                        # buggy no wnpp; show bug list
+        self.assertNotError('bug htdig')                        # buggy incl wnpp; show bug list and orphaned bug
+        self.assertNotError('bug postgresql-9.0')               # buggy incl RM; show bug list and RM bug
+        self.assertNotError('bug nosuchpackage')                # package not found; no such package in the bts
+        self.assertNotError('bug levmar')                       # package not found but in wnpp; show only wnpp
 
     def testRcBugs(self):
         self.assertNotError('rcbugs pyxplot')                   # no rc bugs; none found

@@ -38,6 +38,8 @@ from udd import Udd
 from packages import *
 from relations import *
 from resolver import *
+import bts
+
 try:
     from debian import debian_support
 except:
@@ -260,11 +262,38 @@ class Commands(object):
             tracker.get_bugs_tags([b])
         return b
 
-    def rm(self, package):
+    def bug_package(self, package, verbose=True, archived=False, source=None):
+        """
+        Retrieve information about bugs in a package
+        """
+        filter = {'sort': 'id'}
+        if package[0:4] == 'src:':
+            packagename = package[4:]
+            source = True
+        else:
+            packagename = package
+            if source not in (True, False):
+                source = False
+        if source:
+            try:
+                p = self.udd.BindSourcePackage(packagename,
+                                               self.udd.data.devel_release)
+                filter['source'] = p.package
+            except PackageNotFoundError:
+                filter['source'] = package
+        else:
+            filter['package'] = package
+        tracker = self.udd.Bts(archived)
+        bugs = tracker.get_bugs(filter)
+        if verbose:
+            tracker.get_bugs_tags(bugs)
+        return bugs
+
+    def rm(self, package, archived=True):
         """
         Retrieve information about a package removal bug
         """
-        tracker = self.udd.Bts()
+        tracker = self.udd.Bts(archived)
         return tracker.get_bugs({'package': 'ftp.debian.org',
                                 'title': 'RM: %s ' % package,
                                 'sort': 'id DESC',
@@ -278,12 +307,12 @@ class Commands(object):
         filter = {
                     'package': 'wnpp',
                     'sort': 'id DESC',
-                    'status': ('forwarded', 'pending', 'pending-fixed')
+                    'status': bts.open_status
                 }
         if bugtype:
-            filter['title'] = '%s: %s ' % (bugtype, package)
+            filter['title'] = r'''^["']?'%s\s*(:|--|)\s*%s ''' % (bugtype, package)
         else:
-            filter['title'] = r'\y%s\y' % (package)
+            filter['title'] = r'''^["']?(%s)\s*(:|--|)\s*%s\y''' % ('|'.join(bts.wnpp_types), package)
         return tracker.get_bugs(filter)
 
     def rcbugs(self, package, verbose=True):

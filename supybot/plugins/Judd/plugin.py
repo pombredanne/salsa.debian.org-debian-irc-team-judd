@@ -58,6 +58,7 @@ import uddcache.udd
 import uddcache.commands
 import uddcache.config
 from uddcache.packages import PackageNotFoundError
+import uddcache.bts
 from uddcache.bts import BugNotFoundError
 
 #
@@ -835,11 +836,20 @@ class Judd(callbacks.Plugin):
 
     recent   = wrap(recent, ['something', optional('something')])
 
-    def bug(self, irc, msg, args, bugno):
-        """<number>
+    def bug(self, irc, msg, args, search):
+        """<number>|<package>
 
-        Show information about a bug from the Debian Bug Tracking System.
+        Show bug information about from the Debian Bug Tracking System.
         """
+        search = search.replace('#', '')
+        if search.isdigit():
+            self._bug_number(irc, int(search))
+        else:
+            self._bug_summary(irc, search)
+
+    bug = wrap(bug, ['something'] )
+
+    def _bug_number(self, irc, bugno):
         try:
             bug = self.dispatcher.bug(bugno, True)
         except BugNotFoundError:
@@ -861,8 +871,31 @@ class Judd(callbacks.Plugin):
                     bug.severity, bug.last_modified)
                   ).encode('UTF-8'))
 
-    #todo: support #bugno too
-    bug = wrap(bug, ['int'] )
+    def _bug_summary(self, irc, package):
+        bug_count = []
+        bugs = self.dispatcher.bug_package(package, verbose=False, archived=False)
+        for s in uddcache.bts.severities:
+            bs = [b for b in bugs if b.severity == s]
+            if bs:
+                bug_count.append("%s: %d" % (s, len(bs)))
+
+        bugs = self.dispatcher.wnpp(package)
+        for t in uddcache.bts.wnpp_types:
+            bt = [b for b in bugs if b.wnpp_type == t]
+            if bt:
+                bug_count.append("%s: #%d" % (bt[0].wnpp_type, bt[0].id))
+
+        bugs = self.dispatcher.rm(package, False)
+        if bugs:
+            bug_count.append("RM: #%d" % bugs[0].id)
+
+        if not bug_count:
+            irc.reply("No bugs were found in package %s." % package)
+            return
+
+        irc.reply((u"Bug summary for package %s: %s" % \
+                    (package, ", ".join(bug_count))
+                  ).encode('UTF-8'))
 
     def rcbugs(self, irc, msg, args, package):
         """<package>

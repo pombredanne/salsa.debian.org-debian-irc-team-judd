@@ -40,6 +40,8 @@
 import os
 import udd
 import commands
+import bts
+
 from packages import PackageNotFoundError
 from bts import BugNotFoundError
 
@@ -615,14 +617,33 @@ class Cli():
             ]
         return filter(None, l)
 
-    def bug(self, command, bugnumber, args):
-        bugnumber = int(bugnumber)
-        try:
-            bug = self.dispatcher.bug(bugnumber, self.options.verbose)
-        except BugNotFoundError:
-            print "Sorry, bug %d was not found." % bugnumber
-            return
-        print bug
+    def bug(self, command, search, args):
+        if search.isdigit():
+            bugnumber = int(search)
+            try:
+                bug = self.dispatcher.bug(bugnumber, self.options.verbose)
+            except BugNotFoundError:
+                print "Sorry, bug %d was not found." % bugnumber
+                return
+            print bug
+        else:
+            bugs = self.dispatcher.bug_package(search, verbose=self.options.verbose, archived=False)
+            if self.options.verbose:
+                print "\n".join([str(b) for b in bugs])
+            else:
+                for s in bts.severities:
+                    bs = [str(b.id) for b in bugs if b.severity == s]
+                    if bs:
+                        print "%s: %d: %s" % (s, len(bs), ", ".join(bs))
+            bugs = self.dispatcher.wnpp(search)
+            for s in bts.wnpp_types:
+                bl = [b for b in bugs if b.wnpp_type == s]
+                if bl:
+                    print "%s: #%d" % (s, bl[0].id)
+            bugs = self.dispatcher.rm(search)
+            if bugs:
+                print "RM: %s" % (",".join(["#%d" % b.id for b in bugs]))
+
 
     def rm(self, command, package, args):
         try:

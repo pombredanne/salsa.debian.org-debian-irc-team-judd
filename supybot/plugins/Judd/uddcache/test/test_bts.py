@@ -105,6 +105,12 @@ class BugReportTests(unittest.TestCase):
         self.assertEqual(Bugreport({'status': 'pending-fixed'}).readable_status, 'pending')
         self.assertEqual(Bugreport({'status': 'fixed'}).readable_status, 'fixed')
 
+    def test_wnpp_type(self):
+        self.assertEqual(Bugreport({'package': 'wnpp', 'title': 'ITA: somepackage -- the description'}).wnpp_type, 'ITA')
+        self.assertEqual(Bugreport({'package': 'wnpp', 'title': 'RFP -- somepackage -- the description'}).wnpp_type, 'RFP')
+        self.assertEqual(Bugreport({'package': 'wnpp', 'title': 'some other badly titled bug'}).wnpp_type, None)
+        self.assertRaises(ValueError, getattr, Bugreport(), 'wnpp_type')
+
     def test_str(self):
         data = {
                 'id': 12345,

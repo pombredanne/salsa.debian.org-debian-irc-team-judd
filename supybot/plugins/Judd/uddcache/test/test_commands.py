@@ -167,6 +167,15 @@ class commands(unittest.TestCase):
         self.assertTrue(self.dispatcher.bug("123456", True))
         self.assertTrue(self.dispatcher.bug("#123456", True))
 
+    def testBug_package(self):
+        self.assertFalse(self.dispatcher.bug_package("ktikz")) #no bugs
+        self.assertTrue(self.dispatcher.bug_package("qtikz"))
+        self.assertTrue(self.dispatcher.bug_package("src:ktikz"))
+        self.assertTrue(self.dispatcher.bug_package("htdig"))
+        self.assertTrue(self.dispatcher.bug_package("postgresql-9.0"))
+        self.assertFalse(self.dispatcher.bug_package("nosuchpacakge"))
+        self.assertFalse(self.dispatcher.bug_package("src:nosuchpacakge"))
+
     def testWnpp(self):
         bl = self.dispatcher.wnpp('levmar')
         self.assertEqual(len(bl), 1)

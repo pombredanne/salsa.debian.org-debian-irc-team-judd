@@ -34,12 +34,24 @@
 #
 ###
 
+import re
 import psycopg2
 import psycopg2.extras
 
+severities = ('wishlist', 'minor', 'normal', 'important',
+                    'serious', 'grave', 'critical')
+all_severities = ('fixed', 'wishlist', 'minor', 'normal', 'important',
+                    'serious', 'grave', 'critical')
+
+status = ('pending', 'pending-fixed', 'done', 'forwarded', 'fixed')
+open_status = ('pending', 'pending-fixed', 'forwarded')
+closed_status = ('done', 'fixed')
+
+wnpp_types = ('RFP', 'ITP', 'RFH', 'RFA', 'ITA', 'O')
 
 class Bts(object):
     """ interface to the UDD for extracting bug information """
+
     def __init__(self, dbconn, include_archived=True):
         """ create a BTS searching instance
 
@@ -94,11 +106,11 @@ class Bts(object):
         """
         c = self.dbconn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         wheres = {
-                 'package': '(bugs_packages.package = %(package)s OR bugs_packages.source = %(package)s)',
+                 'package': 'bugs_packages.package = %(package)s',
                  'source': 'bugs_packages.source = %(source)s',
                  'severity': 'severity IN %(severity)s',
                  'status': 'status IN %(status)s',
-                 'title': 'title ~ %(title)s'
+                 'title': 'title ~* %(title)s'
              }
         where = " AND ".join([wheres[s] for s in search if s in wheres])
         q = self._query_builder(where)
@@ -225,6 +237,15 @@ class Bugreport(object):
             return 'open'
         if self.status in ('pending-fixed'):
             return 'pending'
+
+    @property
+    def wnpp_type(self):
+        if self.package != 'wnpp':
+            raise ValueError()
+        m = re.match('^(%s):? .*' % "|".join(wnpp_types), self.title, re.I)
+        if m:
+            return m.group(1).upper()
+        return
 
     def __str__(self):
         s = [
