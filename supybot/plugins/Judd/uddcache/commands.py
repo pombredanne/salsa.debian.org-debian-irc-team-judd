@@ -310,7 +310,7 @@ class Commands(object):
                     'status': bts.open_status
                 }
         if bugtype:
-            filter['title'] = r'''^["']?'%s\s*(:|--|)\s*%s ''' % (bugtype, package)
+            filter['title'] = r'''^["']?%s\s*(:|--|)\s*%s ''' % (bugtype, package)
         else:
             filter['title'] = r'''^["']?(%s)\s*(:|--|)\s*%s\y''' % ('|'.join(bts.wnpp_types), package)
         return tracker.get_bugs(filter)
