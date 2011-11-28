@@ -618,7 +618,8 @@ class Cli():
         return filter(None, l)
 
     def bug(self, command, search, args):
-        if search.isdigit():
+        search = search.replace('#', '')
+        if search.isdigit() and int(search) < 1e7:
             bugnumber = int(search)
             try:
                 bug = self.dispatcher.bug(bugnumber, self.options.verbose)
@@ -646,12 +647,11 @@ class Cli():
 
 
     def rm(self, command, package, args):
-        try:
-            bug = self.dispatcher.rm(package)
-        except BugNotFoundError:
+        bugs = self.dispatcher.rm(package)
+        if not bugs:
             print "Sorry, no removal bug for %s was found." % package
             return
-        print bug[0]
+        print bugs[0]
 
     def wnpp(self, command, package, args):
         bugtype = command.upper()
@@ -659,9 +659,8 @@ class Cli():
             bugtype = 'O'
         if bugtype == 'WNPP':
             bugtype = None
-        try:
-            bugs = self.dispatcher.wnpp(package, bugtype)
-        except BugNotFoundError:
+        bugs = self.dispatcher.wnpp(package, bugtype)
+        if not bugs:
             print "Sorry, no WNPP bug for %s was found." % package
             return
         print "\n".join([str(b) for b in bugs])
