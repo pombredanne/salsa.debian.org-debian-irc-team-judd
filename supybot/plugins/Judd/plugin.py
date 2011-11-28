@@ -225,6 +225,14 @@ class Judd(callbacks.Plugin):
         # screenshot url from screenshots.debian.net
         if pinfo['screenshot_url']:
             reply += "; Screenshot: %s" % pinfo['screenshot_url']
+
+        bug_count = []
+        bugs = self.dispatcher.wnpp(package)
+        for t in uddcache.bts.wnpp_types:
+            bt = [b for b in bugs if b.wnpp_type == t]
+            if bt:
+                bug_count.append("%s: #%d" % (bt[0].wnpp_type, bt[0].id))
+        reply += "; %s" % ", ".join(bug_count)
         irc.reply(reply)
 
     info = wrap(info, ['something',

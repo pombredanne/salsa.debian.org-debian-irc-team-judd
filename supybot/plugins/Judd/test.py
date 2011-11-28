@@ -61,6 +61,7 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('info libc6 --release sid')         # package info sid with homepage; only show sid, include homepage URL too
         self.assertNotError('info libc6 --arch amd64')          # package info amd64; only show sid
         self.assertNotError('info synaptic')                    # package info with screenshot; include screenshot URL too
+        self.assertNotError('info htdig')                       # package info with WNPP bug; include bug number too
         self.assertNotError('info nosuchpackage')               # package not found; no such package in the archive
 
     def testArch(self):
