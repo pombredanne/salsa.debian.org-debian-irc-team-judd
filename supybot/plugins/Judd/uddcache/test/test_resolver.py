@@ -181,7 +181,7 @@ class CheckerTests(unittest.TestCase):
 class BuildDepCheckerTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
-        self.checker = BuildDepsChecker(self.udd.BindRelease(arch="i386", release="lenny"))
+        self.checker = BuildDepsChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
 
     def testCheck(self):
         """Test checking the build-dependencies of a package"""
@@ -198,7 +198,7 @@ class BuildDepCheckerTests(unittest.TestCase):
         self.assert_(len(b.bd.bad) == 0)
         self.assert_(len(b.bdi.bad) == 0)
         # check by SourcePackage object
-        p = self.udd.BindSourcePackage(package="latexdraw", release="sid")
+        p = self.udd.BindSourcePackage(package="latexdraw", release="squeeze")
         b = self.checker.Check(package=p)
         self.assert_(b)
         self.assert_(len(b.bd.good) > 0)

@@ -304,10 +304,10 @@ class BuildDepsChecker(Checker):
             Returns None if the package doesn't exist.
         """
         s = package
+        if not s and not (bdList or bdiList):
+            raise ValueError("A valid package or bdList/bdiList missing")
         if type(package) == str:
             s = self.release.Source(package)
-        if not (s and s.Found()) and not (bdList or bdiList):
-            raise ValueError("A valid package or bdList/bdiList missing")
         if not bdList and s:
             bdList = s.BuildDependsList()
         if not bdiList and s:

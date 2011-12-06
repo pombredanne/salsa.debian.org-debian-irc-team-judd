@@ -80,6 +80,11 @@ class database(unittest.TestCase):
         self.assert_(r.Found())
         self.assert_(r.data['version'])
 
+    def testBts(self):
+        """Test binding to a source package and doing a lookup"""
+        tracker = self.udd.Bts(False)
+        self.assertFalse(tracker.include_archived)
+
 
 ###########################################################
 if __name__ == "__main__":
