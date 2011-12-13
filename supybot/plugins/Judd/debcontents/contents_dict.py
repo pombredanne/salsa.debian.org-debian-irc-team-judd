@@ -30,29 +30,33 @@
 
 """ Contents file results parsing """
 
-class PackageFileList:
+class contents_dict(dict):
     """
     Manage a mapping of filenames to packages that contain them
     """
 
     def __init__(self):
-        """ Create internal storage """
-        self.packages = {}
+        self.separator = "; "
+        self.results_truncated = False
 
     def add(self, filename, packagelist):
         """ Add a file and set of packages containing that file"""
         for pack in packagelist:
-            if not pack in self.packages.keys():
-                self.packages[pack] = []
-            self.packages[pack].append(filename)
+            if not pack in self.keys():
+                self[pack] = []
+            self[pack].append(filename)
+
+    def update(self, source):
+        self.results_truncated |= source.results_truncated
+        super(contents_dict, self).update(source)
 
     def to_string(self, boldfn):
         """ Turn the list into a condensed one-line string output """
         sbuild = []
         # sort the packages so that packages that contain the shortest paths
         # (by number of path elements, /) come first.
-        pprio = sorted(self.packages.keys(),
-          key=lambda p: min([f.count('/') for f in self.packages[p]]))
+        pprio = sorted(self.keys(),
+                        key=lambda p: min([f.count('/') for f in self[p]]))
         for pack in pprio:
             #section,name = p.split('/')
             info = pack.split('/')
@@ -61,17 +65,17 @@ class PackageFileList:
             elif len(info) == 3:
                 name = info[2]
             sbuild.append("%s: %s" % \
-                          (boldfn(name), ", ".join(self.packages[pack])))
-        return "; ".join(sbuild)
+                          (boldfn(name), ", ".join(self[pack])))
+        return self.separator.join(sbuild)
 
     def __len__(self):
         """ Return the number of packages in the list """
-        return len(self.packages.keys())
+        return len(self.keys())
 
     def __str__(self):
         """ Turn the list into a condensed one-line string (simple) """
         sbuild = []
-        for pack in self.packages.keys():
+        for pack in self.keys():
            # either section/package (shells/bash) or
             # component/section/package (non-free/editors/axe)
             info = pack.split('/')
@@ -79,5 +83,5 @@ class PackageFileList:
                 name = info[1]
             elif len(info) == 3:
                 name = info[2]
-            sbuild.append("%s: %s" % (name, ", ".join(self.packages[pack])))
-        return "; ".join(sbuild)
+            sbuild.append("%s: %s" % (name, ", ".join(self[pack])))
+        return self.separator.join(sbuild)

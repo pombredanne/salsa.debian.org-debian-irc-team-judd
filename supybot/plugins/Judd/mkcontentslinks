@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Refresh the symlink farm for the contents files for the Judd plugin
 #
 ###
-# Copyright (c) 2010 Stuart Prescott
+# Copyright (c) 2010-2011 Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -69,25 +69,43 @@ fi
 
 TARGET="$1"
 
-for section in $(udd-sections |
+for release in $(udd-sections |
                 grep -e lenny -e squeeze -e wheezy -e sid -e experimental |
                 grep -v security)
 do
-  DIR=$(awk "/^$section:/,/^$/" $UDDCONFIG |
+  # locate the relevant section of the local mirror
+  DIR=$(awk "/^$release:/,/^$/" $UDDCONFIG |
         sed -n "s/^[[:space:]]*directory:[[:space:]]*//p")
-  echo "$section => $DIR"
-  if [ -d "$TARGET/$section" ]
+  echo "$release => $DIR"
+  if [ -d "$TARGET/$release" ]
   then
-    rm -f "$TARGET/$section"/Contents*gz
-  else
-    mkdir "$TARGET/$section"
+    rm -f "$TARGET/$release"/Contents*gz
+    rm -f "$TARGET/$release"/*/Contents*gz
   fi
-  for c in "$DIR"/Contents*gz
-  do
-    if [ -f "$c" ]
-    then
-      ln -s "$c" "$TARGET/$section/"
-    fi
-  done
+  mkdir -p "$TARGET/$release/"{main,contrib,non-free}
+  case "$release" in
+    *lenny*|*squeeze*)
+        for c in "$DIR"/Contents*gz
+        do
+          if [ -f "$c" ]
+          then
+            ln -s "$c" "$TARGET/$release/main/"
+            touch "$TARGET/$release/"{contrib,non-free}/$(basename "$c")
+          fi
+        done
+      ;;
+    *)
+        for s in main contrib non-free
+        do
+          for c in "$DIR/$s"/Contents*gz
+          do
+            if [ -f "$c" ]
+            then
+              ln -s "$c" "$TARGET/$release/$s/"
+            fi
+          done
+        done
+      ;;
+  esac
 done
 
