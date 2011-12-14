@@ -195,6 +195,19 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('rcbugs libc6')                    # rc bugs; match via binary package name
         self.assertNotError('rcbugs nosuchpackage')             # package not found; no such package in the archive
 
+    def testRm(self):
+        self.assertNotError('rm sun-java6')                    # removed from archive; removal reason found
+        self.assertNotError('rm nosuchpackage')                # package doesn't exist; no removal reason found
+        self.assertNotError('rm pyxplot')                      # package not removed; no removal reason found
+
+    def testWnpp(self):
+        self.assertNotError('wnpp levmar')                     # RFP filed; RFP details displayed
+        self.assertNotError('wnpp nosuchpackage')              # no WNPP bug exists; no bug displayed
+        self.assertNotError('wnpp a')                          # no WNPP bug exists; no bug displayed
+        self.assertNotError('wnpp levmar --type rfp')          # explicitly require RFP bug; display RFP bug
+        self.assertNotError('wnpp levmar --type o')            # explicitly require O bug; no bug displayed
+        self.assertNotError('wnpp levmar --type nosuchtype')   # bogus type given; type ignored
+
     def testFile(self):
         # TODO: test other architectures and releases as well
         self.assertNotError('file /usr/bin/perl')               # absolute file exists ; /usr/bin/perl in perl

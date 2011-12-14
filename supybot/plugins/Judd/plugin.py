@@ -850,7 +850,39 @@ class Judd(callbacks.Plugin):
         else:
             self._bug_summary(irc, search)
 
-    bug = wrap(bug, ['something'] )
+    bug = wrap(bug, ['something'])
+
+    def rm(self, irc, msg, args, search):
+        """<package>
+
+        Looks for removal reasons for a package
+        """
+        bugs = self.dispatcher.rm(search)
+        if bugs:
+            self._show_bug(irc, bugs[0])
+        else:
+            irc.reply("Sorry, no removal reasons were found.")
+
+    rm = wrap(rm, ['something'])
+
+    def wnpp(self, irc, msg, args, search, optlist):
+        """<package>
+
+        Looks for WNPP (work-needed and prospective package) bugs
+        for a package
+        """
+        bug_type = None
+        for (option, arg) in optlist:
+            if option == 'type' and arg.upper() in uddcache.bts.wnpp_types:
+                bug_type = arg.upper()
+        bugs = self.dispatcher.wnpp(search, bug_type)
+        if bugs:
+            self._show_bug(irc, bugs[0])
+        else:
+            irc.reply("Sorry, no wnpp bugs were found.")
+
+    wnpp = wrap(wnpp, ['something',
+                        getopts({'type':'something'})])
 
     def _bug_number(self, irc, bugno):
         try:
@@ -858,7 +890,9 @@ class Judd(callbacks.Plugin):
         except BugNotFoundError:
             irc.reply("Sorry, the requested bug was not found.")
             return
+        return self._show_bug(irc, bug)
 
+    def _show_bug(self, irc, bug):
         title = bug.title.splitlines()
         if title:
             title = title[0]
@@ -870,7 +904,7 @@ class Judd(callbacks.Plugin):
 
         irc.reply((u"Bug http://bugs.debian.org/%d in %s (%s): «%s»; "
                     "Severity: %s; Last Modified: %s." % \
-                    (bugno, bug.package, ", ".join(status), title,
+                    (bug.id, bug.package, ", ".join(status), title,
                     bug.severity, bug.last_modified)
                   ).encode('UTF-8'))
 
