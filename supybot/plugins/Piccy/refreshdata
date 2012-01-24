@@ -295,16 +295,17 @@ fi
 # (as root):
 #     /usr/bin/gpgv --status-fd 1 --ignore-time-conflict \
 #      --keyring /etc/apt/trusted.gpg \
-#     $WD/var/lib/apt/lists/partial/ftp.uk.debian.org_debian_dists_sid_Release.gpg \
+#     $WD/var/lib/apt/lists/ftp.uk.debian.org_debian_dists_sid_Release.gpg \
 #     $WD/var/lib/apt/lists/ftp.uk.debian.org_debian_dists_sid_Release
 echo \
 '#!/bin/sh
-FD=${2-1}
+FD=${3-1}
 cat <<EOF 1>&$FD
-[GNUPG:] SIG_ID qs2dE7AubJyiH5mphDt+perNiA0 2009-02-25 1235551571
-[GNUPG:] GOODSIG A70DAF536070D3A1 Debian Archive Automatic Signing Key (4.0/etch) <ftpmaster@debian.org>
-gpgv: Good signature from "Debian Archive Automatic Signing Key (4.0/etch) <ftpmaster@debian.org>"
-[GNUPG:] VALIDSIG A99951DAF9BB569BDB50AD90A70DAF536070D3A1 2009-02-25 1235551571 0 3 0 17 2 00 A99951DAF9BB569BDB50AD90A70DAF536070D3A1
+gpgv: Signature made Tue 24 Jan 2012 08:19:25 GMT using RSA key ID 473041FA
+[GNUPG:] SIG_ID O5oiBbMhfXaCP231qHusrN+et5s 2012-01-24 1327393165
+[GNUPG:] GOODSIG AED4B06F473041FA Debian Archive Automatic Signing Key (6.0/squeeze) <ftpmaster@debian.org>
+gpgv: Good signature from "Debian Archive Automatic Signing Key (6.0/squeeze) <ftpmaster@debian.org>"
+[GNUPG:] VALIDSIG 9FED2BCBDCD29CDF762678CBAED4B06F473041FA 2012-01-24 1327393165 0 4 0 1 2 00 9FED2BCBDCD29CDF762678CBAED4B06F473041FA
 EOF
 ' > "$TEMPDIR/fakegpgv"
 chmod +x "$TEMPDIR/fakegpgv"
@@ -331,6 +332,8 @@ do
   # Create some of the directories that will be required so that apt
   # doesn't complain
   for d in /etc/apt/apt.conf.d \
+           /etc/apt/preferences.d \
+           /etc/apt/trusted.gpg.d \
            /var/lib/apt/lists/partial \
            /var/cache/apt/archives/partial \
            /var/lib/dpkg/
@@ -338,6 +341,7 @@ do
     mkdir -p "$WD$d"
   done
   touch "$WD/var/lib/dpkg/status"
+  touch "$WD/etc/apt/trusted.gpg"
 
   APTARGS=(-o "quiet=1000"
            -o "Debug::NoLocking=true"
