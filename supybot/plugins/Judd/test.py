@@ -188,6 +188,8 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('bug postgresql-9.0')               # buggy incl RM; show bug list and RM bug
         self.assertNotError('bug nosuchpackage')                # package not found; no such package in the bts
         self.assertNotError('bug levmar')                       # package not found but in wnpp; show only wnpp
+        self.assertNotError('bug src:pyxplot ia64')             # title search; bug matches
+        self.assertNotError('bug src:pyxplot nosuchtitle')      # title search; no matches
 
     def testRcBugs(self):
         self.assertNotError('rcbugs pyxplot')                   # no rc bugs; none found

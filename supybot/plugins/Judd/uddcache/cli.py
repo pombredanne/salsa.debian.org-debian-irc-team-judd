@@ -628,22 +628,26 @@ class Cli():
                 return
             print bug
         else:
-            bugs = self.dispatcher.bug_package(search, verbose=self.options.verbose, archived=False)
-            if self.options.verbose:
-                print "\n".join([str(b) for b in bugs])
+            if not args:
+                bugs = self.dispatcher.bug_package(search, verbose=self.options.verbose, archived=False)
+                if self.options.verbose:
+                    print "\n".join([str(b) for b in bugs])
+                else:
+                    for s in bts.severities:
+                        bs = [str(b.id) for b in bugs if b.severity == s]
+                        if bs:
+                            print "%s: %d: %s" % (s, len(bs), ", ".join(bs))
+                bugs = self.dispatcher.wnpp(search)
+                for s in bts.wnpp_types:
+                    bl = [b for b in bugs if b.wnpp_type == s]
+                    if bl:
+                        print "%s: #%d" % (s, bl[0].id)
+                bugs = self.dispatcher.rm(search)
+                if bugs:
+                    print "RM: %s" % (",".join(["#%d" % b.id for b in bugs]))
             else:
-                for s in bts.severities:
-                    bs = [str(b.id) for b in bugs if b.severity == s]
-                    if bs:
-                        print "%s: %d: %s" % (s, len(bs), ", ".join(bs))
-            bugs = self.dispatcher.wnpp(search)
-            for s in bts.wnpp_types:
-                bl = [b for b in bugs if b.wnpp_type == s]
-                if bl:
-                    print "%s: #%d" % (s, bl[0].id)
-            bugs = self.dispatcher.rm(search)
-            if bugs:
-                print "RM: %s" % (",".join(["#%d" % b.id for b in bugs]))
+                bugs = self.dispatcher.bug_package_search(search, args[0], verbose=self.options.verbose, archived=False)
+                print "\n".join(["#%d: %s" % (b.id, b.title) for b in bugs])
 
 
     def rm(self, command, package, args):

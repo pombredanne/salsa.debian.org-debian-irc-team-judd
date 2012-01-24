@@ -262,11 +262,16 @@ class Commands(object):
             tracker.get_bugs_tags([b])
         return b
 
-    def bug_package(self, package, verbose=True, archived=False, source=None):
+    def bug_package(self, package, verbose=True, archived=False, source=None, _filter=None):
         """
         Retrieve information about bugs in a package
         """
-        filter = {'sort': 'id'}
+        if _filter:
+            filter = _filter.copy()
+        else:
+            filter = {}
+        if 'sort' not in filter:
+            filter['sort'] = 'id'
         if package[0:4] == 'src:':
             packagename = package[4:]
             source = True
@@ -288,6 +293,12 @@ class Commands(object):
         if verbose:
             tracker.get_bugs_tags(bugs)
         return bugs
+
+    def bug_package_search(self, package, search, verbose=True, archived=False, source=None):
+        """
+        Retrieve information about bugs in a package
+        """
+        return self.bug_package(package, verbose, archived, source, {'title':search})
 
     def rm(self, package, archived=True):
         """

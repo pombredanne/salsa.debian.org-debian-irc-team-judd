@@ -227,6 +227,8 @@ class cliTests(unittest.TestCase):
         self.assertTrue(self.cli.bug("bug", "htdig", []) is None)
         self.assertTrue(self.cli.bug("bug", "nosuchpackage", []) is None)
         self.assertTrue(self.cli.bug("bug", "src:nosuchpackage", []) is None)
+        self.assertTrue(self.cli.bug("bug", "src:pyxplot", ['ia64']) is None)
+        self.assertTrue(self.cli.bug("bug", "pyxplot", ['ia64']) is None)
         self.cli.options.verbose = True
         self.assertTrue(self.cli.bug("bug", "qtikz", []) is None)
         self.assertTrue(self.cli.bug("bug", "postgresql-9.0", []) is None)

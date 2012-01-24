@@ -176,6 +176,12 @@ class commands(unittest.TestCase):
         self.assertFalse(self.dispatcher.bug_package("nosuchpacakge"))
         self.assertFalse(self.dispatcher.bug_package("src:nosuchpacakge"))
 
+    def testBug_package_search(self):
+        self.assertFalse(self.dispatcher.bug_package_search('ktikz', 'quux')) # no bugs
+        self.assertTrue(self.dispatcher.bug_package_search('libc6', 'locales'))
+        self.assertFalse(self.dispatcher.bug_package_search("nosuchpacakge", 'quux'))
+        self.assertFalse(self.dispatcher.bug_package_search("src:nosuchpacakge", 'quux'))
+
     def testWnpp(self):
         bl = self.dispatcher.wnpp('levmar')
         self.assertEqual(len(bl), 1)

@@ -839,18 +839,21 @@ class Judd(callbacks.Plugin):
 
     recent   = wrap(recent, ['something', optional('something')])
 
-    def bug(self, irc, msg, args, search):
-        """<number>|<package>
+    def bug(self, irc, msg, args, search, titlesearch):
+        """<number>|<package> [title]
 
-        Show bug information about from the Debian Bug Tracking System.
+        Show bug information about from the Debian Bug Tracking System,
+        searching by bug number, package name or package name and title.
         """
         search = search.replace('#', '')
         if search.isdigit():
             self._bug_number(irc, int(search))
-        else:
+        elif not titlesearch:
             self._bug_summary(irc, search)
+        else:
+            self._bug_title_search(irc, msg, search, titlesearch)
 
-    bug = wrap(bug, ['something'])
+    bug = wrap(bug, ['something', optional('something')])
 
     def rm(self, irc, msg, args, search):
         """<package>
@@ -892,7 +895,17 @@ class Judd(callbacks.Plugin):
             return
         return self._show_bug(irc, bug)
 
-    def _show_bug(self, irc, bug):
+    def _bug_title_search(self, irc, msg, package, title):
+        bugs = self.dispatcher.bug_package_search(package, title, verbose=True, archived=False)
+        if len(bugs) > 10:
+            irc.reply("Matching bugs: %s" % ", ".join(["#%d" % b.id for b in bugs]))
+        else:
+            if not bugs:
+                irc.reply("Sorry, no bugs match that search criterion.", to=msg.nick, private=True)
+            for b in bugs:
+                irc.reply(self._format_bug(b).encode('UTF-8'), to=msg.nick, private=True)
+
+    def _format_bug(self, bug):
         title = bug.title.splitlines()
         if title:
             title = title[0]
@@ -902,11 +915,13 @@ class Judd(callbacks.Plugin):
         status = [bug.readable_status]
         [status.append(t) for t in bug.tags if t not in status]
 
-        irc.reply((u"Bug http://bugs.debian.org/%d in %s (%s): «%s»; "
+        return u"Bug http://bugs.debian.org/%d in %s (%s): «%s»; " \
                     "Severity: %s; Last Modified: %s." % \
                     (bug.id, bug.package, ", ".join(status), title,
                     bug.severity, bug.last_modified)
-                  ).encode('UTF-8'))
+
+    def _show_bug(self, irc, bug):
+        irc.reply(self._format_bug(bug).encode('UTF-8'))
 
     def _bug_summary(self, irc, package):
         bug_count = []
