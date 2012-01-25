@@ -925,7 +925,7 @@ class Judd(callbacks.Plugin):
 
     def _bug_summary(self, irc, package):
         bug_count = []
-        bugs = self.dispatcher.bug_package(package, verbose=False, archived=False)
+        bugs = self.dispatcher.bug_package(package, verbose=False, archived=False, filter={'status': ('forwarded', 'pending', 'pending-fixed')})
         for s in uddcache.bts.severities:
             bs = [b for b in bugs if b.severity == s]
             if bs:

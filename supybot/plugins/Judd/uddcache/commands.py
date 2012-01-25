@@ -262,16 +262,16 @@ class Commands(object):
             tracker.get_bugs_tags([b])
         return b
 
-    def bug_package(self, package, verbose=True, archived=False, source=None, _filter=None):
+    def bug_package(self, package, verbose=True, archived=False, source=None, filter=None):
         """
         Retrieve information about bugs in a package
         """
-        if _filter:
-            filter = _filter.copy()
+        if filter:
+            fil = filter.copy()
         else:
-            filter = {}
-        if 'sort' not in filter:
-            filter['sort'] = 'id'
+            fil = {}
+        if 'sort' not in fil:
+            fil['sort'] = 'id'
         if package[0:4] == 'src:':
             packagename = package[4:]
             source = True
@@ -283,13 +283,13 @@ class Commands(object):
             try:
                 p = self.udd.BindSourcePackage(packagename,
                                                self.udd.data.devel_release)
-                filter['source'] = p.package
+                fil['source'] = p.package
             except PackageNotFoundError:
-                filter['source'] = package
+                fil['source'] = package
         else:
-            filter['package'] = package
+            fil['package'] = package
         tracker = self.udd.Bts(archived)
-        bugs = tracker.get_bugs(filter)
+        bugs = tracker.get_bugs(fil)
         if verbose:
             tracker.get_bugs_tags(bugs)
         return bugs

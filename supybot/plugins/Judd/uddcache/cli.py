@@ -629,7 +629,7 @@ class Cli():
             print bug
         else:
             if not args:
-                bugs = self.dispatcher.bug_package(search, verbose=self.options.verbose, archived=False)
+                bugs = self.dispatcher.bug_package(search, verbose=self.options.verbose, archived=False, filter={'status': ('forwarded', 'pending', 'pending-fixed')})
                 if self.options.verbose:
                     print "\n".join([str(b) for b in bugs])
                 else:
