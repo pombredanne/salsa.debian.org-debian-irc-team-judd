@@ -255,7 +255,8 @@ class Bugreport(object):
                 "Severity: %s" % self.severity,
                 "Bts-Status: %s" % self.status,
                 "Status: %s" % self.readable_status,
-                "Last-Modified: %s" % self.last_modified,
+                "Opened: %s" % self.arrival.date(),
+                "Last-Modified: %s" % self.last_modified.date(),
                 "Archived: %s" % self.archived
              ]
         if self.tags:

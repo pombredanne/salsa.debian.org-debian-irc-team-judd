@@ -916,9 +916,9 @@ class Judd(callbacks.Plugin):
         [status.append(t) for t in bug.tags if t not in status]
 
         return u"Bug http://bugs.debian.org/%d in %s (%s): «%s»; " \
-                    "Severity: %s; Last Modified: %s." % \
+                    "severity: %s; opened: %s; last modified: %s." % \
                     (bug.id, bug.package, ", ".join(status), title,
-                    bug.severity, bug.last_modified)
+                    bug.severity, bug.arrival.date(), bug.last_modified.date())
 
     def _show_bug(self, irc, bug):
         irc.reply(self._format_bug(bug).encode('UTF-8'))
