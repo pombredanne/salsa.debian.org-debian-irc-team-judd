@@ -37,11 +37,8 @@ set -u
 set -e
 # set -x
 
-CLEANUP=true
-# CLEANUP=false
-
-NOISY=false
-# NOISY=true
+CLEANUP=${CLEANUP:-true}
+VERBOSE=${VERBOSE:-false}
 
 PCIIDURL="http://pciids.sourceforge.net/v2.2/pci.ids"
 PCIIDFILE="pci.ids"
@@ -57,7 +54,7 @@ ARCH="i386"
 # squeeze trunk:                 linux-image-2.6.32-trunk-686
 # backports:                     linux-image-2.6.38-bpo.2-686
 # wheezy PAE (replaces -686):    linux-image-2.6.39-1-686-pae
-# wheezy 3.0:                    linux-image-3.0-1-686-pae
+# wheezy 3.0:                    linux-image-3.2.0-1-686-pae
 KERNELRE='linux-image-~(2\.6\.[0-9]+~|3\.[0-9]+\.[0-9]+~)+-~(bpo.~)?~(rc[0-9]~|trunk~|[0-9]+~)-686~(-pae~)?$'
 # ARCH="amd64"
 # KERNELRE='linux-image-2.6.[0-9]+-[0-9]-amd64$'
@@ -89,7 +86,7 @@ EOF
 }
 
 debug() {
-  if $NOISY
+  if $VEBOSE
   then
     echo "$@"
   fi
