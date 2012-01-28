@@ -39,6 +39,10 @@ set -e
 
 CLEANUP=${CLEANUP:-true}
 VERBOSE=${VERBOSE:-false}
+DEBUG=${DEBUG:-false}
+if $DEBUG; then
+  set -x
+fi
 
 PCIIDURL="http://pciids.sourceforge.net/v2.2/pci.ids"
 PCIIDFILE="pci.ids"
@@ -86,7 +90,7 @@ EOF
 }
 
 debug() {
-  if $VEBOSE
+  if $VERBOSE
   then
     echo "$@"
   fi
