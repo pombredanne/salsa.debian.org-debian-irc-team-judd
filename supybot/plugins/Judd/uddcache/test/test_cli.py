@@ -78,7 +78,7 @@ class cliTests(unittest.TestCase):
 
     def tearDown(self):
         sys.stdout = self.held
-        pass
+        self.cli = None
 
     def test_init(self):
         self.assertRaises(ValueError, Cli)

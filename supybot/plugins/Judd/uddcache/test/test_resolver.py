@@ -53,6 +53,10 @@ class CheckerTests(unittest.TestCase):
         self.udd = Udd()
         self.checker = Checker(self.udd.BindRelease(arch="i386", release="lenny"))
 
+    def tearDown(self):
+        self.udd = None
+        self.checker = None
+
     def testInit(self):
         self.assertRaises(TypeError, Checker, None)
 
@@ -183,6 +187,10 @@ class BuildDepCheckerTests(unittest.TestCase):
         self.udd = Udd()
         self.checker = BuildDepsChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
 
+    def tearDown(self):
+        self.udd = None
+        self.checker = None
+
     def testCheck(self):
         """Test checking the build-dependencies of a package"""
         # simple package, check by source package name
@@ -225,6 +233,10 @@ class InstallCheckerTests(unittest.TestCase):
         self.udd = Udd()
         self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="lenny"))
 
+    def tearDown(self):
+        self.udd = None
+        self.checker = None
+
     @unittest.skipUnless(includeSlowTests, 'slow test')
     def testCheck(self):
         """Test installability of packages"""
@@ -243,6 +255,9 @@ class InstallCheckerTests(unittest.TestCase):
 class SolverHierarchyTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
+
+    def tearDown(self):
+        self.udd = None
 
     def testInit(self):
         s = SolverHierarchy('dpkg')

@@ -69,6 +69,9 @@ class Udd():
         else:
             raise ValueError("Unknown data types requested by 'distro'")
 
+    def __del__(self):
+        self._disconnect()
+
     def _connect(self, logfile):
         arg_mapping = {
                             'database': 'database',
@@ -89,6 +92,9 @@ class Udd():
 
         # make the connection, logging to the file if requests
         self.psql = database.Connect(logfile, **args)
+
+    def _disconnect(self):
+        self.psql.close()
 
     def BindRelease(self, release="lenny", arch="i386", **kwargs):
         """

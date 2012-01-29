@@ -43,10 +43,17 @@ import unittest2 as unittest
 
 
 class BtsTests(unittest.TestCase):
-    def setUp(self):
-        self.udd = Udd()
-        self.bts = self.udd.Bts(True)
-        self.btsc = self.udd.Bts(False)
+    @classmethod
+    def setUpClass(cls):
+        cls.udd = Udd()
+        cls.bts = cls.udd.Bts(True)
+        cls.btsc = cls.udd.Bts(False)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.bts = None
+        cls.btsc = None
+        cls.udd = None
 
     def testBugs(self):
         bugs = [500000, 500001, 500002, 620381]

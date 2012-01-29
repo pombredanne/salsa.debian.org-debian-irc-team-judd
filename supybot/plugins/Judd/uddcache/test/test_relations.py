@@ -122,6 +122,9 @@ class RelationshipOptionsListTests(unittest.TestCase):
         self.udd = Udd()
 #        self.checker = RelationChecker(self.udd.BindRelease(arch="i386",release="lenny"))
 
+    def tearDown(self):
+        self.udd = None
+
     def testReleaseMap(self):
         """Test mapping a list of RelationshipOptions into a releases/packages dict"""
         # non-existent package should be unresolvable
@@ -247,6 +250,9 @@ class BuildDepStatusTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
 
+    def tearDown(self):
+        self.udd = None
+
     def testInit(self):
         self.assert_(BuildDepStatus())
         self.assert_(BuildDepStatus(bd=RelationshipStatus(), bdi=RelationshipStatus()))
@@ -299,6 +305,9 @@ class BuildDepStatusTests(unittest.TestCase):
 class RelationshipStatusTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
+
+    def tearDown(self):
+        self.udd = None
 
     def testPackageSets(self):
         release = self.udd.BindRelease(arch="i386", release="squeeze")

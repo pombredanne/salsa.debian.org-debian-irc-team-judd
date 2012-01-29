@@ -55,6 +55,10 @@ class commands(unittest.TestCase):
         self.udd = Udd()
         self.dispatcher = Commands(self.udd)
 
+    def tearDown(self):
+        self.udd = None
+        self.dispatcher = None
+
     def testVersions(self):
         """Test version lookups"""
         self.assert_(self.dispatcher.versions('libc6', 'sid', 'i386'))

@@ -46,6 +46,9 @@ class database(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
 
+    def tearDown(self):
+        self.udd = None
+
     def testDBTypes(self):
         """Test creating a Debian and derivative UDD instance"""
         self.assert_(Udd(distro='debian'))
