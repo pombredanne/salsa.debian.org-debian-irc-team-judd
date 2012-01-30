@@ -78,6 +78,7 @@ class Cli():
                 'bug':          self.bug,
                 'rcbugs':       self.rcbugs,
                 'rm':           self.rm,
+                'rfs':          self.rfs,
                 'wnpp':         self.wnpp,
                 'rfp':          self.wnpp,
                 'itp':          self.wnpp,
@@ -668,6 +669,32 @@ class Cli():
             print "Sorry, no WNPP bug for %s was found." % package
             return
         print "\n".join([str(b) for b in bugs])
+
+    def rfs(self, command, package, args):
+        bugfilter={'title': package}
+        if not self.options.verbose: # also get fixed bugs for verbose
+            bugfilter['status'] = ('forwarded', 'pending', 'pending-fixed')
+        bugs = self.dispatcher.bug_package("sponsorship-requests",
+                                       verbose=True, # always get tags
+                                       archived=self.options.verbose,
+                                       filter=bugfilter)
+        if not bugs:
+            print "No open RFS bugs found for that package"
+            return
+        for b in bugs:
+            s = [
+                "Bug: %d" % b.id,
+                "Title: %s" % b.title.splitlines()[0],
+                "Severity: %s" % b.severity,
+                "Status: %s" % b.readable_status,
+                "Opened: %s" % b.arrival.date(),
+                "Last-Modified: %s" % b.last_modified.date(),
+                "Tags: %s" % ", ".join(b.tags),
+                "Submitter: %s" % b.submitter,
+                "Owner: %s" % b.owner,
+                ""
+            ]
+            print "\n".join(s)
 
     def rcbugs(self, command, package, args):
         bugs = self.dispatcher.rcbugs(package)

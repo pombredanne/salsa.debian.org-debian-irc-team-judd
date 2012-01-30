@@ -210,6 +210,11 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('wnpp levmar --type o')            # explicitly require O bug; no bug displayed
         self.assertNotError('wnpp levmar --type nosuchtype')   # bogus type given; type ignored
 
+    def testRfs(self):
+        self.assertNotError('rfs -')                           # Lots of RFS match; only summary displayed
+        self.assertNotError('rfs sks')                         # One RFS match; show bug summary #FIXME: fragile
+        self.assertNotError('rfs nosuchpackage')               # No RFS match; no bug displayed
+
     def testFile(self):
         # TODO: test other architectures and releases as well
         self.assertNotError('file /usr/bin/perl')               # absolute file exists ; /usr/bin/perl in perl

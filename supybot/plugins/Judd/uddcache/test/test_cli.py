@@ -249,6 +249,10 @@ class cliTests(unittest.TestCase):
         self.assertTrue(self.cli.rm("rm", "sun-java6", []) is None)
         self.assertTrue(self.cli.rm("rm", "nosuchpackage", []) is None)
 
+    def testrfs(self):
+        self.assertTrue(self.cli.rfs('rfs', '-', []) is None)
+        self.assertTrue(self.cli.rfs('rfs', 'sks', []) is None) # FIXME: fragile test
+        self.assertTrue(self.cli.rfs('rfs', 'nosuchpackage', []) is None)
 
 ###########################################################
 if __name__ == "__main__":

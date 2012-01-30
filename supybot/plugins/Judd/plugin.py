@@ -973,6 +973,38 @@ class Judd(callbacks.Plugin):
 
     rcbugs = wrap(rcbugs, ['something'] )
 
+    def rfs(self, irc, msg, args, package):
+        """<package>
+
+        List RFS (request for sponsorship) bugs for a package. Imperfect
+        substring matching against the bug title is performed."""
+        bugfilter={'title': package,
+                    'status': ('forwarded', 'pending', 'pending-fixed')}
+        bugs = self.dispatcher.bug_package("sponsorship-requests",
+                                       verbose=True, # always get tags
+                                       archived=False,
+                                       filter=bugfilter)
+        if not bugs:
+            return irc.reply("Sorry, no open RFS bugs found for that %s."
+                             % package)
+        if len(bugs) > 3:
+            return irc.reply("Lots of RFS bugs match that query: %s" %
+                             ", ".join(["#%d" % b.id for b in bugs]))
+        s = []
+        for bug in bugs:
+            status = [bug.readable_status]
+            [status.append(t) for t in bug.tags if t not in status]
+            if bug.owner:
+                contacts = u"%s/%s" % (bug.submitter, bug.owner)
+            else:
+                contacts = bug.submitter
+            s.append("#%s (%s): %s (%s)" % \
+                 (self.bold(bug.id), ", ".join(status),
+                    bug.title.splitlines()[0], contacts))
+        irc.reply("; ".join(s))
+
+    rfs = wrap(rfs, ['something'])
+
     def file(self, irc, msg, args, glob, optlist, something):
         """<pattern> [--arch <i386>] [--release <stable>] [--regex | --exact]
 
