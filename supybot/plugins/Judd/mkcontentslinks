@@ -1,0 +1,111 @@
+#!/bin/bash
+#
+# Refresh the symlink farm for the contents files for the Judd plugin
+#
+###
+# Copyright (c) 2010-2011 Stuart Prescott
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   * Redistributions of source code must retain the above copyright notice,
+#     this list of conditions, and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright notice,
+#     this list of conditions, and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of the author of this software nor the name of
+#     contributors to this software may be used to endorse or promote products
+#     derived from this software without specific prior written consent.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+###
+
+set -u
+set -e
+
+UDDCONFIG=/org/udd.debian.org/udd/config-judd.yaml
+PATH=~udd/bin:$PATH
+
+usage() {
+  PROG=$(basename $0)
+  cat <<EOF
+Usage: $PROG data_directory
+
+Typical usage: ./$PROG /home/judd/supybot/data/judd
+
+The UDD config file is used for the data sources.
+  $UDDCONFIG
+
+EOF
+  exit 1
+}
+
+if [ $# -lt 1 ]
+then
+  echo bad args
+  usage
+fi
+if [ ! -d "$1" ]
+then
+  echo not dir
+  usage
+fi
+if [ ! -r "$UDDCONFIG" ]
+then
+  echo no config
+  usage
+fi
+
+TARGET="$1"
+
+for release in $(udd-sections |
+                grep -e lenny -e squeeze -e wheezy -e sid -e experimental |
+                grep -v security)
+do
+  # locate the relevant section of the local mirror
+  DIR=$(awk "/^$release:/,/^$/" $UDDCONFIG |
+        sed -n "s/^[[:space:]]*directory:[[:space:]]*//p")
+  echo "$release => $DIR"
+  if [ -d "$TARGET/$release" ]
+  then
+    rm -f "$TARGET/$release"/Contents*gz
+    rm -f "$TARGET/$release"/*/Contents*gz
+  fi
+  mkdir -p "$TARGET/$release/"{main,contrib,non-free}
+  case "$release" in
+    *lenny*|*squeeze*)
+        for c in "$DIR"/Contents*gz
+        do
+          if [ -f "$c" ]
+          then
+            ln -s "$c" "$TARGET/$release/main/"
+            touch "$TARGET/$release/"{contrib,non-free}/$(basename "$c")
+          fi
+        done
+      ;;
+    *)
+        for s in main contrib non-free
+        do
+          for c in "$DIR/$s"/Contents*gz
+          do
+            if [ -f "$c" ]
+            then
+              ln -s "$c" "$TARGET/$release/$s/"
+            fi
+          done
+        done
+      ;;
+  esac
+done
+

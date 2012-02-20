@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2007, Mike O'Connor
+# Copyright (c) 2009,2011 Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,5 +34,160 @@ from supybot.test import *
 class DebianTestCase(PluginTestCase):
     plugins = ('Judd',)
 
+    def __init__(self, *args,  **kwargs):
+        PluginTestCase.__init__(self, *args, **kwargs)
+        self.timeout = 30.   # bump up the timeout to 30s
+        # don't delete data prior to running the tests
+        self.cleanConfDir = False
+        self.cleanDataDir = False
+
+
+    def testVersion(self):
+        self.assertNotError('versions libc6')                   # all versions; show oldstable->experimental
+        self.assertNotError('versions libc6 --release sid')     # one version; only show sid
+        self.assertNotError('versions libc6 --arch amd64')      # one arch; show amd64 instead
+        self.assertNotError('versions libc6 --release qwerty')  # no such release; defaults to lenny
+        self.assertNotError('versions libc6 --arch qwerty')     # no such arch; defaults to i386
+        self.assertNotError('versions libc6 amd64')             # implicit arch; show amd64 instead of i386
+        self.assertNotError('versions libc6 sid')               # implicit release; show sid only
+        self.assertNotError('versions libc6 amd64 sid')         # implicit release; show amd64,sid only
+        self.assertNotError('versions nosuchpackage')           # package not found; no such package in the archive
+
+    def testNames(self):
+        self.assertNotError('names libc6')                      # exact match; one package only (libc6)
+        self.assertNotError('names libc6*')                     # terminal wildcard; lots of packages (libc6, libc6-dev, ....)
+        self.assertNotError('names latexdraw --release sid')    # release selection; only in sid
+        self.assertNotError('names libc6.1 --arch ia64')        # arch selection; only in amd64
+        self.assertNotError('names nosuchpackage')              # package not found; no such package in the archive
+
+    def testInfo(self):
+        self.assertNotError('info libc6')                       # package info stable; only show stable
+        self.assertNotError('info libc6 --release sid')         # package info sid with homepage; only show sid, include homepage URL too
+        self.assertNotError('info libc6 --arch amd64')          # package info amd64; only show sid
+        self.assertNotError('info synaptic')                    # package info with screenshot; include screenshot URL too
+        self.assertNotError('info nosuchpackage')               # package not found; no such package in the archive
+
+    def testArch(self):
+        self.assertNotError('archs libc6')                      # arch-dep package; lots of arches for libc6
+        self.assertNotError('archs python')                     # arch:all package; all
+        self.assertNotError('archs nosuchpackage')              # package not found; no such package in the archive
+
+    def testConflicts(self):
+        self.assertNotError('conflicts python')                  # some conflicts; several packages
+        self.assertNotError('conflicts texlive')                 # no conflicts; no packages conflict
+        self.assertNotError('conflicts nosuchpackage')           # package not found; no such package in the archive
+
+    def testDepends(self):
+        self.assertNotError('depends texlive')                  # depends; some packages
+        self.assertNotError('depends dpkg')                     # depends; no packages
+        self.assertNotError('depends nosuchpackage')            # package not found; no such package in the archive
+
+    def testRecommends(self):
+        self.assertNotError('recommends python-pyx')            # recommends; a package
+        self.assertNotError('recommends texlive')               # recommends; no packages
+        self.assertNotError('recommends nosuchpackage')         # package not found; no such package in the archive
+
+    def testSuggests(self):
+        self.assertNotError('suggests texlive')                 # suggests; a package
+        self.assertNotError('suggests locales')                 # suggests; no packages
+        self.assertNotError('suggests nosuchpackage')           # package not found; no such package in the archive
+
+    def testProvides(self):
+        self.assertNotError('provides postfix')                 # provided packages; m-t-a
+        self.assertNotError('provides nosuchpackage')           # package not found; no such package in the archive
+
+    def testRprovides(self):
+        self.assertNotError('rprovides mail-transport-agent')   # find rproviders; several packages provide m-t-a
+        self.assertNotError('rprovides imagemagick')            # find rproviders real package; a real package as well as being "provided"
+        self.assertNotError('rprovides libc6')                  # real package only; a real package only, not provided by anything
+        self.assertNotError('rprovides nosuchpackage')          # no rproviders; no packages provide this
+
+    def testSource(self):
+        self.assertNotError('src libc6 --release lenny')        # source package; glibc has libc6 in lenny
+        self.assertNotError('src libc6 --release sid')          # source package; eglibc has libc6 in sid
+        self.assertNotError('src nosuchpackage')                # package not found; no such package in the archive
+
+    def testBinaries(self):
+        self.assertNotError('binaries python-defaults')         # list binary packages; several binary packages
+        self.assertNotError('binaries pyxplot')                 # list binary packages; only one binary package
+        self.assertNotError('binaries nosuchpackage')           # package not found; no such package in the archive
+
+    def testBuilddep(self):
+        self.assertNotError('builddep perl')                    # simple build-deps; B-D only
+        self.assertNotError('builddep texlive')                 # complex build-deps; B-D and B-D-I
+        self.assertNotError('builddep libc6')                   # build-deps by binary; give build-deps of (e)glibc package
+        self.assertNotError('builddep nosuchpackage')           # package not found; no such package in the archive
+
+    def testCheckDeps(self):
+        self.assertNotError('checkdeps libc6')                  # all dependencies present; all depends, recommends and suggests are fulfilled
+        self.assertNotError('checkdeps openjdk-6-jre-headless --release lenny')  # missing recommends; package ca-certificates-java is recommended but not in lenny
+        self.assertNotError('checkdeps openjdk-6-jre-headless')  # check release selection; all relations fulfilled
+        self.assertNotError('checkdeps ffmpeg --release lenny-multimedia')  # check release fallback; all relations fulfilled only if fallback to main archive
+        self.assertNotError('checkdeps nosuchpackage')          # package not found; no such package in the archive
+        self.assertNotError('checkdeps libc6 --type depends')   # check relation type; check that depends are selectable
+        self.assertNotError('checkdeps libc6 --type recommends')  # check relation type; check that recommends are selectable
+        self.assertError('checkdeps dpkg --type nosuchrelation')  # package not found; no such package in the archive
+
+    def testCheckBuildDeps(self):
+        self.assertNotError('checkbuilddeps eglibc --release sid')  # source package selection; build-deps are fulfilled
+        self.assertNotError('checkbuilddeps stage --release sid')   # source package selection; build-deps are uninstallable
+        self.assertNotError('checkbuilddeps libc6')             # binary package selection; build-deps are fulfilled
+        self.assertNotError('checkbuilddeps ffmpeg --release lenny-multimedia')  # fallback to official repo; all build-deps are fulfilled but only if lenny itself is included
+        self.assertNotError('checkbuilddeps nosuchpackage')     # package not found; no such package in the archive
+
+    def testCheckInstall(self):
+        self.assertNotError('checkinstall libc6')               # installable package; default release
+        self.assertNotError('checkinstall libc6 --release sid') # installable package, select release
+        self.assertNotError('checkinstall when')                # installable package, no dependencies
+        self.assertNotError('checkinstall openjdk-6-jre-headless --norecommends --release lenny') # installable package; all installable without recommends
+        self.assertNotError('checkinstall openjdk-6-jre-headless --release lenny') # missing recommends in lenny; ca-certificates missing from recommends chain
+        self.assertNotError('checkinstall nosuchpackage')       # package not found; no such package in the archive
+
+    def testCheckbackport(self):
+        self.assertNotError('checkbackport debhelper')          # simple sid backport; all build-deps should be fulfilled
+        self.assertNotError('checkbackport iceweasel')          # backport requires bpo as well; all build-deps should be fulfilled with some from backports.org
+        self.assertNotError('checkbackport iceweasel --torelease lenny')  # backport not possible; impossible build-deps even with backports
+        self.assertNotError('checkbackport xserver-xorg-video-intel') # from/to release selection; only possible backport with backports
+        self.assertNotError('checkbackport python-pyx')         # bin2src autoselection; simple backport
+        self.assertNotError('checkbackport debhelper --verbose') # verbose output; single release used
+        self.assertNotError('checkbackport heartbeat --verbose') # verbose output; multiple releases used
+        self.assertNotError('checkbackport nosuchpackage')      # package not found; no such package in the archive
+
+    def testWhy(self):
+        self.assertNotError('why dpkg libc6')                   # many links; several links found
+        self.assertNotError('why dpkg libc6.1 --arch ia64')     # many links; requires right arch
+        self.assertNotError('why dpkg libc6-i686')              # one link; recommends used in link
+        self.assertNotError('why dpkg libc6-i686 --norecommends') # no link; no link without recommends
+        self.assertNotError('why nosuchpackage nosuchpackage')  # package not found; no such package in the archive
+        self.assertNotError('why dpkg nosuchpackage')           # package not found; no such package in the archive
+        self.assertNotError('why nosuchpackage dpkg')           # package not found; no such package in the archive
+
+    def testPopcon(self):
+        self.assertNotError('popcon perl')                      # list popcon; popular package
+        self.assertNotError('popcon nosuchpackage')             # package not found; no such package in the archive
+
+    def testMaintainer(self):
+        self.assertNotError('maint perl')                  # show maintainer; maintianer, uploader and changer
+        self.assertNotError('maint python-pyx')            # auto bin2src test; maintianer, uploader and changer for source package pyx
+        self.assertNotError('maint nosuchpackage')         # package not found; no such package in the archive
+
+    def testRecent(self):
+        self.assertNotError('recent perl')                      # show recent upload; last 10 uploads of perl
+        self.assertNotError('recent python-pyx')                # auto bin2src test; show last 10 uploads of pyx
+        self.assertNotError('recent nosuchpackage')             # package not found; no such package in the archive
+
+    def testBugs(self):
+        # this is known to be broken at present
+        pass
+
+    def testFile(self):
+        # TODO: test other architectures and releases as well
+        self.assertNotError('file /usr/bin/perl')               # absolute file exists ; /usr/bin/perl in perl
+        self.assertNotError('file /usr/bin/perl --release sid') # absolute file exists in sid; /usr/bin/perl in perl
+        self.assertNotError('file /lib/firmware/3com/typhoon.bin --release sid') # absolute file exists in sid/non-free; lib/firmware/3com/typhoon.bin in firmware-linux-nonfree
+        self.assertNotError('file bin/perl')                    # fragment file exists ; /usr/bin/perl in perl
+        self.assertNotError('file *bin/perl*')                  # fragment file exists ; /usr/bin/perl in perl, /usr/bin/perldoc in perldoc
+        self.assertNotError('file *bin/*')                      # small file fragment ; should trip "truncated" message
+        self.assertNotError('file /nosuchpackage')              # fragment doesn't exist ; no package contains
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

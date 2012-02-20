@@ -34,20 +34,22 @@
 ###
 
 use strict;
-use DCOP::Konversation;
+use FakeDBus::Konversation;
 use File::Basename;
 use Getopt::Long;
 
 ##########################################################################
 my $testfile = lookfortestpy();  # test.py file to read in
-my $target   = "konversation";   # name of the dcop application interface
-my $server   = "0";              # dcop server number
+my $target   = "org.kde.konversation";
+                                 # name of the dbus application interface
+my $server   = "0";              # irc server number
 my $bot      = "judd";           # name of the bot to /msg in the tests
-my $channel  = $bot;             # the channel or bot to talk to
+my $channel  = "";               # the channel or bot to talk to
 my $sleep    = 4;                # break between tests so the bot doesn't flood
 my $noact    = 0;                # don't act
 my $verbose  = 0;                # verbosity
 my $help     = 0;
+my @exclude = qw{update};        # list of tests not to perform
 
 
 GetOptions(
@@ -58,6 +60,7 @@ GetOptions(
              'bot=s'          => \$bot,
              'sleep=s'        => \$sleep,
              'noact'          => \$noact,
+             'exclude=s@'     => \@exclude,
              'verbose'        => \$verbose,
              'help'           => \$help,
           );
@@ -74,14 +77,14 @@ if ($help) {
   exit 1;
 }
 
-$DCOP::DEBUG=$verbose;
+$FakeDBus::DEBUG=$verbose;
 
 ##########################################################################
 
 # make the IPC connection for running the tests
 my $k;
 if ($target ne "" && $server ne "") {
-  $k = new DCOP::Konversation(target => $target, server => $server, channel => $channel);
+  $k = new FakeDBus::Konversation(target => $target, server => $server, channel => $channel);
 } else {
   print STDERR "ERROR: No client or server defined\n";
   exit 1;
@@ -102,13 +105,20 @@ while ($line = <TESTS>) {
 }
 close(TESTS);
 
+foreach (@exclude) {
+  print "Excluding: $_\n";
+}
+
 # run the tests
 foreach my $t (@TESTS) {
   #print "t=$t\n";
-  if ($t->{test} !~ /^update/) {
-    dotest($t);
-    sleep($sleep);
+  my ($tname,@junk) = split(/\s+/, $t->{test});
+  if (grep {/^$tname$/} @exclude) {
+    print "skip $t->{test}\n";
+    next;
   }
+  dotest($t);
+  sleep($sleep);
 }
 
 ##########################################################################
@@ -131,7 +141,11 @@ sub dotest {
     } else {
       $k->info("I: " . $test->{result});
     }
-    $k->msg($bot, $test->{test});
+    if ($channel ne "") {
+      $k->say("$bot:", $test->{test});
+    } else {
+      $k->msg($bot, $test->{test});
+    }
   }
 }
 
@@ -154,7 +168,7 @@ sub usage {
   print STDERR <<"EOF";
 Use IPC to run a series of tests supybot tests through an IRC client.
 
-The only IPC method currently implemented is a set of DCOP calls to
+The only IPC method currently implemented is a set of DBus calls to
 konversation.
 
 Usage:
@@ -166,11 +180,14 @@ No options are required.
       If not specified, "test.py" will be searched for in the current working
       directory or the directory containing this script.
 
-  --target=dcop_target
-  --server=dcop_servername
+  --target=dbus_target
+  --server=dbus_servername
   --channel=channel_name
-      The dcop target application (default, 'konversation') and enumerated
-      server (default '0') with which to have the dcop conversation.
+      The dbus target application (default, 'konversation') and enumerated
+      server (default '0') with which to have the dbus conversation. If channel
+      is specified and non-zero-length then the testing will occur in the
+      specified channel. Otherwise, it will occur by private message with
+      the bot.
 
   --bot=bot_name
       Nick of the bot that will run the tests. Default is 'judd'.

@@ -1,5 +1,6 @@
 ###
 # Copyright (c) 2007, Mike O'Connor
+#           (c) 2009-2011, Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,27 +29,89 @@
 
 ###
 
+""" plugin configuration when run from the wizard and default values
+when just loaded """
+
 import supybot.conf as conf
+import supybot.utils as utils
 import supybot.registry as registry
 import Judd
+
 
 def configure(advanced):
     # This will be called by supybot to configure this module.  advanced is
     # a bool that specifies whether the user identified himself as an advanced
     # user or not.  You should effect your configuration by manipulating the
     # registry as appropriate.
-    from supybot.questions import expect, anything, something, yn
+    from supybot.questions import output, expect, anything, something, yn
     conf.registerPlugin('Judd', True)
+    if not utils.findBinaryInPath('zgrep'):
+        if not advanced:
+            output("""I can't find zgrep in your path.  This is necessary
+                      to run the file command.  I'll disable this command
+                      now.  When you get zgrep in your path, use the command
+                      'enable Judd.file' to re-enable the command.""")
+            capabilities = conf.supybot.capabilities()
+            capabilities.add('-Judd.file')
+            conf.supybot.capabilities.set(capabilities)
+        else:
+            output("""I can't find zgrep in your path.  If you want to run
+                      the file command with any sort of expediency, you'll
+                      need it.  You can use a python equivalent, but it's
+                      about two orders of magnitude slower.  THIS MEANS IT
+                      WILL TAKE AGES TO RUN THIS COMMAND.  Don't do this.""")
+            if yn('Do you want to use a Python equivalent of zgrep?'):
+                conf.supybot.plugins.Judd.pythonZgrep.setValue(True)
+            else:
+                output('I\'ll disable file now.')
+                capabilities = conf.supybot.capabilities()
+                capabilities.add('-Judd.file')
+                conf.supybot.capabilities.set(capabilities)
 
 
 Judd = conf.registerPlugin('Judd')
 # This is where your configuration variables (if any) should go.  For example:
 # conf.registerGlobalValue(Judd, 'someConfigVariableName',
 #     registry.Boolean(False, """Help for someConfigVariableName."""))
-conf.registerGlobalValue( Judd, 'db_hostname', registry.String( "localhost", "hostname of udd postgres database" ) )
-conf.registerGlobalValue( Judd, 'db_username', registry.String( 'stew', "username of udd postgres database" ) )
-conf.registerGlobalValue( Judd, 'db_password', registry.String( 'stew', "password to udd postgres database" ) )
-conf.registerGlobalValue( Judd, 'db_port', registry.Integer( 5432, "port of udd postgres database" ) )
-conf.registerGlobalValue( Judd, 'db_database', registry.String( "udd", "postgres to use" ) )
+conf.registerGlobalValue(Judd, 'db_hostname',
+                         registry.String("localhost",
+                         "hostname of udd postgres database", private=True))
+conf.registerGlobalValue(Judd, 'db_username',
+                         registry.String('stew',
+                         "username of udd postgres database", private=True))
+conf.registerGlobalValue(Judd, 'db_password',
+                         registry.String('stew',
+                         "password to udd postgres database", private=True))
+conf.registerGlobalValue(Judd, 'db_port',
+                         registry.Integer(5432,
+                         "port of udd postgres database", private=True))
+conf.registerGlobalValue(Judd, 'db_database',
+                         registry.String("udd",
+                         "postgres to use", private=True))
+conf.registerGlobalValue(Judd, 'db_querylog',
+                         registry.String("udd-query.log",
+                         "logfile in which sql queries should be logged; "
+                         "if a relative path is used, "
+                         "it is relative to supybot.directories.logs"))
+conf.registerGlobalValue(Judd, 'use_conf_file',
+                         registry.Boolean(True,
+                         "use the udd-cache.conf file in the plugin directory "
+                         "if present"))
+conf.registerGlobalValue(Judd, 'base_path',
+                         registry.String("judd",
+                         "base path to the data files; "
+                         "if a relative path is used, "
+                         "it is relative to supybot.directories.data",
+                         private=True))
+conf.registerChannelValue(Judd, 'bold',
+                          registry.Boolean(True,
+                          "Determines whether the plugin will use bold in the "
+                          "responses to some of its commands."))
+conf.registerChannelValue(Judd, 'default_release',
+                         registry.String("stable",
+                         "default release to use for queries"))
+conf.registerChannelValue(Judd, 'default_arch',
+                         registry.String("i386",
+                         "default architecture to use for queries"))
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

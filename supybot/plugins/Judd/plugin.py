@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 ###
+#
 # Copyright (c) 2007,2008, Mike O'Connor
+# Copyright (c) 2010-2011  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,364 +31,729 @@
 
 ###
 
-#TODO: add build-dep - (should work with binary package name too)
+#TODO:
 
+import supybot.conf as conf
 import supybot.utils as utils
 from supybot.commands import *
 import supybot.plugins as plugins
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
-from debian_bundle import debian_support
 
+import re
 import psycopg2
+import psycopg2.extras
 
-release_map = { 'unstable':'sid', 'testing':'squeeze', 'stable':'lenny' }
-releases = [ 'etch', 'etch-backports', 'etch-multimedia', 'etch-security', 'etch-volatile', 'experimental', 'lenny', 'lenny-multimedia', 'lenny-security', 'lenny-backports', 'lenny-volatile', 'squeeze', 'squeeze-security', 'squeeze-multimedia', 'sid', 'sid-multimedia', 'unstable', 'testing', 'stable' ]
 
-arches = [ 'alpha', 'amd64', 'arm', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64', 'm68k', 'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all' ]
+import os
+import fnmatch
+import debcontents.contents_file
 
-def parse_standard_options( optlist, args=None ):
-    if not args:
-        args=[]
-    release='lenny'
-    arch='i386'
+import uddcache.udd
+import uddcache.commands
+import uddcache.config
+from uddcache.packages import PackageNotFoundError
 
-    for( option,arg ) in optlist:
-        if option=='release':
-            release=arg;
-        elif option=='arch':
-            arch=arg;
+#
+#def parse_standard_options(optlist, args=None):
+#    release = clean_release_name(optlist=optlist, args=args)
+#    arch = clean_arch_name(optlist=optlist, args=args)
+#    return release, arch
 
-    if args in releases:
-        release=args
-    elif args in arches:
-        arch=args
-
-    if release_map.has_key( release ):
-        release = release_map[ release ]
-
-    if not release in releases:
-        release=None
-
-    if not arch in arches:
-        arch=None
-
-    return release, arch
 
 class Judd(callbacks.Plugin):
     """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
+    threaded = True
 
     def __init__(self, irc):
         self.__parent = super(Judd, self)
         self.__parent.__init__(irc)
 
-        self.psql = psycopg2.connect( "dbname='%s' host='%s' port='%d' password='%s' user='%s'" %
-                                      ( self.registryValue('db_database'),
-                                        self.registryValue('db_hostname'),
-                                        self.registryValue('db_port'),
-                                        self.registryValue('db_password'),
-                                        self.registryValue('db_username') ),
-                                      )
-
-        self.psql.set_isolation_level(0)
-
-
-    def versions(self, irc, msg, args, package, optlist, something ):
-        """
-        Output available versions of a package.
-        Usage: "versions pattern [--arch i386] [--release etch]"
-        pattern will treat * and ? as wildcards
-        """
-        release = None
-        arch='i386'
-        atleastone=False
-
-        for( option,arg ) in optlist:
-            if option=='release':
-                release=arg;
-            elif option=='arch':
-                arch=arg;
-        for option in args:
-            if option in releases:
-                release=option
-            elif option in arches:
-                arch=option
-        if release_map.has_key( release ):
-            release = release_map[ release ]
-
-        c = self.psql.cursor()
-        if package.find( '*' ) == -1 and package.find( '?' ) == -1:
-            sql = "SELECT distinct release,version,component FROM packages WHERE package=%(package)s AND (architecture=%(arch)s or architecture='all')"
-            if release:
-                sql += " AND release=%(release)s"
-
-            c.execute( sql,
-                       dict( package=package,
-                             arch=arch,
-                             release=release ) );
-
-            pkgs=[]
-            for row in c.fetchall():
-                pkgs.append( [row[0], row[1], row[2]] )
-
-
-            pkgs.sort( lambda a,b: debian_support.version_compare( a[1], b[1] ) )
-
-            reply = "%s --" % package
-            for row in pkgs:
-		atleaseone=True
-                if( row[2] == 'main' ):
-                    reply += " %s: %s" % (row[0], row[1])
-                else:
-                    reply += " %s/%s: %s" % (row[0], row[2], row[1])
-
+        # If there is an udd-cache.conf in the plugin directory then it
+        # probably contains useful configuration data
+        conffile = os.path.join(os.path.dirname(__file__), 'udd-cache.conf')
+        if os.path.isfile(conffile) and self.registryValue('use_conf_file'):
+            self.log.debug("Using file udd-db configuration: %s", conffile)
+            uddconf = uddcache.config.Config(file=conffile)
         else:
-            package = package.replace( "*", "%" )
-            package = package.replace( "?", "_" )
-            sql = "SELECT distinct release,version,package,component FROM packages WHERE package like %(package)s AND (architecture=%(arch)s or architecture='all')"
-            if release:
-                sql += " AND release=%(release)s"
+            self.log.debug("Using registry udd-db configuration")
+            sqllog = os.path.join(conf.supybot.directories.log(),
+                     self.registryValue('db_querylog'))
+            self.log.debug("UDD SQL Query logfile: %s",  sqllog)
+            # some amount of remapping of config option names is required
+            confdict = {
+                        'database': self.registryValue('db_database'),
+                        'hostname': self.registryValue('db_hostname'),
+                        'port': self.registryValue('db_port'),
+                        'username': self.registryValue('db_username'),
+                        'password': self.registryValue('db_password'),
+                        'logfile': sqllog
+                    }
+            uddconf = uddcache.config.Config(confdict=confdict)
+        # Initialise a UDD instance with the appropriate configuration
+        self.udd = uddcache.udd.Udd(uddconf)
+        self.dispatcher = uddcache.commands.Commands(self.udd)
 
-            c.execute( sql,
-                       dict( package=package, 
-                             arch=arch,
-                             release=release ) );
-    
-            pkgs=[]
-            for row in c.fetchall():
-                atleaseone=True
-                pkgs.append( [row[0], row[1], row[2]] )
-
-            if release:
-                reply = "%s in %s:" % (package,release)
+    def notfound(self, irc, package, release=None, arch=None,
+                 message="No package named '%s' was found%s."):
+        """ return a message indicating that the package was not found """
+        if release:
+            if arch:
+                tag = " in %s/%s" % (release, arch)
             else:
-                reply = "%s" % package
-
-            pkgs.sort( lambda a,b: debian_support.version_compare( a[1], b[1] ) )
-            for row in pkgs:
-                if release:
-                    if( row[2] == 'main' ):
-                        reply += " %s %s" % (row[2], row[1] )
-                    else:
-                        reply += " %s: %s %s" % (row[0], row[2], row[1] )
-                else:
-                    if( row[2] == 'main' ):
-                        reply += " %s: %s %s" % (row[0], row[2], row[1])
-#                    else:
-#                        reply += " %s %s (%s/%s)" % (row[2], row[1], row[0], row[3])
-
-#fixme should be checking atleastone
-        if True:
-            irc.reply( reply )
+                tag = " in %s" % release
         else:
-            irc.reply( "No package named %s found" % package )
-        
-    versions = wrap(versions, ['something', getopts( { 'arch':'something', 'release':'something' } ), optional( 'something' ) ] )
-    
-    def info(self, irc, msg, args, package, optlist, something ):
-        """
-        Output brief info about a package.
-        Usage: "info packagename [--arch i386] [--release etch]"
-        """
-        release,arch = parse_standard_options( optlist, something )
-
-        c = self.psql.cursor()
-        c.execute( "SELECT section, priority, version, size, installed_size, description FROM packages WHERE package=%(package)s AND (architecture=%(arch)s OR architecture='all') AND release=%(release)s", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
-
-        row = c.fetchone()
-        if row:
-            ds = row[5].splitlines()
-            if ds:
-                d = ds[0]
+            if arch:
+                tag = " in %s" % arch
             else:
-                d=""
-            irc.reply( "%s (%s): is %s; Version: %s; Size: %0.1fk; Installed: %dk -- %s" % (
-                package, row[0], row[1], row[2], row[3]/1024.0, row[4], d ) )
+                tag = ""
+        irc.reply(message % (package, tag))
 
-        
-    info = wrap(info, ['something', getopts( { 'arch':'something',
-                                              'release':'something' } ), optional( 'something' ) ] )
+    def versions(self, irc, msg, args, package, optlist, something):
+        """<pattern> [--arch <i386>] [--release <stable>]
 
-    def depends( self, irc, msg, args, package, optlist, something ):
+        Show the available versions of a package in the optionally specified
+        release and for the given architecture.
+        All current releases and i386 are searched by default. By default,
+        binary packages are searched; prefix the packagename with "src:" to
+        search source packages.
         """
-        Show Depends: of a given package.
-        Usage: "depends packagename [--arch i386] [--release etch]"
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                            args=something, default=None)
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                            args=something, default=self.default_arch(channel))
+
+        try:
+            pkgs = self.dispatcher.versions(package, release, arch)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, release, arch)
+
+        replies = []
+        for row in pkgs:
+            if (row['component'] == 'main'):
+                replies.append("%s %s" % \
+                    ("%s:" % self.bold(row['release']),
+                    row['version']))
+            else:
+                replies.append("%s %s" % \
+                    ("%s/%s:" % (self.bold(row['release']), row['component']),
+                    row['version']))
+
+        irc.reply("Package: %s on %s -- %s" % (package, arch,
+                            "; ".join(replies)))
+
+    versions = wrap(versions, ['something',
+                                getopts({'arch':'something',
+                                        'release':'something'}),
+                                any('something')])
+
+    def names(self, irc, msg, args, package, optlist, something):
+        """<pattern> [--arch <i386>] [--release <stable>]
+
+        Search package names with * and ? as wildcards.
+        The current stable release and i386 are searched by default.
         """
-        release,arch = parse_standard_options( optlist, something )
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
 
-        print( "release: %s arch: %s" % (release, arch) )
-        c = self.psql.cursor()
-        c.execute( "SELECT depends FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
+        try:
+            pkgs = self.dispatcher.names(package, release, arch)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, release, arch,
+                             message="No packages matching %s were found%s.")
 
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Depends: %s" % ( package, row[0]) )
+        replies = []
+        for row in pkgs:
+            if (row['component'] == 'main'):
+                replies.append("%s %s" % \
+                                (self.bold(row['package']), row['version']))
+            else:
+                replies.append("%s %s (%s)" % \
+                                (self.bold(row['package']), row['version'],
+                                  row['component']))
 
-        
-    depends = wrap(depends, ['something', getopts( { 'arch':'something',
-                                                     'release':'something' } ), 
-                             optional( 'something' ) ] );
+        irc.reply("Search for %s in %s/%s: %s" % \
+                            (package, release, arch, "; ".join(replies)))
 
-    def danke( self, irc, msg, args ):
+    names = wrap(names, ['something',
+                          getopts({'arch':'something',
+                                   'release':'something'}),
+                          any('something')])
+
+    def info(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>]
+
+        Show the short description and some other brief details about a package
+        in the specified release and architecture. By default, the current
+        stable release and i386 are used.
+        """
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
+
+        try:
+            pinfo = self.dispatcher.info(package, release, arch)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, release, arch)
+
+        description = pinfo['description'].splitlines()
+        if description:
+            description = description[0]
+        else:
+            description = ""
+        reply = "Package %s (%s, %s) in %s/%s: %s. Version: %s; " \
+                "Size: %0.1fk; Installed: %dk" % \
+                  (package, pinfo['section'], pinfo['priority'],
+                    release, arch, description,
+                    pinfo['version'],
+                    pinfo['size'] / 1024.0, pinfo['installed_size'])
+        if pinfo['homepage']:    # homepage field
+            reply += "; Homepage: %s" % pinfo['homepage']
+        # screenshot url from screenshots.debian.net
+        if pinfo['screenshot_url']:
+            reply += "; Screenshot: %s" % pinfo['screenshot_url']
+        irc.reply(reply)
+
+    info = wrap(info, ['something',
+                        getopts({'arch':'something',
+                                 'release':'something'}),
+                        any('something')])
+
+    def archs(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--release <stable>]
+
+        Show for what architectures a package is available. By default, the
+        current stable release is used.
+        """
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+
+        try:
+            pkgs = self.dispatcher.archs(package, release)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, release, None)
+
+        replies = []
+        for row in pkgs:
+            replies.append("%s (%s)" % (row[0], row[1]))
+        irc.reply("Package %s in %s: %s" % (package, release,
+                                            ", ".join(replies)))
+
+    archs  = wrap(archs, ['something',
+                                getopts({'release':'something'}),
+                                any('something')])
+
+    def rprovides(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>]
+
+        Show the packages that 'Provide' the specified virtual package
+        ('reverse provides').
+        By default, the current stable release and i386 are used.
+        """
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
+
+        pack = self.udd.BindPackage(package, release, arch)
+        if pack.IsVirtual():
+            reply = "Package %s in %s/%s is provided by: %s." % \
+                    (package, release, arch, ", ".join(pack.ProvidersList()))
+            if pack.Found():
+                reply += " %s is also a real package." % package
+        else:
+            if pack.Found():
+                reply = "In %s/%s, %s is a real package." % \
+                            (release, arch, package)
+            else:
+                reply = "No packages provide '%s' in %s/%s." % \
+                                                (package, release, arch)
+
+        irc.reply(reply)
+
+    rprovides = wrap(rprovides, ['something',
+                                      getopts({'arch':'something',
+                                               'release':'something'}),
+                                      any('something')])
+
+    def provides(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>]
+
+        Show the list of "provided" packages for the specified binary package
+        in the given release and architecture. By default, the current
+        stable release and i386 are used.
+        """
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
+
+        pack = self.udd.BindPackage(package, release, arch)
+
+        if pack.Found():
+            if pack.data['provides']:
+                irc.reply("Package %s in %s/%s provides: %s." % \
+                            (package, release, arch, pack.data['provides']))
+            else:
+                irc.reply("Package %s in %s/%s provides no additional packages." % \
+                            (package, release, arch))
+        else:
+            return self.notfound(irc, package, release, arch)
+
+    provides = wrap(provides, ['something',
+                              getopts({'arch':'something',
+                                       'release':'something'}),
+                              any('something')])
+
+    def danke(self, irc, msg, args):
         """
         Someone is trying to speak esperanto to me
         """
-        irc.reply( "ne dankinde" )
+        irc.reply("ne dankinde")
 
-    danke = wrap( danke, [] )
+    danke = wrap(danke, [])
 
-    def source( self, irc, msg, args, package, optlist, something ):
+    def src(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--release <stable>]
+
+        Show the name of the source package from which a given binary package
+        is derived.
+        By default, the current stable release and i386 are used.
         """
-        Show Source: of a given package.
-        Usage: "source packagename [--release etch]"
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
+
+        rel = self.udd.BindRelease(release, arch)
+        try:
+            pack = rel.bin2src(package)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, release, arch,
+                            message="Sorry, there is no record of a "
+                            "source package for the binary package '%s'%s.")
+
+        irc.reply("Package %s in %s -- source: %s" % (package, release, pack))
+
+    src = wrap(src, ['something',
+                        getopts({'release':'something'}),
+                        any('something')])
+
+    def binaries(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--release <stable>]
+
+        Show the name of the binary package(s) that are derived from a given
+        source package.
+        By default, the current stable release and i386 are used.
         """
-        release,arch = parse_standard_options( optlist, something )
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+#        arch = self.udd.data.clean_arch_name(optlist=optlist,
+#                        args=something, default=self.default_arch())
 
-        c = self.psql.cursor()
-        c.execute( "SELECT source FROM packages WHERE package=%(package)s AND release=%(release)s limit 1", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
+        try:
+            pack = self.udd.BindSourcePackage(package, release)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, release, None)
 
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Source: %s" % ( package, row[0]) )
+        irc.reply("Source %s in %s: Binaries: %s" % \
+                      (package, release, ", ".join(pack.Binaries())))
 
-        
-    src = wrap(source, ['something', getopts( { 'release':'something' } ),
-                           optional( 'something' ) ] );
+    binaries = wrap(binaries, ['something',
+                              getopts({'release':'something'}),
+                              any('something')])
 
-    def binaries( self, irc, msg, args, package, optlist, something ):
+    def builddep(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--release <stable>]
+
+        Show the name of the binary packages on which a given source package
+        or binary package build-depends.
+        By default, the current stable release is used.
         """
-        Show Source: of a given package.
-        Usage: "source packagename [--release etch]"
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=None)
+
+        # FIXME: make b-d list arch-specific
+        try:
+            pack = self.udd.BindSourcePackage(package, release)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, release, arch)
+
+        bd = pack.BuildDepends()
+        bdi = pack.BuildDependsIndep()
+        irc.reply("Package %s in %s -- %s." %
+                  (package, release,
+                    "; ".join(
+                    self._builddeps_formatter(bd, bdi))))
+
+    builddep = wrap(builddep, ['something',
+                                getopts({'release':'something'}),
+                                any('something')])
+
+    def relationship_helper(self, irc, msg, args, package, optlist, something, relation):
+        """Does the dirty work for each of the functions that show
+        "conflicts", "depends", "recommends", "suggests", "enhances".
+
+        The standard usage for each of these functions is accepted:
+            relationship <packagename> [--arch <i386>] [--release <stable>]
+
+        Show the packages that are listed as 'Depends' for a given package.
+        By default, the current stable release and i386 are used.
         """
-        release,arch = parse_standard_options( optlist, something )
+        known_relations = [ 'conflicts',
+                           'depends',
+                           'recommends',
+                           'suggests',
+                           'enhances' ]
 
-        c = self.psql.cursor()
-        c.execute( "SELECT distinct package FROM packages WHERE source=%(package)s AND release=%(release)s", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
+        if not relation in known_relations:
+            irc.error("Sorry, unknown error determining package relationship.")
 
-        row = c.fetchone()
-        if row:
-            reply = "%s -- Binaries:" % package
-            while row:
-                reply += " %s" % ( row[0] )
-                row = c.fetchone()
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
 
-            irc.reply( reply )
-        
-    binaries = wrap(binaries, ['something', getopts( { 'release':'something' } ),
-                           optional( 'something' ) ] );
+        pack = self.udd.BindPackage(package, release, arch)
 
-    def builddep( self, irc, msg, args, package, optlist, something ):
-        """
-        Show BuildDepends: of a given package.
-        Usage: "buliddep packagename [--arch i386] [--release etch]"
-        """
-        release,arch = parse_standard_options( optlist, something )
-
-        c = self.psql.cursor()
-        c.execute( "SELECT build_depends FROM sources WHERE source=%(package)s AND release=%(release)s limit 1", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- BuildDepends: %s" % ( package, row[0]) )
+        if pack.Found():
+            irc.reply("Package %s in %s/%s -- %s: %s." % \
+                      (package, release, arch,
+                        relation, pack.RelationEntry(relation)))
         else:
-            c.execute( """SELECT sources.source,build_depends FROM sources 
-                        INNER JOIN packages on packages.source = sources.source
-                        WHERE packages.package=%(package)s AND packages.release=%(release)s limit 1""", 
-                       dict( package=package, 
-                             arch=arch,
-                             release=release) );
-            row = c.fetchone()
-            if row:
-                irc.reply( "%s -- BuildDepends: %s" % ( row[0], row[1]) )
+            return self.notfound(irc, package, release, arch)
 
-        
-        
-    builddep = wrap(builddep, ['something', getopts( { 'release':'something' } ), optional( 'something' )] );
-        
-    def conflicts( self, irc, msg, args, package, optlist, something ):
+    def conflicts(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>]
+
+        Show the binary packages listed as conflicting with a given binary
+        package.
+        By default, the current stable release and i386 are used.
         """
-        Show Conflicts: of a given package.
-        Usage: "conflicts packagename [--arch i386] [--release etch]"
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'conflicts')
+
+    conflicts = wrap(conflicts, ['something', getopts({'arch':'something',
+                                                       'release':'something'}),
+                                 any('something')])
+
+    def depends(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>]
+
+        Show the packages that are listed as 'Depends' for a given package.
+        By default, the current stable release and i386 are used.
         """
-        release,arch = parse_standard_options( optlist, something )
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'depends')
 
-        c = self.psql.cursor()
-        c.execute( "SELECT conflicts FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s limit 1", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
+    depends = wrap(depends, ['something', getopts({'arch':'something',
+                                                   'release':'something'}),
+                                 any('something')])
 
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Conflicts: %s" % ( package, row[0]) )
+    def recommends(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>]
 
-        
-    conflicts = wrap(conflicts, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ),
-                                 optional( 'something' )] );
-
-    def recommends( self, irc, msg, args, package, optlist, something ):
+        Show the packages that are listed as 'Recommends' for a given package.
+        By default, the current stable release and i386 are used.
         """
-        Show Recommends: of a given package.
-        Usage: "recommends packagename [--arch i386] [--release etch]"
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'recommends')
+
+    recommends = wrap(recommends, ['something', getopts({'arch':'something',
+                                                    'release':'something'}),
+                                   any('something')])
+
+    def suggests(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>]
+
+        Show the packages that are listed as 'Suggests' for a given package.
+        By default, the current stable release and i386 are used.
         """
-        release,arch = parse_standard_options( optlist, something )
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'suggests')
 
-        c = self.psql.cursor()
-        c.execute( "SELECT recommends FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s limit 1", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
+    suggests = wrap(suggests, ['something', getopts({'arch':'something',
+                                                    'release':'something'}),
+                               any('something')])
 
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Recommends: %s" % ( package, row[0]) )
+    def enhances(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>]
 
-        
-    recommends = wrap(recommends, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ),
-                                   optional( 'something' )] );
-
-    def suggests( self, irc, msg, args, package, optlist, something ):
+        Show the packages that are listed as 'Enhances' for a given package.
+        By default, the current stable release and i386 are used.
         """
-        Show Suggests: of a given package.
-        Usage: "suggests packagename [--arch i386] [--release etch]"
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'enhances')
+
+    enhances = wrap(enhances, ['something', getopts({'arch':'something',
+                                                    'release':'something'}),
+                               any('something')])
+
+    def checkdeps(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>] [--type depends|recommends|suggests]
+
+        Check that the dependencies listed by a package are satisfiable for the
+        specified release and architecture.
+        By default, all dependency types with the current stable release and
+        i386 are used.
         """
-        release,arch = parse_standard_options( optlist, something )
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
 
-        c = self.psql.cursor()
-        c.execute( "SELECT suggests FROM packages WHERE package=%(package)s AND (architecture='all' or architecture=%(arch)s) AND release=%(release)s limit 1", 
-                   dict( package=package, 
-                         arch=arch,
-                         release=release) );
+        relation = []
+        for (option, arg) in optlist:
+            if option == 'type':
+                if arg in self.udd.data.relations:
+                    relation.append(arg)
+                else:
+                    irc.error("Unknown relationship type.")
+                    return
 
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s -- Suggests: %s" % ( package, row[0]) )
+        if not relation:
+            relation = self.udd.data.relations
 
-        
-    suggests = wrap(suggests, ['something', getopts( { 'arch':'something',
-                                                         'release':'something' } ),
-                               optional( 'something' ) ] );
-    def bug( self, irc, msg, args, bugno ):
-        """ 
-        Show information about a bug in a given pacage.  
-        Usage: "conflicts packagename"
+        try:
+            status = self.dispatcher.checkdeps(package, release, arch, relation)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, release, arch)
+
+        badlist = []
+        for rel in relation:
+            if status[rel].bad:
+                badlist.append("%s: %s" % (self.bold(rel.title()), str(status[rel].bad)))
+
+        if badlist:
+            irc.reply("Package %s in %s/%s unsatisfiable dependencies: %s." %
+                        (package, release, arch, "; ".join(badlist)))
+        else:
+            irc.reply("Package %s in %s/%s: all dependencies satisfied." %
+                        (package, release, arch))
+
+    checkdeps = wrap(checkdeps, ['something',
+                                  getopts({'arch':'something',
+                                           'release':'something',
+                                           'type':'something'}),
+                                  any('something')])
+
+    def checkinstall(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <i386>] [--release <stable>] [--norecommends]
+
+        Check that the package is installable (i.e. dependencies checked
+        recursively) within the specified release and architecture.
+        By default, recommended packages are checked too and the current
+        stable release and i386 are used.
+        """
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
+
+        withrecommends = True
+        for (option, arg) in optlist:
+            if option == 'norecommends':
+                withrecommends = False
+
+        try:
+            solverh = self.dispatcher.checkInstall(package, release, arch,
+                                              withrecommends)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, release, arch)
+
+        solverh = solverh.flatten()
+        details = []
+        if solverh.depends.satisfied:
+            details.append("all Depends are satisfied")
+        else:
+            details.append("%d packages in the Depends chain are uninstallable"
+                            % len(solverh.depends.bad))
+        if withrecommends:
+            if solverh.recommends.satisfied:
+                details.append("all Recommends are satisfied")
+            else:
+                details.append("%d packages in the Recommends chain are "
+                                "uninstallable" % len(solverh.recommends.bad))
+
+        irc.reply("Package %s on %s/%s: %s" % \
+                    (package, release, arch, "; ".join(details)))
+
+    checkinstall = wrap(checkinstall, ['something',
+                                        getopts({'arch':'something',
+                                                 'release':'something',
+                                                 'norecommends':'' }),
+                                        any('something')])
+
+    def why(self, irc, msg, args, package1, package2, optlist, something):
+        """<package1> <package2> [--arch <i386>] [--release <stable>] [--norecommends]
+
+        Find dependency chains  between the two packages within the specified
+        release and architecture.
+        By default, recommended packages are checked too and the current
+        stable release and i386 are used.
+        """
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
+
+        withrecommends = True
+        for (option, arg) in optlist:
+            if option == 'norecommends':
+                withrecommends = False
+
+        try:
+            chains = self.dispatcher.why(package1, package2, release, arch,
+                                              withrecommends)
+        except PackageNotFoundError:
+            return self.notfound(irc, package1, release, arch)
+
+        details = ""
+        if chains:
+            chaintext = []
+            for c in chains:
+                chaintext.append(unicode(c))
+            details = "Packages %s and %s in %s/%s " \
+                        "are linked by %d chains: %s" % \
+                            (package1, package2, release, arch,
+                                len(chains),  "; ".join(chaintext))
+        else:
+            details= "No dependency chain found between "\
+                        "packages %s and %s in %s/%s." % \
+                            (package1, package2, release, arch)
+
+        irc.reply(details.encode('UTF-8'))
+
+    why= wrap(why, ['something', 'something',
+                                        getopts({'arch':'something',
+                                                 'release':'something',
+                                                 'norecommends':'' }),
+                                        any('something')])
+
+    def _builddeps_formatter(self, bd, bdi):
+        """Format a pair of build-depends lists (build-dep, build-dep-indep)"""
+        def formatRel(rel, longname):
+            """Format the individual relation"""
+            if rel:
+                return u"%s: %s" % (self.bold(longname), unicode(rel))
+            return None
+
+        sbuild = [
+               formatRel(bd,  'Build-Depends'),
+               formatRel(bdi, 'Build-Depends-Indep')
+            ]
+        return [item for item in sbuild if item]
+
+    def _builddeps_status_formatter(self, status):
+        """Format a build-deps status object"""
+        if not status.AllFound():
+            return u"unsatisfiable build dependencies: %s." % \
+                    ";".join(self._builddeps_formatter(status.bd.bad,
+                                                      status.bdi.bad))
+        return u"all build-dependencies satisfied using %s." % \
+                    ', '.join(status.ReleaseMap().keys())
+
+    def checkbuilddeps(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--release <stable>] [--arch <i386>]
+
+        Check that the build-dependencies listed by a package are satisfiable
+        for the specified release and host architecture.
+        By default, the current stable release and i386 are used.
+        """
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
+
+        rel = self.udd.BindRelease(arch=arch, release=release)
+
+        try:
+            status = self.dispatcher.checkBackport(package, rel, rel)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, None, None)
+
+        irc.reply("Package %s in %s/%s: %s" % \
+                        (package, release, arch,
+                        self._builddeps_status_formatter(status)))
+
+    checkbuilddeps = wrap(checkbuilddeps, ['something',
+                                            getopts({'arch':'something',
+                                                     'release':'something'}),
+                                            any('something')])
+
+    def checkbackport(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <i386>] [--verbose]
+
+        Check that the build-dependencies listed by a package in the release
+        specified as "fromrelease" are satisfiable for in "torelease" for the
+        given host architecture.
+        By default, a backport from unstable to the current stable release
+        and i386 are used.
+        """
+        channel = msg.args[0]
+        fromrelease = self.udd.data.clean_release_name(optlist=optlist,
+                            optname='fromrelease',
+                            args=None, default=self.udd.data.devel_release)
+        torelease = self.udd.data.clean_release_name(optlist=optlist,
+                            optname='torelease',
+                            args=None, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                            args=something, default=self.default_arch(channel))
+
+        fr = self.udd.BindRelease(arch=arch, release=fromrelease)
+        # FIXME: should torelease do fallback to allow --to-release lenny-multimedia etc?
+        releases = self.udd.data.list_dependent_releases(torelease,
+                                                     suffixes=['backports'])
+
+        pins = dict(zip(releases, reversed(range(len(releases)))))
+        tr = self.udd.BindRelease(arch=arch,
+                        release=releases, pins=pins)
+
+        try:
+            status = self.dispatcher.checkBackport(package, fr, tr)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, fromrelease, arch)
+
+        irc.reply((u"Backporting package %s in %s→%s/%s: %s" % \
+                    (package, fromrelease, torelease, arch,
+                    self._builddeps_status_formatter(status))).encode('UTF-8'))
+
+        verbose = [option for (option, arg) in optlist if option == 'verbose']
+        if verbose:
+            rm = status.ReleaseMap()
+            reply = []
+            for release in rm.keys():
+                packages = rm[release]
+                reply.append("%s: %s" % (self.bold(release), ",".join([str(p) for p in packages])))
+
+            irc.reply("; ".join(reply), to=msg.nick, private=True)
+
+
+    checkbackport = wrap(checkbackport, ['something',
+                                          getopts({'arch':'something',
+                                                   'fromrelease':'something',
+                                                   'torelease':'something',
+                                                   'verbose':''}),
+                                         any('something')])
+
+    def bug(self, irc, msg, args, bugno):
+        """
+        Show information about a bug in a given pacage.
+        Usage: "bug bugnumber"
         """
         c = self.psql.cursor()
         c.execute( "SELECT package, status, severity, title, last_modified FROM bugs WHERE id=%(bugno)s limit 1", dict( bugno=bugno ) )
@@ -396,102 +764,91 @@ class Judd(callbacks.Plugin):
             if ds:
                 d = ds[0]
             else:
-                d=""
+                d = ""
             irc.reply( "Bug #%d (%s) %s -- %s; Severity: %s; Last Modified: %s" % ( bugno, row[1], row[0], d, row[2], row[4]) )
 
-        
-    bug = wrap(bug, ['int'] )
+    #bug = wrap(bug, ['int'] )
 
-    def popcon( self, irc, msg, args, package ):
+    def popcon(self, irc, msg, args, package):
+        """<packagename>
+
+        Show the popcon (popularity contents) data for a given binary package.
+        http://popcon.debian.org/FAQ
         """
-        Return the popcon data  of the given package. 
-        Usage: "popcon packagename"
+        try:
+            popdata = self.dispatcher.popcon(package)
+        except PackageNotFoundError:
+            return self.notfound(irc, package, None, None)
+
+        irc.reply("Popcon data for %s: inst: %d, vote: %d, "
+                    "old: %d, recent: %d, nofiles: %d" %
+                    (package, popdata['insts'], popdata['vote'],
+                    popdata['olde'], popdata['recent'], popdata['nofiles']))
+
+    popcon = wrap(popcon, ['something'])
+
+    def maint(self, irc, msg, args, package, version):
+        """<packagename> [<version>]
+
+        Return the names of the person who uploaded the source package, the
+        person who changed the package prior to upload and the maintainer of
+        the specified source package. If version is omitted, the most recent
+        upload is used. Imperfect binary-to-source package mapping will be
+        attempted.
         """
-        c = self.psql.cursor()
 
-        c.execute( "SELECT insts,vote,olde,recent,nofiles FROM popcon where package=%(package)s", dict( package=package ) )
+        release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
+                            default=self.udd.data.devel_release)
 
-        row = c.fetchone()
-        if row:
-            irc.reply( "Popcon data for %s: inst: %d, vote: %d, old: %d, recent: %d, nofiles: %d" % (package, row[0],row[1],row[2],row[3],row[4]) )
-        else:
-            irc.reply( "no popcon data for %s" % (package) )
-
-    popcon = wrap(popcon, ['something'] )
-        
-    def uploader( self, irc, msg, args, package, version ):
-        """
-        Return the gpg keyid of the uploader of the given package version. 
-        Usage: "uploader package [version]"
-        If version is omitted, the most recent upload is used.
-        """
-        c = self.psql.cursor()
-
-        c.execute( "SELECT key_id FROM upload_history where package=%(package)s and version=%(version)s", dict( package=package, version=version ) )
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "Uploader of %s %s: %s" % (package, version, row[0]) )
-        else:
-            irc.reply( "no record of %s %s" % (package,version) )
-
-    uploader = wrap(uploader, ['something', optional( 'something' )] )
-        
-    def changer( self, irc, msg, args, package, version ):
-        """
-        Return the person listed as the changer in the uploaded .changes file.
-        Usage: "changer package [version]" -- 
-        If version is omitted, the most recently changed version is used.
-        """
-        c = self.psql.cursor()
-
-        if( version ):
-            c.execute( "SELECT changed_by, version FROM upload_history where package=%(package)s and version=%(version)s", dict( package=package, version=version ) )
-        else:
-            c.execute( "SELECT changed_by, version FROM upload_history where package=%(package)s order by date desc", dict( package=package, version=version ) )
-
-        row = c.fetchone()
-        if row:
-            irc.reply( "%s %s was changed by: %s" % (package, row[1], row[0]) )
-        else:
-            if( version ):
-                irc.reply( "no record of %s %s" % (package,version) )
+        try:
+            pack = self.udd.BindSourcePackage(package, release)
+            uploads = self.dispatcher.uploads(pack, max=1, version=version)
+        except PackageNotFoundError:
+            if version:
+                irc.reply("Sorry, there is no record of '%s', version '%s'." %
+                                    (package, version))
             else:
-                irc.reply( "no record of %s" % (package) )
+                irc.reply("Sorry, there is no record of '%s'." % package)
+            return
 
-    changer = wrap(changer, ['something', optional( 'something' )] )
-        
+        u = uploads[0]
+        reply = "Package %s version %s was uploaded by %s on %s, " \
+                    "last changed by %s and maintained by %s." % \
+                (package, u['version'], u['signed_by_name'],
+                    u['date'].date(),
+                    u['changed_by_name'], u['maintainer_name'])
+        if u['nmu']:
+            reply += " (non-maintainer upload)"
+        irc.reply(reply)
 
-# TODO: this should use package.gz data (instead of?  as well as?)
-    def maintainer( self,irc,msg,args,package,version ):
+    maint      = wrap(maint, ['something', optional('something')])
+
+    def recent(self, irc, msg, args, package, version):
+        """<packagename>
+
+        Return the dates and versions of recent uploads of the specified source
+        package.
+        Imperfect binary-to-source package mapping will be tried too.
         """
-        Return the listed maintainer of a package.
-        Usage: "{maintainer,maint} package [version]"
-        If version is omitted, the most recent upload is used.
-        """
-        c = self.psql.cursor()
+        release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
+                            default=self.udd.data.devel_release)
 
-        if version:
-            c.execute( "SELECT maintainer FROM upload_history where package=%(package)s and version=%(version)s", dict( package=package, version=version ) )
-            row = c.fetchone()
-            if row:
-                irc.reply( "%s is listed as maintainer of %s %s" % (row[0], package, version ) )
-            else:
-                irc.reply( "no record of %s %s" % (package,version) )
-        else:
-            c.execute( "SELECT maintainer,version FROM upload_history where package=%(package)s order by date desc limit 1", dict( package=package, version=version ) )
-            row = c.fetchone()
-            if row:
-                irc.reply( "%s is listed as maintainer of %s %s" % (row[0], package, row[1] ) )
-            else:
-                irc.reply( "no record of %s" % (package) )
+        try:
+            p = self.udd.BindSourcePackage(package, release)
+            uploads = self.dispatcher.uploads(p, max=10, version=version)
+        except PackageNotFoundError:
+            irc.reply("Sorry, there is no record of source package '%s'." %
+                            package)
+            return
 
+        uploads = ["%s %s" % (self.bold(u['version']), u['date'].date()) for u in uploads]
+        reply = "Package %s recent uploads: %s." % \
+                    (package, ", ".join(uploads))
+        irc.reply(reply)
 
-    maint = wrap(maintainer, ['something', optional( 'something' )] )
-    maintainer = wrap(maintainer, ['something', optional( 'something' )] )
-        
-        
-    def rcbugs( self, irc, msg, args, package ):
+    recent   = wrap(recent, ['something', optional('something')])
+
+    def rcbugs(self, irc, msg, args, package):
         """
         Return the release critical bugs for a given package.
         Usage: "rcbugs packagename"
@@ -505,15 +862,114 @@ class Judd(callbacks.Plugin):
         else:
             c.execute( "SELECT id FROM bugs WHERE package=%(package)s AND severity in ('critical', 'grave', 'serious' ) and status not in ('done,fixed') order by bugs.id", dict( package=package ) )
 
-        reply = "RC bugs in %s:" % package;
+        reply = "RC bugs in %s:" % package
         for row in c.fetchall():
             reply += " %d" % row[0]
 
         irc.reply( reply )
-        
-    rcbugs = wrap(rcbugs, ['something'] )
+
+    #rcbugs = wrap(rcbugs, ['something'] )
+
+    def file(self, irc, msg, args, glob, optlist, something):
+        """<pattern> [--arch <i386>] [--release <stable>] [--regex | --exact]
+
+        Returns packages that include files matching <pattern> which, by
+        default, is interpreted as a glob (see glob(7)).
+        If --regex is given, the pattern is treated as a extended regex
+        (see regex(7); note not PCRE!).
+        If --exact is given, the exact filename is required.
+        The current stable release and i386 are searched by default.
+        """
+        # Based on the file command in the Debian plugin by James Vega
+
+        channel = msg.args[0]
+        release = self.udd.data.clean_release_name(optlist=optlist,
+                        args=something, default=self.default_release(channel))
+        arch = self.udd.data.clean_arch_name(optlist=optlist,
+                        args=something, default=self.default_arch(channel))
+
+        mode = 'glob'
+        for (option, arg) in optlist:
+            if option == 'exact':
+                mode = 'exact'
+            elif option == 'regex' or option == 'regexp':
+                mode = 'regex'
+
+        # Convert the glob/re/fixed string to a regexp.
+        # Strip leading / since they're not in the index anyway.
+        # Contents file is whitespace delimited.
+        regexp = glob
+        if mode == 'glob':
+            regexp = fnmatch.translate(regexp)
+            #print regexp
+            if regexp.startswith(r'\/'):
+                regexp = '^' + regexp[2:]
+            elif not regexp.startswith(r'.*'):
+                regexp = '.*' + regexp
+            if regexp.endswith(r'$'):
+                regexp = regexp[:-1] + r'[[:space:]]'
+            elif regexp.endswith(r'\Z(?ms)'):
+                regexp = regexp[:-7] + r'[[:space:]]'
+        elif mode == 'regex':
+            if regexp.startswith(r'/'):
+                regexp = '^' + regexp[1:]
+            if regexp.endswith(r'$'):
+                regexp = regexp[:-1] + r'[[:space:]]'
+        else:
+            regexp = regexp = r'^%s[[:space:]]' % re.escape(regexp.lstrip(r'/'))
+
+        self.log.debug("RE=%s" % regexp)
+
+        path = os.path.join(conf.supybot.directories.data(),
+                            self.registryValue('base_path'))
+
+        contents = debcontents.contents_file.contents_file(path, release, arch,
+                                            ['main', 'contrib', 'non-free'])
+
+        try:
+            packages = contents.search(regexp)
+        except debcontents.contents_file.ContentsError, e:
+            self.log.error("File search for '%s' produced re '%s' "
+                            "and errors: %s",  glob, regexp, e)
+            irc.error("Sorry, an error occurred trying to search for that "
+                        "file. Further details have been logged.")
+            return
+
+        if len(packages) == 0:
+            irc.reply('No packages in %s/%s were found with that file.' % \
+                  (release, arch))
+        else:
+            s = packages.to_string(self.bold)
+            truncated =  ""
+            if packages.results_truncated:
+                truncated = "[truncated] "
+            irc.reply("Search for %s in %s/%s: %s%s" % \
+                      (glob, release, arch, truncated, s))
+
+    file = wrap(file, ['something',
+                        getopts({'arch':'something',
+                                'release':'something',
+                                'regex':'',
+                                'regexp':'',
+                                'exact':''
+                                }),
+                       optional('something')
+                       ])
+
+    def bold(self, s):
+        """return the string in bold markup if required"""
+        if self.registryValue('bold', dynamic.channel):
+            return ircutils.bold(s)
+        return s
+
+    def default_release(self, channel):
+        """the release that is the default for the current channel"""
+        return self.registryValue('default_release', channel)
+
+    def default_arch(self, channel):
+        """the architecture that is the default for the current channel"""
+        return self.registryValue('default_arch', channel)
 
 Class = Judd
-
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

@@ -99,8 +99,8 @@ done
 
 
 echo "I: Making pcimap"
-DEPMODARGS=$(dpkg --compare-versions $(depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m)
-depmod $DEPMODARGS $KVER
+DEPMODARGS=$(dpkg --compare-versions $(/sbin/depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m)
+/sbin/depmod $DEPMODARGS $KVER
 
 OUTFILE="modules.pcimap-$NAME-extras"
 echo "I: Copying pcimap to '$OUTFILE'"
@@ -110,16 +110,21 @@ cp /lib/modules/*/modules.pcimap $OUTFILE
 # Extra step to get the nvidia driver's xorg pci-id map
 aptitude -o quiet=1000 download nvidia-glx > /dev/null
 dpkg -x nvidia-glx*.deb /
+# zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
+#     awk '/^Appendix H/,EOF' | 
+#     awk '/^Appendix A/,EOF' | 
+#     awk '//{print}; /^Below are the legacy/{exit}' | 
+#     sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia.ids
+# zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
+#     awk '/^Appendix H/ {body=1;next}
+#          body!=1 {next}
+#          /^Appendix A/,/^Below are the legacy/' | 
+#     sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia.ids
 zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
-    awk '/^Appendix H/,EOF' | 
-    awk '/^Appendix A/,EOF' | 
-    awk '//{print}; /^Below are the legacy/{exit}' | 
-    sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia.ids
+    awk '/^A1/,/^Below are the legacy/' | 
+    sed -n 's/.*0x\(....\).*/10DE\1/p' > nvidia.ids
 
 zcat /usr/share/doc/nvidia-glx/README.txt.gz | 
-    awk '/^Appendix H/,EOF' | 
-    awk '/^Appendix A/,EOF' | 
-    awk '/^Below are the legacy/,EOF' | 
-    awk '//{print}; /^____/{exit}' | 
-    sed -n 's/.*0x\(....\)$/10DE\1/p' > nvidia-legacy.ids
+    awk '/^Below are the legacy/,/^____/' | 
+    sed -n 's/.*0x\(....\).*/10DE\1/p' > nvidia-legacy.ids
 

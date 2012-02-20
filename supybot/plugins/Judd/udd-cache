@@ -1,0 +1,173 @@
+#!/usr/bin/python
+#
+# Copyright (c) 2010-2011  Stuart Prescott
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   * Redistributions of source code must retain the above copyright notice,
+#     this list of conditions, and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright notice,
+#     this list of conditions, and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of the author of this software nor the name of
+#     contributors to this software may be used to endorse or promote products
+#     derived from this software without specific prior written consent.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+###
+
+from optparse import OptionParser, OptionGroup
+from posoptparse.posoptiongroup import PosOptionGroup
+
+from uddcache.cli import Cli
+
+
+__version__ = 0.1
+
+
+def main():
+#    parser = PosOptionParser()
+    usage = "usage: %prog command package [options]"
+    parser = OptionParser(usage=usage,
+                version="%%prog %s" % __version__,
+                description="%prog queries an "
+                    "Ultimate Debian Database instance"
+                    "to make it possible to perform simple package-related "
+                    "queries on architectures and releases that are would "
+                    "not otherwise be available in your local apt cache. ",
+                epilog="")
+
+    # Commands
+    commands = PosOptionGroup(parser, "Commands",
+                "Exactly one of these commands must be specified to "
+                "determine what %prog will do.")
+    commands.add_option("--info",
+                help="display basic package info about a package; "
+                    "like 'apt-cache show'")
+    commands.add_option("--names",
+                help="search package names for a pattern (glob); "
+                    "like 'aptitude search ~n'")
+    commands.add_option("--versions",
+                help="list versions of a binary package in the archive; "
+                    "only the specified architecture is searched. "
+                    "Prefix the search term with src: "
+                    "to search source packages.")
+    commands.add_option("--archs",
+                help="list the archictectures that have a binary package")
+    commands.add_option("--provides",
+                help="list the packages Provided by a binary package")
+    commands.add_option("--rprovides",
+                help="list which packages Provide a given package")
+    commands.add_option("--relations", "--depends", "--recommends",
+                        "--suggests", "--enhances", "--conflicts",
+                help="list the relationships of the specified package")
+    commands.add_option("--binaries", "--source",
+                help="show which source package generated the binary package "
+                    "or list the binaries from a particular source package.")
+    commands.add_option("--recent", "--maint",
+                help="show information about recent uploads and who "
+                    "maintains the package. 'maint' can also be given "
+                    "a specific version that it should query")
+    commands.add_option("--popcon",
+                help="show popcon data for the package")
+    commands.add_option("--checkdeps",
+                help="check whether the relationships declared by the "
+                    "package can be fulfilled. See also --type.")
+    commands.add_option("--checkinstall",
+                help="check whether a package and all its dependencies are "
+                    "installable; see also --with-recommends")
+    commands.add_option("--why",
+                help="look for relationship links between two packages; "
+                    "see also --with-recommends")
+    commands.add_option("--checkbuilddeps",
+                help="check whether the declared build-dependencies can"
+                    "be fulfilled.")
+    commands.add_option("--checkbackport",
+                help="check whether the build-depends listed for a package "
+                    "allow it to be backported from one release to another. "
+                    "See --fromrelease --torelease")
+    parser.add_option_group(commands)
+
+    # Common options
+    common = OptionGroup(parser, "General Options",
+                    "These options apply to (nearly) all commands.")
+    common.add_option("--distro", dest='distro', default='debian',
+                  help="the distribution to be queried in searches "
+                        "(examples: --distro=debian --distro=ubuntu)")
+    common.add_option("--release", dest='release',
+                  help="the release to be queried in searches "
+                        "(examples: --release=sid --release=testing)")
+    common.add_option("--arch", dest='arch',
+                  help="the architecture to be queried in searches "
+                        "(examples: --arch=i386 --arch=amd64")
+    common.add_option("--config", dest='config',
+                  metavar="FILE", default=None,
+                  help="the UDD database connection configuration file")
+    common.add_option("-v", "--verbose",
+                      action="store_true", dest="verbose", default=False,
+                      help="include additional information in output")
+    parser.add_option_group(common)
+
+    # Options for dependency analysis and checking
+    dependencies = OptionGroup(parser, "Dependency Options",
+                    "These options apply to commands that look at the "
+                    "dependency resolution or dependency checking.")
+    dependencies.add_option("--with-recommends", "--withrecommends", "-r",
+                  dest='withrecommends',
+                  action='store_true',
+                  help="include recommended packages in the "
+                        "dependency analysis")
+    dependencies.add_option("--type", dest='deptype', action="append",
+                  metavar="TYPE",
+                  choices=['depends', 'recommends', 'suggests'],
+                  help="specify which type of dependencies should be "
+                    "checked. One or of depends, recommends, suggests "
+                    "may be specified; repeat the option to include"
+                    "additional relations."
+                    "by default all are checked.")
+    parser.add_option_group(dependencies)
+
+    # Options for backporting analysis
+    backport = OptionGroup(parser, "Backporting Options",
+                    "These options change how the backport analysis is "
+                    "performed.")
+    backport.add_option("--from-release",
+                  dest="fromrelease",
+                  help="select the release from which the source package "
+                    "is to be taken")
+    backport.add_option("--to-release",
+                  dest="torelease",
+                  help="select the release in which the package is to "
+                    "built. (A -backports release will be automatically "
+                    "included in the analysis if it exists in the distro.")
+    parser.add_option_group(backport)
+
+    (options, args) = parser.parse_args()
+    if len(args) < 2:
+        parser.error("both a command and a package or search term "
+                    "must be specified")
+
+    runner = Cli(config=options.config, options=options)
+
+    command = args.pop(0)
+    package = args.pop(0)
+
+    if not runner.is_valid_command(command):
+        parser.error("unknown command '%s'" % command)
+    runner.run(command, package, args)
+
+if __name__ == "__main__":
+    main()
