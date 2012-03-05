@@ -839,171 +839,191 @@ class Judd(callbacks.Plugin):
 
     recent   = wrap(recent, ['something', optional('something')])
 
-    def bug(self, irc, msg, args, search, titlesearch):
-        """<number>|<package> [title]
+    class bug(callbacks.Commands):
+        def __init__(self, irc):
+            self.__parent = super(callbacks.Commands, self)
+            self.__parent.__init__(irc)
+            self._found_conf = False
 
-        Show bug information about from the Debian Bug Tracking System,
-        searching by bug number, package name or package name and title.
-        """
-        search = search.replace('#', '')
-        if search.isdigit():
-            self._bug_number(irc, int(search))
-        elif not titlesearch:
-            self._bug_summary(irc, search)
-        else:
-            self._bug_title_search(irc, msg, search, titlesearch)
+        def _find_conf(self, irc):
+            if self._found_conf:
+                return
+            outer = irc.getCallback('Judd')
+            self.udd = outer.udd
+            self.dispatcher = outer.dispatcher
+            self.bold = outer.bold
+            self._found_conf = True
 
-    bug = wrap(bug, ['something', optional('something')])
+        def bug(self, irc, msg, args, search, titlesearch):
+            """<number>|<package> [title]
 
-    def rm(self, irc, msg, args, search):
-        """<package>
-
-        Looks for removal reasons for a package
-        """
-        bugs = self.dispatcher.rm(search)
-        if bugs:
-            self._show_bug(irc, bugs[0])
-        else:
-            irc.reply("Sorry, no removal reasons were found.")
-
-    rm = wrap(rm, ['something'])
-
-    def wnpp(self, irc, msg, args, search, optlist):
-        """<package>
-
-        Looks for WNPP (work-needed and prospective package) bugs
-        for a package
-        """
-        bug_type = None
-        for (option, arg) in optlist:
-            if option == 'type' and arg.upper() in uddcache.bts.wnpp_types:
-                bug_type = arg.upper()
-        bugs = self.dispatcher.wnpp(search, bug_type)
-        if bugs:
-            self._show_bug(irc, bugs[0])
-        else:
-            irc.reply("Sorry, no wnpp bugs were found.")
-
-    wnpp = wrap(wnpp, ['something',
-                        getopts({'type':'something'})])
-
-    def _bug_number(self, irc, bugno):
-        try:
-            bug = self.dispatcher.bug(bugno, True)
-        except BugNotFoundError:
-            irc.reply("Sorry, the requested bug was not found.")
-            return
-        return self._show_bug(irc, bug)
-
-    def _bug_title_search(self, irc, msg, package, title):
-        bugs = self.dispatcher.bug_package_search(package, title, verbose=True, archived=False)
-        if len(bugs) > 10:
-            irc.reply("Matching bugs: %s" % ", ".join(["#%d" % b.id for b in bugs]))
-        else:
-            if not bugs:
-                irc.reply("Sorry, no bugs match that search criterion.", to=msg.nick, private=True)
-            for b in bugs:
-                irc.reply(self._format_bug(b).encode('UTF-8'), to=msg.nick, private=True)
-
-    def _format_bug(self, bug):
-        title = bug.title.splitlines()
-        if title:
-            title = title[0]
-        else:
-            title = ""
-
-        status = [bug.readable_status]
-        [status.append(t) for t in bug.tags if t not in status]
-
-        return u"Bug http://bugs.debian.org/%d in %s (%s): «%s»; " \
-                    "severity: %s; opened: %s; last modified: %s." % \
-                    (bug.id, bug.package, ", ".join(status), title,
-                    bug.severity, bug.arrival.date(), bug.last_modified.date())
-
-    def _show_bug(self, irc, bug):
-        irc.reply(self._format_bug(bug).encode('UTF-8'))
-
-    def _bug_summary(self, irc, package):
-        bug_count = []
-        bugs = self.dispatcher.bug_package(package, verbose=False, archived=False, filter={'status': ('forwarded', 'pending', 'pending-fixed')})
-        for s in uddcache.bts.severities:
-            bs = [b for b in bugs if b.severity == s]
-            if bs:
-                bug_count.append("%s: %d" % (s, len(bs)))
-
-        bugs = self.dispatcher.wnpp(package)
-        for t in uddcache.bts.wnpp_types:
-            bt = [b for b in bugs if b.wnpp_type == t]
-            if bt:
-                bug_count.append("%s: #%d" % (bt[0].wnpp_type, bt[0].id))
-
-        bugs = self.dispatcher.rm(package, False)
-        if bugs:
-            bug_count.append("RM: #%d" % bugs[0].id)
-
-        if not bug_count:
-            irc.reply("No bugs were found in package %s." % package)
-            return
-
-        irc.reply((u"Bug summary for package %s: %s" % \
-                    (package, ", ".join(bug_count))
-                  ).encode('UTF-8'))
-
-    def rcbugs(self, irc, msg, args, package):
-        """<package>
-
-        List the release critical bugs for a given source package. Binary
-        package names will be mapped to source package names.
-        """
-        bugs = self.dispatcher.rcbugs(package, True)
-        if not bugs:
-            irc.reply("No release critical bugs were found in "
-                        "package '%s'." % package)
-            return
-
-        buglist = []
-        for bug in bugs:
-            status = [bug.readable_status]
-            [status.append(t) for t in bug.tags if t not in status]
-            buglist.append("#%d (%s)" % (bug.id, ", ".join(status)))
-
-        irc.reply((u"Release critical bugs in package %s (%d): %s" % \
-                    (package, len(bugs), ", ".join(buglist))
-                  ).encode('UTF-8'))
-
-    rcbugs = wrap(rcbugs, ['something'] )
-
-    def rfs(self, irc, msg, args, package):
-        """<package>
-
-        List RFS (request for sponsorship) bugs for a package. Imperfect
-        substring matching against the bug title is performed."""
-        bugfilter={'title': package,
-                    'status': ('forwarded', 'pending', 'pending-fixed')}
-        bugs = self.dispatcher.bug_package("sponsorship-requests",
-                                       verbose=True, # always get tags
-                                       archived=False,
-                                       filter=bugfilter)
-        if not bugs:
-            return irc.reply("Sorry, no open RFS bugs found for that %s."
-                             % package)
-        if len(bugs) > 3:
-            return irc.reply("Lots of RFS bugs match that query: %s" %
-                             ", ".join(["#%d" % b.id for b in bugs]))
-        s = []
-        for bug in bugs:
-            status = [bug.readable_status]
-            [status.append(t) for t in bug.tags if t not in status]
-            if bug.owner:
-                contacts = u"%s/%s" % (bug.submitter, bug.owner)
+            Show bug information about from the Debian Bug Tracking System,
+            searching by bug number, package name or package name and title.
+            """
+            self._find_conf(irc)
+            search = search.replace('#', '')
+            if search.isdigit():
+                self._bug_number(irc, int(search))
+            elif not titlesearch:
+                self._bug_summary(irc, search)
             else:
-                contacts = bug.submitter
-            s.append("#%s (%s): %s (%s)" % \
-                 (self.bold(bug.id), ", ".join(status),
-                    bug.title.splitlines()[0], contacts))
-        irc.reply("; ".join(s))
+                self._bug_title_search(irc, msg, search, titlesearch)
 
-    rfs = wrap(rfs, ['something'])
+        bug = wrap(bug, ['something', optional('something')])
+
+        def rm(self, irc, msg, args, search):
+            """<package>
+
+            Looks for removal reasons for a package
+            """
+            self._find_conf(irc)
+            bugs = self.dispatcher.rm(search)
+            if bugs:
+                self._show_bug(irc, bugs[0])
+            else:
+                irc.reply("Sorry, no removal reasons were found.")
+
+        rm = wrap(rm, ['something'])
+
+        def wnpp(self, irc, msg, args, search, optlist):
+            """<package>
+
+            Looks for WNPP (work-needed and prospective package) bugs
+            for a package
+            """
+            self._find_conf(irc)
+            bug_type = None
+            for (option, arg) in optlist:
+                if option == 'type' and arg.upper() in uddcache.bts.wnpp_types:
+                    bug_type = arg.upper()
+            bugs = self.dispatcher.wnpp(search, bug_type)
+            if bugs:
+                self._show_bug(irc, bugs[0])
+            else:
+                irc.reply("Sorry, no wnpp bugs were found.")
+
+        wnpp = wrap(wnpp, ['something',
+                            getopts({'type':'something'})])
+
+        def _bug_number(self, irc, bugno):
+            try:
+                bug = self.dispatcher.bug(bugno, True)
+            except BugNotFoundError:
+                irc.reply("Sorry, the requested bug was not found.")
+                return
+            return self._show_bug(irc, bug)
+
+        def _bug_title_search(self, irc, msg, package, title):
+            bugs = self.dispatcher.bug_package_search(package, title, verbose=True, archived=False)
+            if len(bugs) > 10:
+                irc.reply("Matching bugs: %s" % ", ".join(["#%d" % b.id for b in bugs]))
+            else:
+                if not bugs:
+                    irc.reply("Sorry, no bugs match that search criterion.", to=msg.nick, private=True)
+                for b in bugs:
+                    irc.reply(self._format_bug(b).encode('UTF-8'), to=msg.nick, private=True)
+
+        def _format_bug(self, bug):
+            title = bug.title.splitlines()
+            if title:
+                title = title[0]
+            else:
+                title = ""
+
+            status = [bug.readable_status]
+            [status.append(t) for t in bug.tags if t not in status]
+
+            return u"Bug http://bugs.debian.org/%d in %s (%s): «%s»; " \
+                        "severity: %s; opened: %s; last modified: %s." % \
+                        (bug.id, bug.package, ", ".join(status), title,
+                        bug.severity, bug.arrival.date(), bug.last_modified.date())
+
+        def _show_bug(self, irc, bug):
+            irc.reply(self._format_bug(bug).encode('UTF-8'))
+
+        def _bug_summary(self, irc, package):
+            bug_count = []
+            bugs = self.dispatcher.bug_package(package, verbose=False, archived=False, filter={'status': ('forwarded', 'pending', 'pending-fixed')})
+            for s in uddcache.bts.severities:
+                bs = [b for b in bugs if b.severity == s]
+                if bs:
+                    bug_count.append("%s: %d" % (s, len(bs)))
+
+            bugs = self.dispatcher.wnpp(package)
+            for t in uddcache.bts.wnpp_types:
+                bt = [b for b in bugs if b.wnpp_type == t]
+                if bt:
+                    bug_count.append("%s: #%d" % (bt[0].wnpp_type, bt[0].id))
+
+            bugs = self.dispatcher.rm(package, False)
+            if bugs:
+                bug_count.append("RM: #%d" % bugs[0].id)
+
+            if not bug_count:
+                irc.reply("No bugs were found in package %s." % package)
+                return
+
+            irc.reply((u"Bug summary for package %s: %s" % \
+                        (package, ", ".join(bug_count))
+                      ).encode('UTF-8'))
+
+        def rc(self, irc, msg, args, package):
+            """<package>
+
+            List the release critical bugs for a given source package. Binary
+            package names will be mapped to source package names.
+            """
+            self._find_conf(irc)
+            bugs = self.dispatcher.rcbugs(package, True)
+            if not bugs:
+                irc.reply("No release critical bugs were found in "
+                            "package '%s'." % package)
+                return
+
+            buglist = []
+            for bug in bugs:
+                status = [bug.readable_status]
+                [status.append(t) for t in bug.tags if t not in status]
+                buglist.append("#%d (%s)" % (bug.id, ", ".join(status)))
+
+            irc.reply((u"Release critical bugs in package %s (%d): %s" % \
+                        (package, len(bugs), ", ".join(buglist))
+                      ).encode('UTF-8'))
+
+        rc = wrap(rc, ['something'] )
+
+        def rfs(self, irc, msg, args, package):
+            """<package>
+
+            List RFS (request for sponsorship) bugs for a package. Imperfect
+            substring matching against the bug title is performed."""
+            self._find_conf(irc)
+            bugfilter={'title': package,
+                        'status': ('forwarded', 'pending', 'pending-fixed')}
+            bugs = self.dispatcher.bug_package("sponsorship-requests",
+                                           verbose=True, # always get tags
+                                           archived=False,
+                                           filter=bugfilter)
+            if not bugs:
+                return irc.reply("Sorry, no open RFS bugs found for that %s."
+                                 % package)
+            if len(bugs) > 3:
+                return irc.reply("Lots of RFS bugs match that query: %s" %
+                                 ", ".join(["#%d" % b.id for b in bugs]))
+            s = []
+            for bug in bugs:
+                status = [bug.readable_status]
+                [status.append(t) for t in bug.tags if t not in status]
+                if bug.owner:
+                    contacts = u"%s/%s" % (bug.submitter, bug.owner)
+                else:
+                    contacts = bug.submitter
+                s.append("#%s (%s): %s (%s)" % \
+                     (self.bold(bug.id), ", ".join(status),
+                        bug.title.splitlines()[0], contacts))
+            irc.reply("; ".join(s))
+
+        rfs = wrap(rfs, ['something'])
 
     def file(self, irc, msg, args, glob, optlist, something):
         """<pattern> [--arch <i386>] [--release <stable>] [--regex | --exact]

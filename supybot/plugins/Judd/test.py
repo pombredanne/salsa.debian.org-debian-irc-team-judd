@@ -192,28 +192,28 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('bug src:pyxplot nosuchtitle')      # title search; no matches
 
     def testRcBugs(self):
-        self.assertNotError('rcbugs pyxplot')                   # no rc bugs; none found
-        self.assertNotError('rcbugs eglibc')                    # rc bugs; match via source package name
-        self.assertNotError('rcbugs libc6')                    # rc bugs; match via binary package name
-        self.assertNotError('rcbugs nosuchpackage')             # package not found; no such package in the archive
+        self.assertNotError('bug rc pyxplot')                   # no rc bugs; none found
+        self.assertNotError('bug rc eglibc')                    # rc bugs; match via source package name
+        self.assertNotError('bug rc libc6')                    # rc bugs; match via binary package name
+        self.assertNotError('bug rc nosuchpackage')             # package not found; no such package in the archive
 
     def testRm(self):
-        self.assertNotError('rm sun-java6')                    # removed from archive; removal reason found
-        self.assertNotError('rm nosuchpackage')                # package doesn't exist; no removal reason found
-        self.assertNotError('rm pyxplot')                      # package not removed; no removal reason found
+        self.assertNotError('bug rm sun-java6')                    # removed from archive; removal reason found
+        self.assertNotError('bug rm nosuchpackage')                # package doesn't exist; no removal reason found
+        self.assertNotError('bug rm pyxplot')                      # package not removed; no removal reason found
 
     def testWnpp(self):
-        self.assertNotError('wnpp levmar')                     # RFP filed; RFP details displayed
-        self.assertNotError('wnpp nosuchpackage')              # no WNPP bug exists; no bug displayed
-        self.assertNotError('wnpp a')                          # no WNPP bug exists; no bug displayed
-        self.assertNotError('wnpp levmar --type rfp')          # explicitly require RFP bug; display RFP bug
-        self.assertNotError('wnpp levmar --type o')            # explicitly require O bug; no bug displayed
-        self.assertNotError('wnpp levmar --type nosuchtype')   # bogus type given; type ignored
+        self.assertNotError('bug wnpp levmar')                     # RFP filed; RFP details displayed
+        self.assertNotError('bug wnpp nosuchpackage')              # no WNPP bug exists; no bug displayed
+        self.assertNotError('bug wnpp a')                          # no WNPP bug exists; no bug displayed
+        self.assertNotError('bug wnpp levmar --type rfp')          # explicitly require RFP bug; display RFP bug
+        self.assertNotError('bug wnpp levmar --type o')            # explicitly require O bug; no bug displayed
+        self.assertNotError('bug wnpp levmar --type nosuchtype')   # bogus type given; type ignored
 
     def testRfs(self):
-        self.assertNotError('rfs -')                           # Lots of RFS match; only summary displayed
-        self.assertNotError('rfs sks')                         # One RFS match; show bug summary #FIXME: fragile
-        self.assertNotError('rfs nosuchpackage')               # No RFS match; no bug displayed
+        self.assertNotError('bug rfs -')                           # Lots of RFS match; only summary displayed
+        self.assertNotError('bug rfs sks')                         # One RFS match; show bug summary #FIXME: fragile
+        self.assertNotError('bug rfs nosuchpackage')               # No RFS match; no bug displayed
 
     def testFile(self):
         # TODO: test other architectures and releases as well
