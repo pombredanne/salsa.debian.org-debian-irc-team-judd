@@ -1032,7 +1032,7 @@ class Judd(callbacks.Plugin):
                                            archived=False,
                                            filter=bugfilter)
             if not bugs:
-                return irc.reply("Sorry, no open RFS bugs found for that %s."
+                return irc.reply("Sorry, no open RFS bugs found for '%s'."
                                  % package)
             if len(bugs) > 3:
                 return irc.reply("Lots of RFS bugs match that query: %s" %
