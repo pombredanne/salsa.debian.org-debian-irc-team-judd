@@ -43,7 +43,7 @@ import supybot.callbacks as callbacks
 import re
 import psycopg2
 import psycopg2.extras
-
+import time
 
 import os
 import fnmatch
@@ -844,14 +844,18 @@ class Judd(callbacks.Plugin):
             self.__parent = super(callbacks.Commands, self)
             self.__parent.__init__(irc)
             self._found_conf = False
+            self.throttle = RequestThrottle()
 
         def _find_conf(self, irc):
             if self._found_conf:
                 return
             outer = irc.getCallback('Judd')
+            self.registryValue = outer.registryValue
             self.udd = outer.udd
             self.dispatcher = outer.dispatcher
             self.bold = outer.bold
+            self.log = outer.log
+            self.throttle.log = outer.log
             self._found_conf = True
 
         def bug(self, irc, msg, args, search, titlesearch):
@@ -863,13 +867,35 @@ class Judd(callbacks.Plugin):
             self._find_conf(irc)
             search = search.replace('#', '')
             if search.isdigit():
-                self._bug_number(irc, int(search))
+                self._bug_number(irc, int(search), False)
             elif not titlesearch:
                 self._bug_summary(irc, search)
             else:
                 self._bug_title_search(irc, msg, search, titlesearch)
 
         bug = wrap(bug, ['something', optional('something')])
+
+        def autobug(self, irc, msg, args, search):
+            """<number>
+
+            Show information about a bug from the Debian Bug Tracking System,
+            limiting how often the information will be repeated.
+            """
+            self._find_conf(irc)
+            search = search.replace('#', '')
+            if search.isdigit():
+                channel = msg.args[0]
+                if (self.throttle.permit(msg, search)) \
+                    and not re.search(self.registryValue('auto_bug_ignore_re', channel), msg.nick):
+                    self._bug_number(irc, int(search), True)
+                self.throttle.record(msg,
+                        self.registryValue('auto_bug_throttle', channel),
+                        search)
+            else:
+                # should never get here; just log it
+                self.log("Unacceptable input to autobug: '%s'", search)
+
+        autobug = wrap(autobug, ['something'])
 
         def rm(self, irc, msg, args, search):
             """<package>
@@ -905,11 +931,12 @@ class Judd(callbacks.Plugin):
         wnpp = wrap(wnpp, ['something',
                             getopts({'type':'something'})])
 
-        def _bug_number(self, irc, bugno):
+        def _bug_number(self, irc, bugno, silent_failures):
             try:
                 bug = self.dispatcher.bug(bugno, True)
             except BugNotFoundError:
-                irc.reply("Sorry, the requested bug was not found.")
+                if not silent_failures:
+                  irc.reply("Sorry, the requested bug was not found.")
                 return
             return self._show_bug(irc, bug)
 
@@ -1124,6 +1151,45 @@ class Judd(callbacks.Plugin):
     def default_arch(self, channel):
         """the architecture that is the default for the current channel"""
         return self.registryValue('default_arch', channel)
+
+
+class RequestThrottle(object):
+    """ A throttle to control the rate of automated responses """
+    def __init__(self):
+        self.cache = {}
+        self.limit_private = False
+
+    def permit(self, msg, *args):
+        """ permit the request according to the throttle conditions
+        (False disallows the call) """
+        channel = msg.args[0]
+        if self.limit_private and not channel.startswith("#"):
+            # don't throttle privmsg queries
+           return False
+
+        reqid = self._id(channel, *args)
+        ts = time.time()
+        permit = not (reqid in self.cache and self.cache[reqid] > ts)
+        if self.log:
+            if permit:
+                self.log.info("Permitting request id %s", reqid)
+            else:
+                self.log.info("Not permitting request %s", reqid)
+        return permit
+
+    def _id(self, channel, *args):
+        return "/".join((channel,) + args)
+
+    def record(self, msg, timeout, *args):
+        """track a timestamp for this throttle """
+        channel = msg.args[0]
+        reqid = self._id(channel, *args)
+        ts = time.time()
+        self.cache[reqid] = ts + timeout
+        # clean out old timestamps; there will never be enough entries in
+        # the cache for performance to be slow enough to be an issue
+        [self.cache.pop(k) for k in self.cache.keys() if self.cache[k] < ts]
+
 
 Class = Judd
 
