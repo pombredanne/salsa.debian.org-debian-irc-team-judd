@@ -17,9 +17,9 @@ wheezy,             deb http://ftp.de.debian.org/debian/ wheezy main  #  deb htt
 squeeze-backports,    deb http://ftp.de.debian.org/debian-backports/ squeeze-backports main,
 squeeze,            deb http://ftp.de.debian.org/debian/ squeeze main  #  deb http://ftp.de.debian.org/debian-security/ squeeze/updates main           , ,
 #
-lenny,              deb http://ftp.de.debian.org/debian/ lenny main    # deb http://ftp.de.debian.org/debian-security/ lenny/updates main             , , xorg
+#lenny,              deb http://ftp.de.debian.org/debian/ lenny main    # deb http://ftp.de.debian.org/debian-security/ lenny/updates main             , , xorg
 #
-lenny-backports,    deb http://ftp.de.debian.org/debian-backports/ lenny-backports main,
+#lenny-backports,    deb http://ftp.de.debian.org/debian-backports/ lenny-backports main,
 #
 #etchnhalf,          deb http://ftp.de.debian.org/debian/ etch main     # deb http://ftp.de.debian.org/debian-security/ etch/updates main,                       linux-image-2.6.*etchnhalf.*-686$
 #
