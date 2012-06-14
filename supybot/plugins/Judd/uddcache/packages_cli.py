@@ -37,20 +37,19 @@
 
 """ Command line interface to udd - output to stdout """
 
-import os
+import clibase
 import udd
-import commands
-import bts
+import package_queries
+import bug_queries
 
 from packages import PackageNotFoundError
 from bts import BugNotFoundError
 
-class Cli():
+class Cli(clibase.CliBase):
     """ Run a specified command sending output to stdout """
 
     def __init__(self, config=None, options=None, initialise=True):
-        if not options:
-            raise ValueError("No options specified.")
+        super(Cli,self).__init__(config, options, initialise, package_queries.Commands)
         self.command_map = {
                 'versions':     self.versions,
                 'info':         self.info,
@@ -75,16 +74,6 @@ class Cli():
                 'checkinstall': self.checkinstall,
                 'checkbackport': self.checkbackport,
                 'why':          self.why,
-                'bug':          self.bug,
-                'rcbugs':       self.rcbugs,
-                'rm':           self.rm,
-                'rfs':          self.rfs,
-                'wnpp':         self.wnpp,
-                'rfp':          self.wnpp,
-                'itp':          self.wnpp,
-                'rfa':          self.wnpp,
-                'ita':          self.wnpp,
-                'orphan':       self.wnpp,
                 }
         self.command_aliases = {
                 'show':         'info',
@@ -97,25 +86,6 @@ class Cli():
                 'build-dep':    'builddeps',
                 'build-deps':   'builddeps',
                 }
-        if initialise:
-            self.udd = udd.Udd(config=config,
-                                                  distro=options.distro)
-            self.dispatcher = commands.Commands(self.udd)
-            self.options = options
-
-    def is_valid_command(self, command):
-        """ test if the supplied command string is a valid command """
-        return command.lower() in self.command_map or \
-                command.lower() in self.command_aliases
-
-    def run(self, command, package, args):
-        """ run the specified command """
-        if command.lower() in self.command_aliases:
-            command = self.command_aliases[command.lower()]
-        if not self.is_valid_command(command):
-            raise ValueError("command was not valid: %s" % command)
-        callback = self.command_map[command.lower()]
-        callback(command, package, args)
 
     @staticmethod
     def notfound(package, release=None, arch=None,
@@ -617,88 +587,3 @@ class Cli():
                format_rel(bdstatus.bdi.get(data), 'Build-Depends-Indep')
             ]
         return filter(None, l)
-
-    def bug(self, command, search, args):
-        search = search.replace('#', '')
-        if search.isdigit() and int(search) < 1e7:
-            bugnumber = int(search)
-            try:
-                bug = self.dispatcher.bug(bugnumber, self.options.verbose)
-            except BugNotFoundError:
-                print "Sorry, bug %d was not found." % bugnumber
-                return
-            print bug
-        else:
-            if not args:
-                bugs = self.dispatcher.bug_package(search, verbose=self.options.verbose, archived=False, filter={'status': ('forwarded', 'pending', 'pending-fixed')})
-                if self.options.verbose:
-                    print "\n".join([str(b) for b in bugs])
-                else:
-                    for s in bts.severities:
-                        bs = [str(b.id) for b in bugs if b.severity == s]
-                        if bs:
-                            print "%s: %d: %s" % (s, len(bs), ", ".join(bs))
-                bugs = self.dispatcher.wnpp(search)
-                for s in bts.wnpp_types:
-                    bl = [b for b in bugs if b.wnpp_type == s]
-                    if bl:
-                        print "%s: #%d" % (s, bl[0].id)
-                bugs = self.dispatcher.rm(search)
-                if bugs:
-                    print "RM: %s" % (",".join(["#%d" % b.id for b in bugs]))
-            else:
-                bugs = self.dispatcher.bug_package_search(search, args[0], verbose=self.options.verbose, archived=False)
-                print "\n".join(["#%d: %s" % (b.id, b.title) for b in bugs])
-
-
-    def rm(self, command, package, args):
-        bugs = self.dispatcher.rm(package)
-        if not bugs:
-            print "Sorry, no removal bug for %s was found." % package
-            return
-        print bugs[0]
-
-    def wnpp(self, command, package, args):
-        bugtype = command.upper()
-        if bugtype == 'ORPHAN':
-            bugtype = 'O'
-        if bugtype == 'WNPP':
-            bugtype = None
-        bugs = self.dispatcher.wnpp(package, bugtype)
-        if not bugs:
-            print "Sorry, no WNPP bug for %s was found." % package
-            return
-        print "\n".join([str(b) for b in bugs])
-
-    def rfs(self, command, package, args):
-        bugfilter={'title': package}
-        if not self.options.verbose: # also get fixed bugs for verbose
-            bugfilter['status'] = ('forwarded', 'pending', 'pending-fixed')
-        bugs = self.dispatcher.bug_package("sponsorship-requests",
-                                       verbose=True, # always get tags
-                                       archived=self.options.verbose,
-                                       filter=bugfilter)
-        if not bugs:
-            print "No open RFS bugs found for that package"
-            return
-        for b in bugs:
-            s = [
-                "Bug: %d" % b.id,
-                "Title: %s" % b.title.splitlines()[0],
-                "Severity: %s" % b.severity,
-                "Status: %s" % b.readable_status,
-                "Opened: %s" % b.arrival.date(),
-                "Last-Modified: %s" % b.last_modified.date(),
-                "Tags: %s" % ", ".join(b.tags),
-                "Submitter: %s" % b.submitter,
-                "Owner: %s" % b.owner,
-                ""
-            ]
-            print "\n".join(s)
-
-    def rcbugs(self, command, package, args):
-        bugs = self.dispatcher.rcbugs(package)
-        if not bugs:
-            print "No release critical bugs were found for '%s'." % package
-            return
-        print "\n".join([str(b) for b in bugs])

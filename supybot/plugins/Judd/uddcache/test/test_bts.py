@@ -55,7 +55,7 @@ class BtsTests(unittest.TestCase):
         self.udd = None
 
     def testBugs(self):
-        bugs = [500000, 500001, 500002, 620381]
+        bugs = [500000, 500001, 500002, 666666]
         self.assertTrue(self.bts.bugs(bugs))
         self.assertEqual(len(self.bts.bugs(bugs)), 4)
         self.assertEqual(len(self.btsc.bugs(bugs)), 1)
@@ -84,9 +84,9 @@ class BtsTests(unittest.TestCase):
         self.assertEqual(len(self.bts.get_bugs({'source': 'latexdraw', 'limit':1})), 1)
 
     def test_get_bugs_tags(self):
-        b = self.bts.bug(620396)
+        b = self.bts.bug(2297)
         self.bts.get_bugs_tags(b)
-        self.assertEqual(len(b.tags), 2)
+        self.assertEqual(len(b.tags), 1)
         bl = self.bts.bugs([500000, 500001, 500002, 620381])
         self.bts.get_bugs_tags(bl)
 

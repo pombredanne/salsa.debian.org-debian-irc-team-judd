@@ -41,7 +41,7 @@ import os
 import sys
 import unittest2 as unittest
 from cStringIO import StringIO
-from uddcache.cli import Cli
+from uddcache.packages_cli import Cli
 
 import codecs
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
@@ -79,19 +79,6 @@ class cliTests(unittest.TestCase):
     def tearDown(self):
         sys.stdout = self.held
         self.cli = None
-
-    def test_init(self):
-        self.assertRaises(ValueError, Cli)
-
-    def testis_valid_command(self):
-        self.assert_(self.cli.is_valid_command("versions"))
-        self.assert_(self.cli.is_valid_command("show"))    # test an alias
-        self.assertFalse(self.cli.is_valid_command("nosuchcommand"))
-
-    def testrun(self):
-        self.assert_(self.cli.run("versions", "dpkg", []) is None)
-        self.assert_(self.cli.run("show", "dpkg", []) is None)
-        self.assertRaises(ValueError, self.cli.run, "nosuchcommand", "", [])
 
     def testnotfound(self):
         self.assert_(self.cli.notfound("nosuchpackage") is None)
@@ -216,43 +203,6 @@ class cliTests(unittest.TestCase):
         self.assert_(self.cli.checkbackport("checkbackport", "libv4l-0", []) is None)
         self.assert_(self.cli.checkbackport("checkbackport", "libxfont1", []) is None)
         self.assert_(self.cli.checkbackport("checkbackport", "nosuchpackage", []) is None)
-
-    def testbug(self):
-        self.assertTrue(self.cli.bug("bug", "500000", []) is None)
-        self.assertTrue(self.cli.bug("bug", "#500000", []) is None)
-        self.assertTrue(self.cli.bug("bug", "999999999999", []) is None)
-        self.assertTrue(self.cli.bug("bug", "9999999", []) is None)
-        self.assertTrue(self.cli.bug("bug", "src:ktikz", []) is None)
-        self.assertTrue(self.cli.bug("bug", "qtikz", []) is None)
-        self.assertTrue(self.cli.bug("bug", "htdig", []) is None)
-        self.assertTrue(self.cli.bug("bug", "nosuchpackage", []) is None)
-        self.assertTrue(self.cli.bug("bug", "src:nosuchpackage", []) is None)
-        self.assertTrue(self.cli.bug("bug", "src:pyxplot", ['ia64']) is None)
-        self.assertTrue(self.cli.bug("bug", "pyxplot", ['ia64']) is None)
-        self.cli.options.verbose = True
-        self.assertTrue(self.cli.bug("bug", "qtikz", []) is None)
-        self.assertTrue(self.cli.bug("bug", "postgresql-9.0", []) is None)
-
-    def testrcbugs(self):
-        self.assertTrue(self.cli.rcbugs("rcbugs", "ktikz", []) is None)
-        self.assertTrue(self.cli.rcbugs("rcbugs", "eglibc", []) is None)
-        self.assertTrue(self.cli.rcbugs("rcbugs", "libc6", []) is None)
-        self.assertTrue(self.cli.rcbugs("rcbugs", "nosuchpackage", []) is None)
-
-    def testwnpp(self):
-        self.assertTrue(self.cli.wnpp("rfp", "levmar", []) is None)
-        self.assertTrue(self.cli.wnpp("wnpp", "levmar", []) is None)
-        self.assertTrue(self.cli.wnpp("orphan", "htdig", []) is None)
-        self.assertTrue(self.cli.wnpp("rfp", "nosuchpackage", []) is None)
-
-    def testrm(self):
-        self.assertTrue(self.cli.rm("rm", "sun-java6", []) is None)
-        self.assertTrue(self.cli.rm("rm", "nosuchpackage", []) is None)
-
-    def testrfs(self):
-        self.assertTrue(self.cli.rfs('rfs', '-', []) is None)
-        self.assertTrue(self.cli.rfs('rfs', 'sks', []) is None) # FIXME: fragile test
-        self.assertTrue(self.cli.rfs('rfs', 'nosuchpackage', []) is None)
 
 ###########################################################
 if __name__ == "__main__":

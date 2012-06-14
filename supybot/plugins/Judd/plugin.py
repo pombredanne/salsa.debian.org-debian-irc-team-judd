@@ -50,7 +50,8 @@ import fnmatch
 import debcontents.contents_file
 
 import uddcache.udd
-import uddcache.commands
+import uddcache.package_queries
+import uddcache.bug_queries
 import uddcache.config
 from uddcache.packages import PackageNotFoundError
 import uddcache.bts
@@ -94,7 +95,7 @@ class Judd(callbacks.Plugin):
             uddconf = uddcache.config.Config(confdict=confdict)
         # Initialise a UDD instance with the appropriate configuration
         self.udd = uddcache.udd.Udd(uddconf)
-        self.dispatcher = uddcache.commands.Commands(self.udd)
+        self.dispatcher = uddcache.package_queries.Commands(self.udd)
 
     def notfound(self, irc, package, release=None, arch=None,
                  message="No package named '%s' was found%s."):
@@ -852,7 +853,7 @@ class Judd(callbacks.Plugin):
             outer = irc.getCallback('Judd')
             self.registryValue = outer.registryValue
             self.udd = outer.udd
-            self.dispatcher = outer.dispatcher
+            self.dispatcher = uddcache.bug_queries.Commands(self.udd)
             self.bold = outer.bold
             self.log = outer.log
             self.throttle.log = outer.log

@@ -40,9 +40,8 @@
 import os
 import unittest2 as unittest
 from uddcache.udd import Udd
-from uddcache.commands import Commands
+from uddcache.package_queries import Commands
 from uddcache.packages import *
-from uddcache.bts import BugNotFoundError
 
 
 includeSlowTests = 1
@@ -163,55 +162,6 @@ class commands(unittest.TestCase):
         self.assert_(self.dispatcher.checkBackport('libv4l-0', fr, tr), 'Check resolution of virtual build-deps')
 
         self.assertRaises(PackageNotFoundError, self.dispatcher.checkBackport, 'nosuchpackage', fr, tr)
-
-    def testBug(self):
-        self.assertTrue(self.dispatcher.bug(123456, False))
-        self.assertTrue(self.dispatcher.bug(123456, True))
-        self.assertRaises(BugNotFoundError, self.dispatcher.bug, 9999999, True)
-        self.assertTrue(self.dispatcher.bug("123456", True))
-        self.assertTrue(self.dispatcher.bug("#123456", True))
-
-    def testBug_package(self):
-        self.assertFalse(self.dispatcher.bug_package("ktikz")) #no bugs
-        self.assertTrue(self.dispatcher.bug_package("qtikz"))
-        self.assertTrue(self.dispatcher.bug_package("src:ktikz"))
-        self.assertTrue(self.dispatcher.bug_package("htdig"))
-        self.assertTrue(self.dispatcher.bug_package("postgresql-9.0"))
-        self.assertFalse(self.dispatcher.bug_package("nosuchpacakge"))
-        self.assertFalse(self.dispatcher.bug_package("src:nosuchpacakge"))
-
-    def testBug_package_search(self):
-        self.assertFalse(self.dispatcher.bug_package_search('ktikz', 'quux')) # no bugs
-        self.assertTrue(self.dispatcher.bug_package_search('libc6', 'locales'))
-        self.assertFalse(self.dispatcher.bug_package_search("nosuchpacakge", 'quux'))
-        self.assertFalse(self.dispatcher.bug_package_search("src:nosuchpacakge", 'quux'))
-
-    def testWnpp(self):
-        bl = self.dispatcher.wnpp('levmar')
-        self.assertEqual(len(bl), 1)
-        self.assertEqual(bl[0].id, 546202)
-        bl = self.dispatcher.wnpp('levmar', 'RFP')
-        self.assertEqual(len(bl), 1)
-        self.assertEqual(bl[0].id, 546202)
-        bl = self.dispatcher.wnpp('levmar', 'ITP')
-        self.assertEqual(len(bl), 0)
-
-    def testRcbugs(self):
-        bl = self.dispatcher.rcbugs('ktikz')
-        self.assertEqual(len(bl), 0)    # has bugs but not rc bugs
-        bl = self.dispatcher.rcbugs('eglibc')
-        self.assertGreaterEqual(len(bl), 1)
-        bl = self.dispatcher.rcbugs('libc6')   # test mapping to source package
-        self.assertGreaterEqual(len(bl), 1)
-        bl = self.dispatcher.rcbugs('nosuchpackage')
-        self.assertEqual(len(bl), 0)
-
-    def testRm(self):
-        bl = self.dispatcher.rm('sun-java6')
-        self.assertEqual(len(bl), 1)    # there are other RM requests of experimental packages too
-        self.assertEqual(bl[0].id, 646524)
-        bl = self.dispatcher.rm('nosuchpackage')
-        self.assertEqual(len(bl), 0)
 
 ###########################################################
 if __name__ == "__main__":
