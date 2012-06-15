@@ -1,0 +1,97 @@
+#!/usr/bin/python
+#
+# Copyright (c) 2010-2011  Stuart Prescott
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   * Redistributions of source code must retain the above copyright notice,
+#     this list of conditions, and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright notice,
+#     this list of conditions, and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of the author of this software nor the name of
+#     contributors to this software may be used to endorse or promote products
+#     derived from this software without specific prior written consent.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+###
+
+from optparse import OptionParser, OptionGroup
+from posoptparse.posoptiongroup import PosOptionGroup
+
+from uddcache.bugs_cli import Cli
+
+
+__version__ = 0.1
+
+
+def main():
+#    parser = PosOptionParser()
+    usage = "usage: %prog command [options]"
+    parser = OptionParser(usage=usage,
+                version="%%prog %s" % __version__,
+                description="%prog queries an "
+                    "Ultimate Debian Database instance"
+                    "to make it possible to perform simple bug-related "
+                    "queries.",
+                epilog="")
+
+    # Commands
+    commands = PosOptionGroup(parser, "Commands",
+                "Exactly one of these commands must be specified to "
+                "determine what the program will do.")
+    commands.add_option("--bug",
+                help="display information about a bug.")
+    commands.add_option("--rm",
+                help="display information about a package removal bug.")
+    commands.add_option("--wnpp",
+                help="display information about a WNPP bug for a package. "
+                    "rfp, ita, itp and orphan can be used to search for "
+                    "specific types of WNPP bug.")
+    commands.add_option("--rfs",
+                help="display information about an RFS bug for a package.")
+    parser.add_option_group(commands)
+
+    # Common options
+    common = OptionGroup(parser, "General Options",
+                    "These options apply to (nearly) all commands.")
+    common.add_option("--distro", dest='distro', default='debian',
+                  help="the distribution to be queried in searches "
+                        "(examples: --distro=debian --distro=ubuntu)")
+    common.add_option("--config", dest='config',
+                  metavar="FILE", default=None,
+                  help="the UDD database connection configuration file")
+    common.add_option("-v", "--verbose",
+                      action="store_true", dest="verbose", default=False,
+                      help="include additional information in output")
+    parser.add_option_group(common)
+
+    (options, args) = parser.parse_args()
+    if len(args) < 2:
+        parser.error("both a command and a bug number or search term "
+                    "must be specified")
+
+    runner = Cli(config=options.config, options=options)
+
+    command = args.pop(0)
+    package = args.pop(0)
+
+    if not runner.is_valid_command(command):
+        parser.error("unknown command '%s'" % command)
+    runner.run(command, package, args)
+
+if __name__ == "__main__":
+    main()

@@ -40,7 +40,7 @@
 import os
 import unittest2 as unittest
 from uddcache.udd import Udd
-from uddcache.commands import Commands
+from uddcache.package_queries import Commands
 from uddcache.packages import *
 
 
@@ -53,6 +53,10 @@ class commands(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
         self.dispatcher = Commands(self.udd)
+
+    def tearDown(self):
+        self.udd = None
+        self.dispatcher = None
 
     def testVersions(self):
         """Test version lookups"""
@@ -109,10 +113,10 @@ class commands(unittest.TestCase):
     def testCheckDeps(self):
         """Test dependency testing for packages"""
         # TODO: it would be nice to actually test the accuracy of the tests
-        self.assert_(self.dispatcher.checkdeps('libc6', 'lenny', 'i386', ['depends']))
-        self.assert_(self.dispatcher.checkdeps('libc6', 'lenny', 'i386', ['depends', 'recommends', 'suggests']))
+        self.assert_(self.dispatcher.checkdeps('libc6', 'squeeze', 'i386', ['depends']))
+        self.assert_(self.dispatcher.checkdeps('libc6', 'squeeze', 'i386', ['depends', 'recommends', 'suggests']))
         self.assert_(self.dispatcher.checkdeps('openjdk-6-jre-headless', 'lenny', 'i386', ['depends', 'recommends']), 'broken recommends not handled correctly')
-        self.assertRaises(PackageNotFoundError, self.dispatcher.checkdeps, 'nosuchpackage', 'lenny', 'i386', ['depends'])
+        self.assertRaises(PackageNotFoundError, self.dispatcher.checkdeps, 'nosuchpackage', 'squeeze', 'i386', ['depends'])
 
     @unittest.skipUnless(includeSlowTests, 'slow test')
     def testCheckInstall(self):
@@ -151,14 +155,13 @@ class commands(unittest.TestCase):
         tro = self.udd.BindRelease(arch='i386', release='lenny')
         self.assert_(self.dispatcher.checkBackport('iceweasel', fr, tro), 'Check impossible backport')
 
-        self.assert_(self.dispatcher.checkBackport('sun-java6', fr, tr), 'Check resolution of arch-dependent build-deps')
+        self.assert_(self.dispatcher.checkBackport('openjdk-6', fr, tr), 'Check resolution of arch-dependent build-deps')
 
         self.assert_(self.dispatcher.checkBackport('pyxplot', fr, tr), 'Check resolution of virtual build-deps')
 
         self.assert_(self.dispatcher.checkBackport('libv4l-0', fr, tr), 'Check resolution of virtual build-deps')
 
         self.assertRaises(PackageNotFoundError, self.dispatcher.checkBackport, 'nosuchpackage', fr, tr)
-
 
 ###########################################################
 if __name__ == "__main__":

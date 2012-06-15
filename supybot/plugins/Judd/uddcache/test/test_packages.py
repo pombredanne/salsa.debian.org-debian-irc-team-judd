@@ -46,6 +46,9 @@ class ReleaseTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
 
+    def tearDown(self):
+        self.udd = None
+
     def testRelease(self):
         """Test binding the release"""
         rd = Release(self.udd.psql)
@@ -131,6 +134,9 @@ class ReleaseTests(unittest.TestCase):
 class PackageTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
+
+    def tearDown(self):
+        self.udd = None
 
     def testPackage(self):
         """Test binding a package"""
@@ -270,6 +276,9 @@ class PackageTests(unittest.TestCase):
 class SourcePackageTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
+
+    def tearDown(self):
+        self.udd = None
 
     def testPackage(self):
         """Test binding a package"""

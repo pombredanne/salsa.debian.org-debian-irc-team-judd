@@ -46,6 +46,9 @@ class database(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
 
+    def tearDown(self):
+        self.udd = None
+
     def testDBTypes(self):
         """Test creating a Debian and derivative UDD instance"""
         self.assert_(Udd(distro='debian'))
@@ -79,6 +82,11 @@ class database(unittest.TestCase):
         self.assert_(r)
         self.assert_(r.Found())
         self.assert_(r.data['version'])
+
+    def testBts(self):
+        """Test binding to a source package and doing a lookup"""
+        tracker = self.udd.Bts(False)
+        self.assertFalse(tracker.include_archived)
 
 
 ###########################################################

@@ -36,7 +36,7 @@ class DebianTestCase(PluginTestCase):
 
     def __init__(self, *args,  **kwargs):
         PluginTestCase.__init__(self, *args, **kwargs)
-        self.timeout = 30.   # bump up the timeout to 30s
+        self.timeout = 60.   # bump up the timeout to 60s
         # don't delete data prior to running the tests
         self.cleanConfDir = False
         self.cleanDataDir = False
@@ -65,6 +65,7 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('info libc6 --release sid')         # package info sid with homepage; only show sid, include homepage URL too
         self.assertNotError('info libc6 --arch amd64')          # package info amd64; only show sid
         self.assertNotError('info synaptic')                    # package info with screenshot; include screenshot URL too
+        self.assertNotError('info htdig')                       # package info with WNPP bug; include bug number too
         self.assertNotError('info nosuchpackage')               # package not found; no such package in the archive
 
     def testArch(self):
@@ -177,8 +178,42 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('recent nosuchpackage')             # package not found; no such package in the archive
 
     def testBugs(self):
-        # this is known to be broken at present
-        pass
+        self.assertNotError('bug 599019')                       # open bug; open and important
+        self.assertNotError('bug 584031')                       # archived bug; archived and grave
+        self.assertNotError('bug 644230')                       # pending upload bug; see "open" and "pending"
+        self.assertNotError('bug 9999999')                      # bug not found; no such bug in the bts
+        self.assertNotError('bug ktikz')                        # no bugs; no bugs found
+        self.assertNotError('bug qtikz')                        # buggy no wnpp; show bug list
+        self.assertNotError('bug htdig')                        # buggy incl wnpp; show bug list and orphaned bug
+        self.assertNotError('bug postgresql-9.0')               # buggy incl RM; show bug list and RM bug
+        self.assertNotError('bug nosuchpackage')                # package not found; no such package in the bts
+        self.assertNotError('bug levmar')                       # package not found but in wnpp; show only wnpp
+        self.assertNotError('bug src:pyxplot ia64')             # title search; bug matches
+        self.assertNotError('bug src:pyxplot nosuchtitle')      # title search; no matches
+
+    def testRcBugs(self):
+        self.assertNotError('bug rc pyxplot')                   # no rc bugs; none found
+        self.assertNotError('bug rc eglibc')                    # rc bugs; match via source package name
+        self.assertNotError('bug rc libc6')                    # rc bugs; match via binary package name
+        self.assertNotError('bug rc nosuchpackage')             # package not found; no such package in the archive
+
+    def testRm(self):
+        self.assertNotError('bug rm sun-java6')                    # removed from archive; removal reason found
+        self.assertNotError('bug rm nosuchpackage')                # package doesn't exist; no removal reason found
+        self.assertNotError('bug rm pyxplot')                      # package not removed; no removal reason found
+
+    def testWnpp(self):
+        self.assertNotError('bug wnpp levmar')                     # RFP filed; RFP details displayed
+        self.assertNotError('bug wnpp nosuchpackage')              # no WNPP bug exists; no bug displayed
+        self.assertNotError('bug wnpp a')                          # no WNPP bug exists; no bug displayed
+        self.assertNotError('bug wnpp levmar --type rfp')          # explicitly require RFP bug; display RFP bug
+        self.assertNotError('bug wnpp levmar --type o')            # explicitly require O bug; no bug displayed
+        self.assertNotError('bug wnpp levmar --type nosuchtype')   # bogus type given; type ignored
+
+    def testRfs(self):
+        self.assertNotError('bug rfs -')                           # Lots of RFS match; only summary displayed
+        self.assertNotError('bug rfs sks')                         # One RFS match; show bug summary #FIXME: fragile
+        self.assertNotError('bug rfs nosuchpackage')               # No RFS match; no bug displayed
 
     def testFile(self):
         # TODO: test other architectures and releases as well

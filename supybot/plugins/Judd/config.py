@@ -113,5 +113,13 @@ conf.registerChannelValue(Judd, 'default_release',
 conf.registerChannelValue(Judd, 'default_arch',
                          registry.String("i386",
                          "default architecture to use for queries"))
+conf.registerChannelValue(Judd, 'auto_bug_throttle',
+                         registry.Integer(900,
+                         "minimum time in seconds before bug information will "
+                         "be shown automatically again"))
+conf.registerChannelValue(Judd, 'auto_bug_ignore_re',
+                         registry.String("(dpkg.*|dselect.*)",
+                         "regular expression listing the senders who should be"
+                         "ignored when considering auto bug display"))
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

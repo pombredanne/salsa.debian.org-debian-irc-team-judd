@@ -37,17 +37,19 @@
 
 """ Command line interface to udd - output to stdout """
 
-import os
+import clibase
 import udd
-import commands
-from packages import PackageNotFoundError
+import package_queries
+import bug_queries
 
-class Cli():
+from packages import PackageNotFoundError
+from bts import BugNotFoundError
+
+class Cli(clibase.CliBase):
     """ Run a specified command sending output to stdout """
 
     def __init__(self, config=None, options=None, initialise=True):
-        if not options:
-            raise ValueError("No options specified.")
+        super(Cli,self).__init__(config, options, initialise, package_queries.Commands)
         self.command_map = {
                 'versions':     self.versions,
                 'info':         self.info,
@@ -71,7 +73,7 @@ class Cli():
                 'checkbuilddeps': self.checkbuilddeps,
                 'checkinstall': self.checkinstall,
                 'checkbackport': self.checkbackport,
-                'why':          self.why
+                'why':          self.why,
                 }
         self.command_aliases = {
                 'show':         'info',
@@ -84,25 +86,6 @@ class Cli():
                 'build-dep':    'builddeps',
                 'build-deps':   'builddeps',
                 }
-        if initialise:
-            self.udd = udd.Udd(config=config,
-                                                  distro=options.distro)
-            self.dispatcher = commands.Commands(self.udd)
-            self.options = options
-
-    def is_valid_command(self, command):
-        """ test if the supplied command string is a valid command """
-        return command.lower() in self.command_map or \
-                command.lower() in self.command_aliases
-
-    def run(self, command, package, args):
-        """ run the specified command """
-        if command.lower() in self.command_aliases:
-            command = self.command_aliases[command.lower()]
-        if not self.is_valid_command(command):
-            raise ValueError("command was not valid: %s" % command)
-        callback = self.command_map[command.lower()]
-        callback(command, package, args)
 
     @staticmethod
     def notfound(package, release=None, arch=None,

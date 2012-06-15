@@ -32,7 +32,7 @@
 from optparse import OptionParser, OptionGroup
 from posoptparse.posoptiongroup import PosOptionGroup
 
-from uddcache.cli import Cli
+from uddcache.packages_cli import Cli
 
 
 __version__ = 0.1
@@ -46,14 +46,14 @@ def main():
                 description="%prog queries an "
                     "Ultimate Debian Database instance"
                     "to make it possible to perform simple package-related "
-                    "queries on architectures and releases that are would "
-                    "not otherwise be available in your local apt cache. ",
+                    "queries on architectures and releases that would "
+                    "not otherwise be available in your local apt cache.",
                 epilog="")
 
     # Commands
     commands = PosOptionGroup(parser, "Commands",
                 "Exactly one of these commands must be specified to "
-                "determine what %prog will do.")
+                "determine what the program will do.")
     commands.add_option("--info",
                 help="display basic package info about a package; "
                     "like 'apt-cache show'")

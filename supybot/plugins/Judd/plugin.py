@@ -43,16 +43,19 @@ import supybot.callbacks as callbacks
 import re
 import psycopg2
 import psycopg2.extras
-
+import time
 
 import os
 import fnmatch
 import debcontents.contents_file
 
 import uddcache.udd
-import uddcache.commands
+import uddcache.package_queries
+import uddcache.bug_queries
 import uddcache.config
 from uddcache.packages import PackageNotFoundError
+import uddcache.bts
+from uddcache.bts import BugNotFoundError
 
 #
 #def parse_standard_options(optlist, args=None):
@@ -92,7 +95,8 @@ class Judd(callbacks.Plugin):
             uddconf = uddcache.config.Config(confdict=confdict)
         # Initialise a UDD instance with the appropriate configuration
         self.udd = uddcache.udd.Udd(uddconf)
-        self.dispatcher = uddcache.commands.Commands(self.udd)
+        self.dispatcher = uddcache.package_queries.Commands(self.udd)
+        self.bugs_dispatcher = uddcache.bug_queries.Commands(self.udd)
 
     def notfound(self, irc, package, release=None, arch=None,
                  message="No package named '%s' was found%s."):
@@ -218,6 +222,17 @@ class Judd(callbacks.Plugin):
         # screenshot url from screenshots.debian.net
         if pinfo['screenshot_url']:
             reply += "; Screenshot: %s" % pinfo['screenshot_url']
+
+        bug_count = []
+        bugs = self.bugs_dispatcher.wnpp(package)
+        for b in  bugs:
+            self.log.critical("Bug %s" % b.id)
+        for t in uddcache.bts.wnpp_types:
+            bt = [b for b in bugs if b.wnpp_type == t]
+            if bt:
+                bug_count.append("%s: #%d" % (bt[0].wnpp_type, bt[0].id))
+        if bug_count:
+            reply += "; %s" % ", ".join(bug_count)
         irc.reply(reply)
 
     info = wrap(info, ['something',
@@ -750,25 +765,6 @@ class Judd(callbacks.Plugin):
                                                    'verbose':''}),
                                          any('something')])
 
-    def bug(self, irc, msg, args, bugno):
-        """
-        Show information about a bug in a given pacage.
-        Usage: "bug bugnumber"
-        """
-        c = self.psql.cursor()
-        c.execute( "SELECT package, status, severity, title, last_modified FROM bugs WHERE id=%(bugno)s limit 1", dict( bugno=bugno ) )
-
-        row = c.fetchone()
-        if row:
-            ds = row[3].splitlines()
-            if ds:
-                d = ds[0]
-            else:
-                d = ""
-            irc.reply( "Bug #%d (%s) %s -- %s; Severity: %s; Last Modified: %s" % ( bugno, row[1], row[0], d, row[2], row[4]) )
-
-    #bug = wrap(bug, ['int'] )
-
     def popcon(self, irc, msg, args, package):
         """<packagename>
 
@@ -848,27 +844,218 @@ class Judd(callbacks.Plugin):
 
     recent   = wrap(recent, ['something', optional('something')])
 
-    def rcbugs(self, irc, msg, args, package):
-        """
-        Return the release critical bugs for a given package.
-        Usage: "rcbugs packagename"
-        """
+    class bug(callbacks.Commands):
+        def __init__(self, irc):
+            self.__parent = super(callbacks.Commands, self)
+            self.__parent.__init__(irc)
+            self._found_conf = False
+            self.throttle = RequestThrottle()
 
-        c = self.psql.cursor()
+        def _find_conf(self, irc):
+            if self._found_conf:
+                return
+            outer = irc.getCallback('Judd')
+            self.registryValue = outer.registryValue
+            self.udd = outer.udd
+            self.dispatcher = outer.bugs_dispatcher
+            self.bold = outer.bold
+            self.log = outer.log
+            self.throttle.log = outer.log
+            self._found_conf = True
 
-        if package.startswith( 'src:' ):
-            package = package[4:]
-            c.execute( "SELECT id FROM bugs inner join packages on packages.package=bugs.package WHERE packages.source=%(package)s AND severity in ('critical', 'grave', 'serious' ) and status not in ('done,fixed') order by bugs.id", dict( package=package ) )
-        else:
-            c.execute( "SELECT id FROM bugs WHERE package=%(package)s AND severity in ('critical', 'grave', 'serious' ) and status not in ('done,fixed') order by bugs.id", dict( package=package ) )
+        def bug(self, irc, msg, args, search, titlesearch):
+            """<number>|<package> [title]
 
-        reply = "RC bugs in %s:" % package
-        for row in c.fetchall():
-            reply += " %d" % row[0]
+            Show bug information about from the Debian Bug Tracking System,
+            searching by bug number, package name or package name and title.
+            """
+            self._find_conf(irc)
+            search = search.replace('#', '')
+            if search.isdigit():
+                self._bug_number(irc, int(search), False)
+            elif not titlesearch:
+                self._bug_summary(irc, search)
+            else:
+                self._bug_title_search(irc, msg, search, titlesearch)
 
-        irc.reply( reply )
+        bug = wrap(bug, ['something', optional('something')])
 
-    #rcbugs = wrap(rcbugs, ['something'] )
+        def autobug(self, irc, msg, args, search):
+            """<number>
+
+            Show information about a bug from the Debian Bug Tracking System,
+            limiting how often the information will be repeated.
+            """
+            self._find_conf(irc)
+            search = search.replace('#', '')
+            if search.isdigit():
+                channel = msg.args[0]
+                if (self.throttle.permit(msg, search)) \
+                    and not re.search(self.registryValue('auto_bug_ignore_re', channel), msg.nick):
+                    self._bug_number(irc, int(search), True)
+                self.throttle.record(msg,
+                        self.registryValue('auto_bug_throttle', channel),
+                        search)
+            else:
+                # should never get here; just log it
+                self.log("Unacceptable input to autobug: '%s'", search)
+
+        autobug = wrap(autobug, ['something'])
+
+        def rm(self, irc, msg, args, search):
+            """<package>
+
+            Looks for removal reasons for a package
+            """
+            self._find_conf(irc)
+            bugs = self.dispatcher.rm(search)
+            if bugs:
+                self._show_bug(irc, bugs[0])
+            else:
+                irc.reply("Sorry, no removal reasons were found.")
+
+        rm = wrap(rm, ['something'])
+
+        def wnpp(self, irc, msg, args, search, optlist):
+            """<package>
+
+            Looks for WNPP (work-needed and prospective package) bugs
+            for a package
+            """
+            self._find_conf(irc)
+            bug_type = None
+            for (option, arg) in optlist:
+                if option == 'type' and arg.upper() in uddcache.bts.wnpp_types:
+                    bug_type = arg.upper()
+            bugs = self.dispatcher.wnpp(search, bug_type)
+            if bugs:
+                self._show_bug(irc, bugs[0])
+            else:
+                irc.reply("Sorry, no wnpp bugs were found.")
+
+        wnpp = wrap(wnpp, ['something',
+                            getopts({'type':'something'})])
+
+        def _bug_number(self, irc, bugno, silent_failures):
+            try:
+                bug = self.dispatcher.bug(bugno, True)
+            except BugNotFoundError:
+                if not silent_failures:
+                  irc.reply("Sorry, the requested bug was not found.")
+                return
+            return self._show_bug(irc, bug)
+
+        def _bug_title_search(self, irc, msg, package, title):
+            bugs = self.dispatcher.bug_package_search(package, title, verbose=True, archived=False)
+            if len(bugs) > 10:
+                irc.reply("Matching bugs: %s" % ", ".join(["#%d" % b.id for b in bugs]))
+            else:
+                if not bugs:
+                    irc.reply("Sorry, no bugs match that search criterion.", to=msg.nick, private=True)
+                for b in bugs:
+                    irc.reply(self._format_bug(b).encode('UTF-8'), to=msg.nick, private=True)
+
+        def _format_bug(self, bug):
+            title = bug.title.splitlines()
+            if title:
+                title = title[0]
+            else:
+                title = ""
+
+            status = [bug.readable_status]
+            [status.append(t) for t in bug.tags if t not in status]
+
+            return u"Bug http://bugs.debian.org/%d in %s (%s): «%s»; " \
+                        "severity: %s; opened: %s; last modified: %s." % \
+                        (bug.id, bug.package, ", ".join(status), title,
+                        bug.severity, bug.arrival.date(), bug.last_modified.date())
+
+        def _show_bug(self, irc, bug):
+            irc.reply(self._format_bug(bug).encode('UTF-8'))
+
+        def _bug_summary(self, irc, package):
+            bug_count = []
+            bugs = self.dispatcher.bug_package(package, verbose=False, archived=False, filter={'status': ('forwarded', 'pending', 'pending-fixed')})
+            for s in uddcache.bts.severities:
+                bs = [b for b in bugs if b.severity == s]
+                if bs:
+                    bug_count.append("%s: %d" % (s, len(bs)))
+
+            bugs = self.dispatcher.wnpp(package)
+            for t in uddcache.bts.wnpp_types:
+                bt = [b for b in bugs if b.wnpp_type == t]
+                if bt:
+                    bug_count.append("%s: #%d" % (bt[0].wnpp_type, bt[0].id))
+
+            bugs = self.dispatcher.rm(package, False)
+            if bugs:
+                bug_count.append("RM: #%d" % bugs[0].id)
+
+            if not bug_count:
+                irc.reply("No bugs were found in package %s." % package)
+                return
+
+            irc.reply((u"Bug summary for package %s: %s" % \
+                        (package, ", ".join(bug_count))
+                      ).encode('UTF-8'))
+
+        def rc(self, irc, msg, args, package):
+            """<package>
+
+            List the release critical bugs for a given source package. Binary
+            package names will be mapped to source package names.
+            """
+            self._find_conf(irc)
+            bugs = self.dispatcher.rcbugs(package, True)
+            if not bugs:
+                irc.reply("No release critical bugs were found in "
+                            "package '%s'." % package)
+                return
+
+            buglist = []
+            for bug in bugs:
+                status = [bug.readable_status]
+                [status.append(t) for t in bug.tags if t not in status]
+                buglist.append("#%d (%s)" % (bug.id, ", ".join(status)))
+
+            irc.reply((u"Release critical bugs in package %s (%d): %s" % \
+                        (package, len(bugs), ", ".join(buglist))
+                      ).encode('UTF-8'))
+
+        rc = wrap(rc, ['something'] )
+
+        def rfs(self, irc, msg, args, package):
+            """<package>
+
+            List RFS (request for sponsorship) bugs for a package. Imperfect
+            substring matching against the bug title is performed."""
+            self._find_conf(irc)
+            bugfilter={'title': package,
+                        'status': ('forwarded', 'pending', 'pending-fixed')}
+            bugs = self.dispatcher.bug_package("sponsorship-requests",
+                                           verbose=True, # always get tags
+                                           archived=False,
+                                           filter=bugfilter)
+            if not bugs:
+                return irc.reply("Sorry, no open RFS bugs found for '%s'."
+                                 % package)
+            if len(bugs) > 3:
+                return irc.reply("Lots of RFS bugs match that query: %s" %
+                                 ", ".join(["#%d" % b.id for b in bugs]))
+            s = []
+            for bug in bugs:
+                status = [bug.readable_status]
+                [status.append(t) for t in bug.tags if t not in status]
+                if bug.owner:
+                    contacts = u"%s/%s" % (bug.submitter, bug.owner)
+                else:
+                    contacts = bug.submitter
+                s.append("#%s (%s): %s (%s)" % \
+                     (self.bold(bug.id), ", ".join(status),
+                        bug.title.splitlines()[0], contacts))
+            irc.reply("; ".join(s))
+
+        rfs = wrap(rfs, ['something'])
 
     def file(self, irc, msg, args, glob, optlist, something):
         """<pattern> [--arch <i386>] [--release <stable>] [--regex | --exact]
@@ -969,6 +1156,45 @@ class Judd(callbacks.Plugin):
     def default_arch(self, channel):
         """the architecture that is the default for the current channel"""
         return self.registryValue('default_arch', channel)
+
+
+class RequestThrottle(object):
+    """ A throttle to control the rate of automated responses """
+    def __init__(self):
+        self.cache = {}
+        self.limit_private = False
+
+    def permit(self, msg, *args):
+        """ permit the request according to the throttle conditions
+        (False disallows the call) """
+        channel = msg.args[0]
+        if self.limit_private and not channel.startswith("#"):
+            # don't throttle privmsg queries
+           return False
+
+        reqid = self._id(channel, *args)
+        ts = time.time()
+        permit = not (reqid in self.cache and self.cache[reqid] > ts)
+        if self.log:
+            if permit:
+                self.log.info("Permitting request id %s", reqid)
+            else:
+                self.log.info("Not permitting request %s", reqid)
+        return permit
+
+    def _id(self, channel, *args):
+        return "/".join((channel,) + args)
+
+    def record(self, msg, timeout, *args):
+        """track a timestamp for this throttle """
+        channel = msg.args[0]
+        reqid = self._id(channel, *args)
+        ts = time.time()
+        self.cache[reqid] = ts + timeout
+        # clean out old timestamps; there will never be enough entries in
+        # the cache for performance to be slow enough to be an issue
+        [self.cache.pop(k) for k in self.cache.keys() if self.cache[k] < ts]
+
 
 Class = Judd
 

@@ -41,7 +41,7 @@ import os
 import sys
 import unittest2 as unittest
 from cStringIO import StringIO
-from uddcache.cli import Cli
+from uddcache.packages_cli import Cli
 
 import codecs
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
@@ -78,20 +78,7 @@ class cliTests(unittest.TestCase):
 
     def tearDown(self):
         sys.stdout = self.held
-        pass
-
-    def test_init(self):
-        self.assertRaises(ValueError, Cli)
-
-    def testis_valid_command(self):
-        self.assert_(self.cli.is_valid_command("versions"))
-        self.assert_(self.cli.is_valid_command("show"))    # test an alias
-        self.assertFalse(self.cli.is_valid_command("nosuchcommand"))
-
-    def testrun(self):
-        self.assert_(self.cli.run("versions", "dpkg", []) is None)
-        self.assert_(self.cli.run("show", "dpkg", []) is None)
-        self.assertRaises(ValueError, self.cli.run, "nosuchcommand", "", [])
+        self.cli = None
 
     def testnotfound(self):
         self.assert_(self.cli.notfound("nosuchpackage") is None)
@@ -216,7 +203,6 @@ class cliTests(unittest.TestCase):
         self.assert_(self.cli.checkbackport("checkbackport", "libv4l-0", []) is None)
         self.assert_(self.cli.checkbackport("checkbackport", "libxfont1", []) is None)
         self.assert_(self.cli.checkbackport("checkbackport", "nosuchpackage", []) is None)
-
 
 ###########################################################
 if __name__ == "__main__":

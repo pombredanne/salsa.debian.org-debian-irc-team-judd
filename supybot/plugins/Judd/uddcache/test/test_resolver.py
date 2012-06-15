@@ -53,6 +53,10 @@ class CheckerTests(unittest.TestCase):
         self.udd = Udd()
         self.checker = Checker(self.udd.BindRelease(arch="i386", release="lenny"))
 
+    def tearDown(self):
+        self.udd = None
+        self.checker = None
+
     def testInit(self):
         self.assertRaises(TypeError, Checker, None)
 
@@ -181,7 +185,11 @@ class CheckerTests(unittest.TestCase):
 class BuildDepCheckerTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
-        self.checker = BuildDepsChecker(self.udd.BindRelease(arch="i386", release="lenny"))
+        self.checker = BuildDepsChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
+
+    def tearDown(self):
+        self.udd = None
+        self.checker = None
 
     def testCheck(self):
         """Test checking the build-dependencies of a package"""
@@ -198,7 +206,7 @@ class BuildDepCheckerTests(unittest.TestCase):
         self.assert_(len(b.bd.bad) == 0)
         self.assert_(len(b.bdi.bad) == 0)
         # check by SourcePackage object
-        p = self.udd.BindSourcePackage(package="latexdraw", release="sid")
+        p = self.udd.BindSourcePackage(package="latexdraw", release="squeeze")
         b = self.checker.Check(package=p)
         self.assert_(b)
         self.assert_(len(b.bd.good) > 0)
@@ -225,6 +233,10 @@ class InstallCheckerTests(unittest.TestCase):
         self.udd = Udd()
         self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="lenny"))
 
+    def tearDown(self):
+        self.udd = None
+        self.checker = None
+
     @unittest.skipUnless(includeSlowTests, 'slow test')
     def testCheck(self):
         """Test installability of packages"""
@@ -243,6 +255,9 @@ class InstallCheckerTests(unittest.TestCase):
 class SolverHierarchyTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
+
+    def tearDown(self):
+        self.udd = None
 
     def testInit(self):
         s = SolverHierarchy('dpkg')

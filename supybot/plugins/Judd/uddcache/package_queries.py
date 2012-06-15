@@ -1,11 +1,11 @@
 #
 # Ultimate Debian Database query tool
 #
-# Set piece queries for the database
+# Set piece queries of package information from the database
 #
 ###
 #
-# Copyright (c) 2010-2011  Stuart Prescott
+# Copyright (c) 2010-2012  Stuart Prescott
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,8 @@ from udd import Udd
 from packages import *
 from relations import *
 from resolver import *
+from packages import PackageNotFoundError
+
 try:
     from debian import debian_support
 except:
