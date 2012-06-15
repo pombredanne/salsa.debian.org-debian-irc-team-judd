@@ -163,6 +163,8 @@ class DebianData(AvailableData):
 
     devel_release = 'sid'
 
-    arches = ['alpha', 'amd64', 'armel', 'hppa', 'hurd-i386', 'i386', 'ia64',
+    arches = ['alpha', 'amd64', 'armel', 'armhf',
+               'hppa', 'hurd-i386', 'i386', 'ia64',
                'kfreebsd-amd64', 'kfreebsd-i386',
-               'mips', 'mipsel', 'powerpc', 's390', 'sparc', 'all']
+               'mips', 'mipsel', 'powerpc', 's390', 's390x',
+               'sparc', 'all']
