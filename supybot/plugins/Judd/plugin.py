@@ -96,6 +96,7 @@ class Judd(callbacks.Plugin):
         # Initialise a UDD instance with the appropriate configuration
         self.udd = uddcache.udd.Udd(uddconf)
         self.dispatcher = uddcache.package_queries.Commands(self.udd)
+        self.bugs_dispatcher = uddcache.bug_queries.Commands(self.udd)
 
     def notfound(self, irc, package, release=None, arch=None,
                  message="No package named '%s' was found%s."):
@@ -223,12 +224,15 @@ class Judd(callbacks.Plugin):
             reply += "; Screenshot: %s" % pinfo['screenshot_url']
 
         bug_count = []
-        bugs = self.dispatcher.wnpp(package)
+        bugs = self.bugs_dispatcher.wnpp(package)
+        for b in  bugs:
+            self.log.critical("Bug %s" % b.id)
         for t in uddcache.bts.wnpp_types:
             bt = [b for b in bugs if b.wnpp_type == t]
             if bt:
                 bug_count.append("%s: #%d" % (bt[0].wnpp_type, bt[0].id))
-        reply += "; %s" % ", ".join(bug_count)
+        if bug_count:
+            reply += "; %s" % ", ".join(bug_count)
         irc.reply(reply)
 
     info = wrap(info, ['something',
@@ -853,7 +857,7 @@ class Judd(callbacks.Plugin):
             outer = irc.getCallback('Judd')
             self.registryValue = outer.registryValue
             self.udd = outer.udd
-            self.dispatcher = uddcache.bug_queries.Commands(self.udd)
+            self.dispatcher = outer.bugs_dispatcher
             self.bold = outer.bold
             self.log = outer.log
             self.throttle.log = outer.log
