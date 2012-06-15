@@ -67,6 +67,9 @@ alias add version versions $*
 alias add v versions $*
 alias add i info $*
 
+alias add rfs bug rfs $*
+alias add wnpp bug wnpp $*
+
 defaultplugin source Alias
 defaultplugin version Alias
 
