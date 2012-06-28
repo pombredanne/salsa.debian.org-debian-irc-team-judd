@@ -790,13 +790,35 @@ class Judd(callbacks.Plugin):
         upload is used. Imperfect binary-to-source package mapping will be
         attempted.
         """
+        self._uploads_helper(irc, msg, args, package, version, 1)
 
-        release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
+    maint      = wrap(maint, ['something', optional('something')])
+
+    def whouploads(self, irc, msg, args, package, number):
+        """<packagename> [<number>]
+
+        Return the names of the person who uploaded the source package, the
+        person who changed the package prior to upload and the maintainer of
+        the specified source package. Up to <number> (default 3) uploads are
+        listed. Imperfect binary-to-source package mapping will be attempted.
+        """
+        if number and int(number) == number and number > 0:
+            number = int(number)
+        else:
+            number = 3
+        self._uploads_helper(irc, msg, args, package, None, number)
+
+    whouploads = wrap(whouploads, ['private', 'something',
+                                  optional('positiveInt')])
+
+    def _uploads_helper(self, irc, msg, args, package, version, number):
+        """ helper function to obtain data about uploads """
+        try:
+            release = self.udd.data.clean_release_name(#optlist=optlist, args=something,
                             default=self.udd.data.devel_release)
 
-        try:
             pack = self.udd.BindSourcePackage(package, release)
-            uploads = self.dispatcher.uploads(pack, max=1, version=version)
+            uploads = self.dispatcher.uploads(pack, max=number, version=version)
         except PackageNotFoundError:
             if version:
                 irc.reply("Sorry, there is no record of '%s', version '%s'." %
@@ -805,17 +827,15 @@ class Judd(callbacks.Plugin):
                 irc.reply("Sorry, there is no record of '%s'." % package)
             return
 
-        u = uploads[0]
-        reply = "Package %s version %s was uploaded by %s on %s, " \
-                    "last changed by %s and maintained by %s." % \
-                (package, u['version'], u['signed_by_name'],
-                    u['date'].date(),
-                    u['changed_by_name'], u['maintainer_name'])
-        if u['nmu']:
-            reply += " (non-maintainer upload)"
-        irc.reply(reply)
-
-    maint      = wrap(maint, ['something', optional('something')])
+        for u in uploads:
+            reply = "Package %s version %s was uploaded by %s on %s, " \
+                        "last changed by %s and maintained by %s." % \
+                    (u['source'], u['version'], u['signed_by_name'],
+                        u['date'].date(),
+                        u['changed_by_name'], u['maintainer_name'])
+            if u['nmu']:
+                reply += " (non-maintainer upload)"
+            irc.reply(reply.encode('UTF-8'))
 
     def recent(self, irc, msg, args, package, version):
         """<packagename>

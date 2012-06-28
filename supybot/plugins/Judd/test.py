@@ -172,6 +172,14 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('maint python-pyx')            # auto bin2src test; maintianer, uploader and changer for source package pyx
         self.assertNotError('maint nosuchpackage')         # package not found; no such package in the archive
 
+    def testWhoUploads(self):
+        self.assertNotError('whouploads nosuchpackage')   # package not found; no such package in the archive
+        self.assertHelp('whouploads nosuchpackage q')    # illegal number; generate an error
+        self.assertHelp('whouploads nosuchpackage -1')    # illegal number; generate an error
+        self.assertHelp('whouploads nosuchpackage 0')    # illegal number; generate an error
+        self.assertNotError('whouploads perl')            # show maintainer; maintianer, uploader and changer
+        self.assertNotError('whouploads python-pyx 5')    # auto bin2src test; maintianer, uploader and changer for source package pyx
+
     def testRecent(self):
         self.assertNotError('recent perl')                      # show recent upload; last 10 uploads of perl
         self.assertNotError('recent python-pyx')                # auto bin2src test; show last 10 uploads of pyx
