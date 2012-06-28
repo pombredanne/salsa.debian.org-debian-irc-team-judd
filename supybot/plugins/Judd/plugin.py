@@ -225,8 +225,6 @@ class Judd(callbacks.Plugin):
 
         bug_count = []
         bugs = self.bugs_dispatcher.wnpp(package)
-        for b in  bugs:
-            self.log.critical("Bug %s" % b.id)
         for t in uddcache.bts.wnpp_types:
             bt = [b for b in bugs if b.wnpp_type == t]
             if bt:
