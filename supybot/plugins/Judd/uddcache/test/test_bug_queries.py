@@ -88,6 +88,8 @@ class commands(unittest.TestCase):
         self.assertEqual(bl[0].id, 546202)
         bl = self.dispatcher.wnpp('levmar', 'ITP')
         self.assertEqual(len(bl), 0)
+        bl = self.dispatcher.wnpp('python') # don't match partial package names
+        self.assertEqual(len(bl), 0)
 
     def testRcbugs(self):
         bl = self.dispatcher.rcbugs('ktikz')

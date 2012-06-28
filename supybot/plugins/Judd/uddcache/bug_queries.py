@@ -121,7 +121,7 @@ class Commands(object):
         if bugtype:
             filter['title'] = r'''^["']?%s\s*(:|--|)\s*%s ''' % (bugtype, package)
         else:
-            filter['title'] = r'''^["']?(%s)\s*(:|--|)\s*%s\y''' % ('|'.join(bts.wnpp_types), package)
+            filter['title'] = r'''^["']?(%s)\s*(:|--|)\s*%s ''' % ('|'.join(bts.wnpp_types), package)
         return tracker.get_bugs(filter)
 
     def rcbugs(self, package, verbose=True):
