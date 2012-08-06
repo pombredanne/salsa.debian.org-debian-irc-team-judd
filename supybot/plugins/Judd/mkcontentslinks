@@ -34,7 +34,7 @@
 set -u
 set -e
 
-UDDCONFIG=/org/udd.debian.org/udd/config-judd.yaml
+UDDCONFIG=/srv/udd.debian.org/udd/config-judd.yaml
 PATH=~udd/bin:$PATH
 
 usage() {
