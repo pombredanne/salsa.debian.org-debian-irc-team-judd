@@ -75,7 +75,7 @@ def _wrap(cursor, func):
             return func(*args, **kwargs)
         finally:
             if not isinstance(cursor, psycopg2.extras.LoggingCursor):
-                cursor.connection.log(cursor.query, cursor)
+                cursor.connection.log(cursor.query.replace("%", "%%"), cursor)
 
     newfunc = types.FunctionType(wrapper.func_code, wrapper.func_globals,
                                 func.func_name,
