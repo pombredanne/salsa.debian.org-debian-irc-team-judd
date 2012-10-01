@@ -142,7 +142,7 @@ sub dotest {
       $k->info("I: " . $test->{result});
     }
     if ($channel ne "") {
-      $k->say("$bot:", $test->{test});
+      $k->say("$bot ", $test->{test});
     } else {
       $k->msg($bot, $test->{test});
     }
