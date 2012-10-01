@@ -76,21 +76,23 @@ do
   # locate the relevant section of the local mirror
   DIR=$(awk "/^$release:/,/^$/" $UDDCONFIG |
         sed -n "s/^[[:space:]]*directory:[[:space:]]*//p")
-  echo "$release => $DIR"
-  if [ -d "$TARGET/$release" ]
+  RELDIR="debian-"$(awk "/^$release:/,/^$/" $UDDCONFIG |
+        sed -n "s/^[[:space:]]*release:[[:space:]]*//p")
+  echo "$release => $DIR => $RELDIR"
+  if [ -d "$TARGET/$RELDIR" ]
   then
-    rm -f "$TARGET/$release"/Contents*gz
-    rm -f "$TARGET/$release"/*/Contents*gz
+    rm -f "$TARGET/$RELDIR"/Contents*gz
+    rm -f "$TARGET/$RELDIR"/*/Contents*gz
   fi
-  mkdir -p "$TARGET/$release/"{main,contrib,non-free}
+  mkdir -p "$TARGET/$RELDIR/"{main,contrib,non-free}
   case "$release" in
     *lenny*|*squeeze*)
         for c in "$DIR"/Contents*gz
         do
           if [ -f "$c" ]
           then
-            ln -s "$c" "$TARGET/$release/main/"
-            touch "$TARGET/$release/"{contrib,non-free}/$(basename "$c")
+            ln -s "$c" "$TARGET/$RELDIR/main/"
+            touch "$TARGET/$RELDIR/"{contrib,non-free}/$(basename "$c")
           fi
         done
       ;;
@@ -101,11 +103,10 @@ do
           do
             if [ -f "$c" ]
             then
-              ln -s "$c" "$TARGET/$release/$s/"
+              ln -s "$c" "$TARGET/$RELDIR/$s/"
             fi
           done
         done
       ;;
   esac
 done
-
