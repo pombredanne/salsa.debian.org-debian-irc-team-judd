@@ -1,0 +1,32 @@
+Documentation for the Judd and Piccy plugins
+============================================
+
+The documentation is split into a number of separate files just to make
+editing the documents simpler. The documentation is presented to the user
+as one large file.
+
+Conventions:
+
+* Technical terms from policy and commands and options are rendered in
+  <code> … </code> tags
+
+* Links to user documentation for explaining terms are most welcome -- links
+  to wiki.debian.org or the apt reference guide are good. Links to the
+  Debian Policy Manual are appropriate too, but user-focussed documentation
+  is better.
+
+* A synopsis of each command showing the possible options and syntax should
+  be presented first. The usual conventions of man-pages are used:
+    - Mandatory arguments and subcommands are written in plain text
+    - Optional arguments are indicated with square brackets: [ --foo ]
+    - Place-holders in the synopsis are italicised: <span class="var"> … </span>
+    - The "synopsis input" classes are used for the example command.
+
+* Useful examples that demonstrate common uses of the commands are welcome.
+  Examples that show the difference that a particular option makes are good.
+    - The "input" class is used to mark the command line.
+    - The "output" class marks the bot response.
+    - Feel free to join multiple lines from long output from the bot.
+
+* Documentation is XHTML 1.0 Transitional, uses UTF-8 encoding and both XHTML
+  and CSS should validate.

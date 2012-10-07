@@ -1,0 +1,85 @@
+<a id="bts" />
+<h2>Bug tracking</h2>
+<p>The <a href="http://udd.debian.org/">Ultimate Debian Database</a>
+imports data from the Debian
+<a href="http://bugs.debian.org/">Bug Tracking System</a> (BTS) on a regular
+basis. Having a nice database full of bug details can be quite handy, but the
+delay in importing the information poses some obvious limitations.</p>
+
+
+<a id="judd-bug" />
+<h3>Bugs in packages</h3>
+<p>The status of an individual bug can be seen,
+an overview of the bugs in a package generated or
+bugs with titles in a package can be located.</p>
+
+<div class="example">
+    <div class="synopsis input">bug
+                (<span class="var">number</span> |
+                <span class="var">package</span>
+                    [ <span class="var">keyword</span> ])
+    </div>
+
+    <div class="input">bug 600600</div>
+    <div class="output">Bug http://bugs.debian.org/600600 in upgrade-reports (open, squeeze): «upgrade-reports: lenny->squeeze and libuuid-perl (and apt-get vs aptitude)»; severity: normal; opened: 2010-10-18; last modified: 2010-12-12.</div>
+
+    <div class="input">bug iceweasel</div>
+    <div class="output">Bug summary for package iceweasel: wishlist: 113, minor: 45, normal: 198, important: 64, grave: 1</div>
+
+    <div class="input">bug src:iceweasel</div>
+    <div class="output">Bug summary for package src:iceweasel: wishlist: 121, minor: 50, normal: 210, important: 70, grave: 1</div>
+
+    <div class="input">bug iceweasel crash</div>
+    <div class="output">Matching bugs: #294428, #305490, #320553, #324791, #386310, #404173, #446069, #517876, #637890,  #642537, #652941, #661387, #674908, #675707, #681852, #688760</div>
+</div>
+
+<p>An overview of the release-critical bugs in a package can be seen.</p>
+<div class="example">
+    <div class="synopsis input">bug rc
+                <span class="var">package</span>
+    </div>
+
+    <div class="input">bug rc libc6</div>
+    <div class="output">Release critical bugs in package libc6 (3): #555168 (forwarded, squeeze-ignore, wheezy-ignore), #634261 (open, upstream), #684889 (open, security) </div>
+</div>
+
+
+<a id="judd-bug-rm" />
+<h3>Administrative tasks tracked through bugs</h3>
+<p>The reason a source package was removed from Debian can be located.</p>
+<div class="example">
+    <div class="synopsis input">bug rm
+                <span class="var">package</span>
+    </div>
+
+    <div class="input">bug rm sun-java6</div>
+    <div class="output">Bug http://bugs.debian.org/646524 in ftp.debian.org (done): «RM: sun-java6 -- ROM; security issues and newer versions cannot be redistributed»; severity: normal; opened: 2011-10-24; last modified: 2011-12-01. </div>
+</div>
+
+<p>Work-needed and prospective packages (WNPP) bugs can be searched too.
+WNPP bugs include O (orphaned), RFA (request for adoption), ITA (intent to adopt),
+ITP (intent to package), RFP (request for packaging).
+</p>
+<div class="example">
+    <div class="synopsis input">bug rm
+                <span class="var">package</span>
+    </div>
+
+    <div class="input">bug wnpp cinnamon</div>
+    <div class="output"> Bug http://bugs.debian.org/657395 in wnpp (open): «ITP: cinnamon -- Cinnamon desktop»; severity: wishlist; opened: 2012-01-25; last modified: 2012-09-30. </div>
+    <div class="input">bug wnpp htdig</div>
+    <div class="output"> Bug http://bugs.debian.org/375733 in wnpp (open): «O: htdig -- web search and indexing system»; severity: normal; opened: 2006-06-27; last modified: 2012-06-07. </div>
+</div>
+
+<p>New versions of packages can be added to the archive at the request of
+maintainers who do not (yet) have upload permissions. Such requests may be
+contained within RFS (Request for Sponsorship) bug reports.
+</p>
+<div class="example">
+    <div class="synopsis input">bug rfs
+                <span class="var">package</span>
+    </div>
+
+    <div class="input">bug rfs cinnamon</div>
+    <div class="output"> #680546 (open): RFS: cinnamon/1.6.1-1 [ITP] (Nicolas Bourdaud &lt;nicolas.bourdaud@[redacted]>)</div>
+</div>

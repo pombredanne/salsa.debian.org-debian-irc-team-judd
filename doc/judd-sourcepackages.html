@@ -1,0 +1,173 @@
+<a id="sourcepackages" />
+<h2>Source package information</h2>
+<p>The binary packages that are installed on a Debian system are derived from
+<a href="http://wiki.debian.org/SourcePackage">source packages</a>.
+The <a href="#judd-versions">versions</a> command shown above for
+binary packages can be used to see source package versions by prefixing
+the package name with <code>src:</code>.</p>
+
+<a id="judd-source" />
+<h3>Source/binary mapping</h3>
+<p>Obtain information about source packages and their relationships to
+binary packages.
+Here, <code><span class="var">binary_packagename</span></code>
+is used for the Debian binary package and
+<code><span class="var">source_packagename</span></code> for
+the Debian source package.
+See
+<a href="http://www.debian.org/doc/manuals/debian-faq/ch-pkg_basics.html">Debian Reference §7.1</a>
+for more information on Debian source packages.
+</p>
+
+<div class="example">
+    <div class="synopsis input">source <span class="var">binary_packagename</span>
+                [ --arch  <span class="var">architecture</span> ]
+                [ --release <span class="var">release</span> ]
+    </div>
+    <div class="synopsis input">binaries <span class="var">source_packagename</span>
+                [ --arch  <span class="var">architecture</span> ]
+                [ --release <span class="var">release</span> ]
+    </div>
+</div>
+
+<p>What source package produced <code>libc6</code> in lenny? squeeze?</p>
+<div class="example">
+    <div class="input">source libc6 --release lenny</div>
+    <div class="output">Package libc6 in lenny -- source: glibc</div>
+
+    <div class="input">source libc6</div>
+    <div class="output">Package libc6 in squeeze -- source: eglibc</div>
+</div>
+
+<p>What source package makes the <code>python</code> package?</p>
+<div class="example">
+    <div class="input">source python</div>
+    <div class="output">Package python in squeeze -- source: python-defaults</div>
+</div>
+
+<p>What other binary packages come out of the <code>python-defaults</code> package?</p>
+<div class="example">
+    <div class="input">binaries python-defaults --release sid</div>
+    <div class="output">Source python-defaults in sid: Binaries: python-minimal, python-dbg, python-examples, python-all-dev, python-dev, python, python-all, python-all-dbg, idle, python-doc</div>
+</div>
+
+
+<a id="judd-builddep" />
+<h3>Building source packages</h3>
+The build-time dependencies of a source package are listed by the maintainer
+as being for general package building (<code>Build-Depends</code>) or
+only for building the architecture-independent parts of the package
+(<code>Build-Depends-Indep</code>).
+<a href="http://www.debian.org/doc/debian-policy/ch-relationships.html#s-sourcebinarydeps">Section 7.7</a> of the Debian Policy Manual
+defines these terms in mode detail.
+
+<div class="example">
+    <div class="synopsis input">builddep <span class="var">source_packagename</span>
+                [ --release <span class="var">release</span> ]
+    </div>
+
+    <div class="input">builddep python-defaults --release sid</div>
+    <div class="output">Package python-defaults in sid -- Build-Depends: debhelper (>= 8~); Build-Depends-Indep: libhtml-tree-perl, debiandoc-sgml, python-docutils (>= 0.4-3).</div>
+</div>
+
+
+<a id="judd-checkbackport" />
+<h3>Building backported packages</h3>
+<p>While pre-compiled backports are <a href="http://backports.debian.org/">available
+for Debian stable releases</a> already, it is also possible to
+<a href="http://wiki.debian.org/SimpleBackportCreation">make your own</a>.
+It is possible to check if the declared build-dependencies are available
+in your target release.
+Note that just because the build-dependencies are satisfied doesn't mean that
+the package will build and function correctly. Conversely, it is sometimes
+still possible to backport a package that doesn't have its build-dependencies
+satisfied by skipping some compilation options.
+</p>
+<div class="example">
+    <div class="synopsis input">checkbackport <span class="var">source_packagename</span>
+                [ --fromrelease  <span class="var">release</span> ]
+                [ --torelease <span class="var">release</span> ]
+                [ --arch <span class="var">architecture</span> ]
+                [ --verbose ]
+    </div>
+
+    <div class="input">checkbackport latexdraw</div>
+    <div class="output">Backporting package latexdraw in sid→squeeze/i386: all build-dependencies satisfied using squeeze.</div>
+
+    <div class="input">checkbackport digikam --fromrelease experimental --torelease squeeze</div>
+    <div class="output">Backporting package digikam in experimental→squeeze/i386: unsatisfiable build dependencies: Build-Depends: kdelibs5-dev (>= 4:4.7), kdepimlibs5-dev (>= 4:4.7), libmarble-dev (>= 4:4.7), libqtwebkit-dev, libopencv-dev.</div>
+
+    <div class="input">checkbackport translate-toolkit --verbose</div>
+    <div class="output">Backporting package translate-toolkit in sid→squeeze/i386: all build-dependencies satisfied using squeeze, squeeze-backports.</div>
+    <div class="output">squeeze: python (>= 2.6.6-3~),python-lxml,python-vobject,python-simplejson; squeeze-backports: debhelper (>= 9~)</div>
+</div>
+
+<p>
+If <code>--verbose</code> is specified, a detailed breakdown of the
+build-dependencies and which release they were found in will be provided to you
+in a private message.</p>
+
+<p>The <code>--fromrelease</code> parameter defaults to
+<code>sid</code> while <code>--torelease</code> defaults to the current stable
+release. Packages from <code>stable-backports</code> will automatically
+be included if needed.
+The output shows the releases that were used to find the build-dependencies.
+The presence of build-dependencies that are not required for the specified
+architecture is noted with an <code>archignore</code> pseudo-release in the
+output.
+Build-dependencies that have been found through virtual packages
+and <code>Provides</codes> relationships cause a <code>virtual</code>
+pseudo-release to be reported in the output.
+Reliance on virtual build-dependencies can indicate that a backport
+is more likely to fail to compile (FTBFS).
+</p>
+
+<p>This command does not take account of the co-installability of the
+build-dependencies and does not look at Build-Conflicts.</p>
+
+
+<a id="judd-maint" />
+<h3>Uploading packages</h3>
+<p>Information about the maintainers of a package and when versions were
+uploaded is available. The upload of specific versions of a package
+can be queried; by default the most recent upload information is returned.</p>
+
+<div class="example">
+    <div class="synopsis input">maint
+                <span class="var">source_packagename</span>
+                [ <span class="var">version</span> ]
+    </div>
+
+    <div class="input">maint eglibc</div>
+    <div class="output">Package eglibc version 2.13-35 was uploaded by Aurelien Jarno on 2012-07-22, last changed by Aurelien Jarno and maintained by Aurelien Jarno.</div>
+
+    <div class="input">maint python-pyx 0.10-0+nmu1</div>
+    <div class="output">Package pyx version 0.10-0+nmu1 was uploaded by Mike O'Connor (stew) on 2009-08-09, last changed by Stuart Prescott and maintained by Ernesto Nadir Crespo Avila. (non-maintainer upload)</div>
+</div>
+
+<p>A list of recently uploaded versions and the upload dates can also be seen.</p>
+
+<div class="example">
+    <div class="synopsis input">recent <span class="var">source_packagename</span>
+    </div>
+
+    <div class="input">recent python-pyx</div>
+    <div class="output">Package python-pyx recent uploads: 0.11.1-2 2011-11-27, 0.11.1-1 2011-06-03, 0.10-2 2010-02-11, 0.10-1 2009-11-04, 0.10-0+nmu3 2009-10-20, 0.10-0+nmu2 2009-10-07, 0.10-0+nmu1 2009-08-09, 0.9-4 2007-02-21, 0.9-3 2006-11-26, 0.9-2 2006-06-15.</div>
+</div>
+
+<p>Further details of recent uploads, similar to the <code>whouploads</code>
+command from the <a href="http://packages.debian.org/devscripts">devscripts</a>
+package, can also be obtained.</p>
+
+<div class="example">
+    <div class="synopsis input">whouploads
+                <span class="var">source_packagename</span>
+                <span class="var">number</span>
+    </div>
+
+    <div class="input">whouploads python-pyx</div>
+    <div class="output">Package pyx version 0.11.1-2 was uploaded by Stuart Prescott on 2011-11-27, last changed by Stuart Prescott and maintained by Stuart Prescott.</div>
+    <div class="output">Package pyx version 0.11.1-1 was uploaded by Michael O'Connor (stew) on 2011-06-03, last changed by Stuart Prescott and maintained by Stuart Prescott.</div>
+    <div class="output">Package pyx version 0.10-2 was uploaded by Jakub Wilk on 2010-02-11, last changed by Stuart Prescott and maintained by Stuart Prescott.</div>
+</div>
+

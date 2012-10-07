@@ -1,0 +1,123 @@
+<a id="about" />
+<h2>About the bot</h2>
+<p>
+The name <code>judd</code> came from the first and most used plugin
+that is running in this bot.
+The plugin was called <code>Judd</code> as it is a window into the
+<a href="http://udd.debian.org/">Ultimate Debian Database</a>
+for providing package and bug tracking information.
+</p>
+
+<p>The bot is a
+<a href="http://packages.debian.org/supybot">supybot</a> running a
+number of customised plugins for helping on <code>#debian</code>:
+</p>
+<dl>
+    <dt><code>Judd</code></dt>
+    <dd>Ultimate Debian Database for package information and bugs</dd>
+
+    <dt><code>Piccy</code></dt>
+    <dd>PCI-Id and other hardware compatibility information</dd>
+</dl>
+
+<p>A complete list of the available commands that any plugin provides
+may be obtained from the bot by asking it to <code>list</code> the plugin,
+for example using the following commands:</p>
+
+<div class="example">
+    <div class="input">/msg judd list Judd</div>
+    <div class="output">archs, binaries, bug, bug autobug, bug rc, bug rfs, bug rm, bug wnpp, builddep, checkbackport, checkbuilddeps, checkdeps, checkinstall, conflicts, danke, depends, enhances, file, info, maint, names, popcon, provides, recent, recommends, rprovides, src, suggests, versions, whouploads, and why</div>
+</div>
+
+<div class="example">
+    <div class="input">/msg judd list Piccy</div>
+    <div class="output">kconfig, kernels, pciid, and pciname</div>
+</div>
+
+<p>A few extra aliases exist for these commands to handle common typos or
+to reduce the amount of typing required.</p>
+
+<p>
+For each of the commands <code>judd</code> lists as part of a plugin,
+on-line help is available:</p>
+
+<div class="example">
+    <div class="synopsis input">/msg judd help <span class="var">command</span></div>
+    <div class="input">/msg judd help versions</div>
+    <div class="output">(versions &lt;pattern> [--arch &lt;i386>] [--release &lt;stable>]) -- Show the available versions of a package in the optionally specified release and for the given architecture. All current releases and i386 are searched by default. By default, binary packages are searched; prefix the packagename with "src:" to search source packages.</div>
+</div>
+
+<p>
+Note that <code>judd</code> uses comma (<code>,</code>) as an address
+character in the channel.
+You can either address it directly by prefixing commands with
+<code>judd</code> or <code>,</code> or send the commands by private message
+(<code>/msg judd</code>). Please talk to <code>judd</code> in a private message
+unless others in the channel really need to see his output.
+For the remainder of this examples in this guide,
+the details of how the bot is addressed are omitted.
+</p>
+
+
+<p>The plugin indexes a number of official repositories as well as
+out-of-Debian repositories that are widely used (indexing is not an
+endorsement of the out-of-Debian repository).
+The repositories indexed by <code>Judd</code>
+and the names given to them are as follows:
+</p>
+
+<dl>
+    <dt>Official repositories</dt>
+    <dd><code>lenny</code>, <code>squeeze</code>, <code>wheezy</code>,
+        <code>sid</code>, <code>experimental</code></dd>
+
+    <dt>Security updates (<code>squeeze/updates</code>)</dt>
+    <dd><code>lenny-security</code>, <code>squeeze-security</code>,
+        <code>wheezy-security</code></dd>
+
+    <dt>Updates (aka volatile) and other updated packages</dt>
+    <dd><code>lenny-volatile</code>, <code>squeeze-updates</code>
+        <code>squeeze-proposed-updates</code>,
+        <code>testing-proposed-updates</code></dd>
+
+    <dt>Backports from <a href="http://backports.debian.org/">backports.debian.org</a></dt>
+    <dd><code>lenny-backports</code>, <code>lenny-backports-sloppy</code>,
+        <code>squeeze-backports</code></dd>
+
+    <dt>Multimedia packages from deb-multimedia.org</dt>
+    <dd><code>lenny-multimedia</code>, <code>squeeze-multimedia</code>,
+        <code>wheezy-multimedia</code>, <code>sid-multimedia</code></dd>
+</dl>
+
+Notes:
+<ul>
+ <li><code>oldstable</code> is kept in the database even after oldstable
+    support finishes. This is only to help people who are tardy in upgrading
+    and not because running an unsupported release is a clever idea.</li>
+ <li><code>testing-security</code> does not always contain meaningful
+    updates if the Testing Security team are not currently providing security
+    support for <code>testing</code>.</li>
+ <li>the release states (<code>unstable</code> etc) can be used as well
+    as code names (<code>sid</code>).</li>
+</ul>
+
+In <code>#debian</code> the information supplied by <code>Judd</code>
+defaults to the current stable release for the i386 architecture.
+In <code>#debian-next</code> the current testing release is used instead.
+
+<h3>Standard Options</h3>
+<p>Many commands take the following options</p>
+<dl>
+    <dt><code>packagename</code></dt>
+    <dd>a binary package name (not source package name). Prefixing the name
+    with <code>src:</code> will look at source packages instead.</dd>
+
+    <dt><code>--arch <span class="var">architecture</span></code></dt>
+    <dd>specify the architecture.
+        Standard Debian architecture names are used, such as
+        <code>i386</code>, <code>amd64</code>, <code>kfreebsd-i386</code>, etc.</dd>
+
+    <dt><code>--release <span class="var">release</span></code></dt>
+    <dd>select which release should be queried.
+    Either release codenames (<code>sid</code>) or release states (<code>unstable</code>) can be used.</dd>
+</dl>

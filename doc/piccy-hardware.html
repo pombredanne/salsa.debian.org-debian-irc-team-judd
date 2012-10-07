@@ -1,0 +1,119 @@
+<a id="hardware" />
+<h2>Hardware support information</h2>
+<p>Information about the hardware support provided by the kernels in various
+<a href="http://wiki.debian.org/DebianReleases">Debian releases</a>
+is made available by the <code>Piccy</code> plugin.</p>
+
+<p> <code>Piccy</code> indexes the kernel config and PCI-Id mappings for the
+i686 kernels in all debian releases including the
+<a href="http://backports.debian.org/">backports.debian.org</a> repositories.
+Additionally, the kernel from the kernel team's build server repository may be
+indexed if it is available.
+Kernel updates released by the security team are included in this indexing
+although these rarely (if ever?) change the data.</p>
+
+<!--
+<p>Mappings between PCI-Ids and xorg modules are attempted and links to the Debian wiki are provided for further information about kernel modules.
+-->
+
+<p>The PCI-Id for a device may be obtained with the command
+<code>lspci -nn</code> (from the
+<a href="http://packages.debian.org/pciutils">pciutils</a> package).
+Further information and other approaches to finding this information
+can be found on the
+<a href="http://wiki.debian.org/HowToIdentifyADevice/PCI">Debian wiki</a>.
+An example output from <code>lspci -nn</code> is:</p>
+
+<div class="example">
+0b:00.0 Network controller [0280]: Intel Corporation PRO/Wireless 3945ABG [Golan] Network Connection [8086:4222] (rev 02)
+</div>
+<p>which shows that this wireless device has a PCI-Id of <code>8086:4222</code>.
+</p>
+
+
+<a id="piccy-pciid" />
+<h3>PCI-Id to kernel module</h3>
+<p>Display the kernel module or modules that claim to support a
+specified PCI-Id.
+The device and its manufacturer are identified based on the
+<a href="http://pciids.sourceforge.net/">pci.ids database</a>.
+An index of kernel modules is used to see which, if any, modules
+will claim that device (based on <code>modules.pcimap</code>).
+A link to <a href="http://kmuto.jp/debian/hcl/">kmuto's HCL</a> is provided
+for further information about the device.
+Links to appropriate pages in the
+<a href="http://wiki.debian.org/">Debian wiki</a>
+are also given.
+</p>
+
+<div class="example">
+    <div class="synopsis input">pciid <span class="var">pci-id</span>
+                [ --release  <span class="var">release</span> ]
+    </div>
+
+    <div class="input">pciid 8086:4222</div>
+    <div class="output">[8086:4222] is 'PRO/Wireless 3945ABG [Golan] Network Connection' from 'Intel Corporation' with kernel modules 'ata_generic', 'iwl3945' in squeeze. See also http://kmuto.jp/debian/hcl/index.rhtmlx?check=1&amp;lspci=8086:4222 http://wiki.debian.org/iwlegacy</div>
+
+    <div class="input">pciid 8086:4237 --release lenny</div>
+    <div class="output">[8086:4237] is 'PRO/Wireless 5100 AGN [Shiloh] Network Connection' from 'Intel Corporation' with no known kernel module in lenny but has kernel module 'iwlwifi', 'ata_generic', 'snd-hda-intel' in sid. See also http://kmuto.jp/debian/hcl/index.rhtmlx?check=1&amp;lspci=8086:4237</div>
+</div>
+
+<p>Note that a few modules like <code>ata_generic</code>, <code>nvidiafb</code>
+and <code>snd-hda-intel</code> are almost always
+false-positives from a wildcard match from the driver - unless you were actually
+asking about a disk or audio card. (Hints on how to do
+this matching more robustly are most welcome.)</p>
+
+<p><code>Piccy</code> will search through the sid kernel if no matches in the
+kernel for the requested release are found.</p>
+
+
+<a id="piccy-pciname" />
+<h3>Device name to PCI-Id</h3>
+<p>Users frequently know the name of the device but not the actual PCI-Id.
+Trying to work out the PCI-Id from the name isn't easy, but can sometimes be
+done. This is usually best done in a private message to save flooding the
+channel.</p>
+
+<div class="example">
+    <div class="synopsis input">pciname <span class="var">keyword</span>
+    </div>
+</div>
+<p>The <span class="var">keyword</span> is part of the device name from
+the pci.ids database. It cannot contain non-alphanumeric characters
+and has a wildcard added to the beginning and end of the term.</p>
+
+<p>For example, a user claimed to have a <code>82573E</code> network
+adapter but stated that the PCI-Id was `80086:1082`
+(which is malformed and incorrect).</p>
+
+<div class="example">
+    <div class="input">pciname 82573E</div>
+    <div class="output">'82573E' matched: [8086:108c] '82573E Gigabit Ethernet Controller (Copper)' from 'Intel Corporation', [8086:108e] '82573E KCS (Active Management)' from 'Intel Corporation', [8086:10b3] '82573E PRO/1000 PM Network Connection' from 'Intel Corporation'</div>
+</div>
+
+<!--
+<h3>PCI-Id to Xorg driver</h3>
+Working out which Xorg driver should be used for a piece of hardware isn't always as easy as it sounds. Piccy attempts to match the PCI-Id of the hardware to the Xorg PCI-Id database.
+
+Note that this database is currently only available for `lenny`.
+
+{{{
+xorg ''pci-id'' [ `- -release` ''release'' ]
+}}}
+
+where the options have the same meaning [[#PiccyOptions|as above]].
+
+Examples:
+{{{
+xorg 1002:7145
+<judd> In lenny, device 1002:7145 is matched by xorg drivers: 'radeon', 'radeonhd'.
+}}}
+
+{{{
+xorg 1106:1122
+<judd> Device 1106:1122 is not matched by any xorg drivers in lenny. In sid, it is matched by xorg driver: 'openchrome'.
+}}}
+
+and kernel configuration (`Piccy`) =
+-->

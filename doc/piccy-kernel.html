@@ -1,0 +1,60 @@
+<a id="kernel" />
+<h2>Kernel information</h2>
+<p>The available kernels and their configuration are also searchable
+through the <code>Piccy</code> module.</p>
+
+
+<a id="piccy-kernels" />
+<h3>Available kernels</h3>
+<p>The kernels indexed to determine PCI-Id support can be interrogated
+using the <code>kernels</code> command.</p>
+
+<div class="example">
+    <div class="synopsis input">kernels
+                    [ --release <span class="var">release</span> ]
+    </div>
+
+    <div class="input">kernels</div>
+    <div class="output">Available kernel versions are: experimental: 3.5-trunk-686-pae (3.5.2-1~experimental.1); sid: 3.2.0-4-686-pae (3.2.30-1); wheezy: 3.2.0-3-686-pae (3.2.23-1); squeeze-backports: 3.2.0-0.bpo.3-686-pae (3.2.23-1~bpo60+2); squeeze: 2.6.32-5-686 (2.6.32-46); lenny-backports: 2.6.32-bpo.5-686 (2.6.32-35~bpo50+1); lenny: 2.6.26-2-686 (2.6.26-29)</div>
+
+    <div class="input">kernels --release squeeze-backports</div>
+    <div class="output">Available kernel versions are: squeeze-backports: 3.2.0-0.bpo.3-686-pae (3.2.23-1~bpo60+2)</div>
+</div>
+
+
+<a id="piccy-kconfig" />
+<h3>Kernels configuration options</h3>
+<p>The Debian kernel packages ship the kernel config that was used to
+compile the kernel in <code>/boot/config-$(uname -r)</code> and
+<code>grep OPTION /boot/config-$(uname -r)</code>
+can provide useful information.
+The i686 kernel configurations for the same releases as for the
+<code>pciid</code> command are indexed.</p>
+
+<div class="example">
+    <div class="synopsis input">kconfig
+                    <span class="var">option</span>
+                    [ --release <span class="var">release</span> ]
+    </div>
+</div>
+
+<p>where <span class="var">option</span> is a keyword or part of the
+config option being searched for.
+It cannot contain non-alphanumeric characters and has a
+wildcard added to the beginning and end of the term.
+CONFIG_ is not required to be added to the term and the search
+is case-insensitive.</p>
+
+<p>Examples:</p>
+
+
+<div class="example">
+    <div class="input">kconfig CIFS</div>
+    <div class="output"> Searching for 'CIFS' in squeeze kernel config gives CIFS=m CIFS_WEAK_PW_HASH=y CIFS_UPCALL=y CIFS_XATTR=y CIFS_POSIX=y CIFS_DFS_UPCALL=y CIFS_EXPERIMENTAL=y.</div>
+
+    <div class="input">kconfig IWL --release squeeze</div>
+    <div class="output">Searching for 'IWL' in squeeze kernel config gives IWLWIFI=m IWLWIFI_LEDS=y IWLWIFI_SPECTRUM_MEASUREMENT=y IWLAGN=m IWL4965=y IWL5000=y IWL3945=m IWL3945_SPECTRUM_MEASUREMENT=y.</div>
+
+    <div class="input">kconfig IWL --release squeeze-backports</div>
+    <div class="output">Searching for 'IWL' in squeeze-backports kernel config gives IWLWIFI=m IWLWIFI_LEGACY=m IWL4965=m IWL3945=m.</div>
+</div>
