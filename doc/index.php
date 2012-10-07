@@ -83,7 +83,7 @@ plugins can be found in
 <a href="http://git.nanonanonano.net/?p=judd.git;a=summary">gitweb</a>.
 </p>
 <p>
-<code>git clone http://git.nanonanonan.net/projects/judd.git</code>
+<code>git clone http://git.nanonanonano.net/projects/judd.git</code>
 </p>
 
 <br />
