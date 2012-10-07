@@ -30,3 +30,7 @@ Conventions:
 
 * Documentation is XHTML 1.0 Transitional, uses UTF-8 encoding and both XHTML
   and CSS should validate.
+
+The documentation uses the Debian website theme. The files from this are
+adapted from the git.deb.at theme and are checked into the infobot-www
+code found in the same location as this code.
