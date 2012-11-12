@@ -231,8 +231,10 @@ class Bugreport(object):
     def readable_status(self):
         if not self.status:
             return
-        if self.status in ('done', 'forwarded', 'fixed'):
+        if self.status in ('forwarded', 'fixed'):
             return self.status
+        if self.status in ('done'):
+            return 'closed'
         if self.status in ('pending'):
             return 'open'
         if self.status in ('pending-fixed'):
