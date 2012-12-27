@@ -1,6 +1,20 @@
 Judd: A supybot plugin to view into the Ultimate Debian Database
 ===============================================================
 
+Data
+====
+* Ultimate Debian Database -- packages, sources, bugs
+  Running on same host with permanent db connection from bot to db.
+  Data is updated from cron:
+    - packages and sources information loaded into the db by the gatherers
+    - bugs data loaded from SQL snapshot of udd.debian.org
+* Contents files
+  Files from mirror searched using zgrep.
+  Data is updated by udd cron jobs.
+* Alternatives list
+  Snapshot generated periodically by Jakub Wilk.
+    - wget http://people.debian.org/~jwilk/alternatives/Contents -O- |
+        gzip -c > supybot/data/judd/debian-sid/main/Contents-alt.gz
 
 
 Maintenance notes for UDD
@@ -66,6 +80,9 @@ alias add arches archs $*
 alias add version versions $*
 alias add v versions $*
 alias add i info $*
+
+alias add find file $*
+alias add alternatives alternative $*
 
 alias add rfs bug rfs $*
 alias add wnpp bug wnpp $*
