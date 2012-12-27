@@ -77,7 +77,7 @@ class contents_file(object):
             raise IOError('File %s not found.' % filepath)
 
         try:
-            #print "Trying: zgrep -iE -e '%s' '%s'" % (regexp, contents)
+            #print "Trying: zgrep -iE -e '%s' '%s'" % (regexp, filepath)
             output = subprocess.Popen(['zgrep', '-iE', '-e', regexp, filepath],
                       stdout=subprocess.PIPE,
                       stderr=subprocess.PIPE,

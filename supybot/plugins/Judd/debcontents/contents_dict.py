@@ -33,6 +33,9 @@
 class contents_dict(dict):
     """
     Manage a mapping of filenames to packages that contain them
+
+    Stores data as a dictionary
+        packagename: [filename1, filename2, ...]
     """
 
     def __init__(self):

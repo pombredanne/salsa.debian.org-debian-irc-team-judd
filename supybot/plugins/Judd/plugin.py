@@ -1161,6 +1161,53 @@ class Judd(callbacks.Plugin):
                        optional('something')
                        ])
 
+    def alternative(self, irc, msg, args, filename):
+        """<pattern>
+
+        Returns packages that provide alternatives for either the absolute path
+        <pattern> or the alternative name <pattern>.
+        Only the unstable release can be searched at present.
+        """
+
+        channel = msg.args[0]
+        release = "sid"
+        arch = "alt"
+        if filename.startswith("/"):
+            filename = filename[1:]
+            regexp = "^%s\s+" % filename
+        elif "/" not in filename:
+            regexp = "^[^[:space:]]+/%s\s+" % filename
+        else:
+            irc.error("Either a full path or the filename only "
+                "must be specified.")
+            return
+
+        path = os.path.join(conf.supybot.directories.data(),
+                            self.registryValue('base_path'))
+
+        contents = debcontents.contents_file.contents_file(path, release, arch,
+                                            ['main', 'contrib', 'non-free'])
+
+        try:
+            packages = contents.search(regexp)
+        except debcontents.contents_file.ContentsError, e:
+            self.log.error("File search for '%s' produced re '%s' "
+                            "and errors: %s",  filename, regexp, e)
+            irc.error("Sorry, an error occurred trying to search for that "
+                        "alternative. Further details have been logged.")
+            return
+
+        if len(packages) == 0:
+            irc.reply('No packages in %s were found with that alternative.' % \
+                  release)
+        else:
+            packs = sorted([k[4:] for k in packages.keys()])
+            s = ", ".join(packs)
+            irc.reply("Alternative %s in %s: %s." % \
+                      (filename, release, s))
+
+    alternative = wrap(alternative, ['something'])
+
     def bold(self, s):
         """return the string in bold markup if required"""
         if self.registryValue('bold', dynamic.channel):

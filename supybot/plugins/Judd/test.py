@@ -233,4 +233,9 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('file *bin/*')                      # small file fragment ; should trip "truncated" message
         self.assertNotError('file /nosuchpackage')              # fragment doesn't exist ; no package contains
 
+    def testAlternative(self):
+        self.assertNotError('alternative editor')               # alternative by short name; lots of packages
+        self.assertNotError('alternative /bin/rzsh')            # alternative by absolute file name; /bin/rzsh in zsh
+        self.assertNotError('alternative /nosuchfile')           # no such alternative; does not exist
+
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

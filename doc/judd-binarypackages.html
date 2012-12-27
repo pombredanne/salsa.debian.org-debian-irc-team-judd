@@ -216,4 +216,33 @@ used to search through these indices, as can <code>Judd</code>.
 <p>Note that files created by maintainer scripts (such as configuration files)
 and files managed by the alternatives system are not necessarily
 indexed in Contents. If there are too many matches, <code>Judd</code> will
-truncate the output.</p>
+truncate the output. See the <a href="#judd-alternative">alternative</a>
+command for a way of searching the alternatives system.</p>
+
+<a id="judd-alternative" />
+<h3>Alternatives</h3>
+<p>Sets of cooperating packages may arrange to use the
+<a href="http://wiki.debian.org/DebianAlternatives">alternatives system</a>
+to share a namespace on the filesystem. Examples of this are the
+<code>editor</code> command (<code>/usr/bin/editor</code>) which is provided
+as an alternative by 43 packages (at last count).
+</p>
+
+<p>Alternatives can be queried either by the full path or by the filename.</p>
+
+<div class="example">
+    <div class="synopsis input">alternative <span class="var">pattern</span>
+    </div>
+
+    <div class="input">alternative /usr/bin/editor</div>
+    <div class="output">Alternative editor in sid: cream, dav-text, e3, ed, elvis, elvis-console, elvis-tiny, emacs23, emacs23-lucid, emacs23-nox, emacs24, emacs24-lucid, emacs24-nox, fte, gnuserv, jed, joe, joe-jupp, jove, jupp, jvim-canna, le, levee, lpe, mc, mg, nano, nano-tiny, ne, nedit, ng-common, nvi, the, vigor, vile, vim, vim-athena, vim-gnome, vim-gtk, vim-nox, vim-tiny, xemacs21, xjed, zile.</div>
+
+    <div class="input">alternative gnome-www-browser</div>
+    <div class="output">Alternative gnome-www-browser in sid: chromium, epiphany-browser, iceweasel.</div>
+
+</div>
+
+<p>Note that in the absence of a declarative syntax for alternatives, the list
+of available alternatives must be created by installing and removing packages
+and looking at the alternatives installed by the maintainer scripts. The data
+searched by Judd is a periodic snapshot prepared by Jakub Wilk.</p>
