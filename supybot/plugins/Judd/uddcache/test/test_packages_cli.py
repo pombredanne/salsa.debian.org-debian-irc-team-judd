@@ -168,7 +168,7 @@ class cliTests(unittest.TestCase):
 
     def testcheckdeps(self):
         self.assert_(self.cli.checkdeps("checkdeps", "libc6", []) is None)
-        self.assert_(self.cli.checkdeps("checkdeps", "libdvdcss2", ["lenny-multimedia"]) is None)
+        self.assert_(self.cli.checkdeps("checkdeps", "libdvdcss2", ["sid-multimedia"]) is None)
         self.assert_(self.cli.checkdeps("checkdeps", "drizzle", ["ia64", "sid"]) is None)
         self.assert_(self.cli.checkdeps("checkdeps", "nosuchpackage", []) is None)
         self.cli.options.deptype = ['suggests', 'depends']
@@ -183,7 +183,7 @@ class cliTests(unittest.TestCase):
     @unittest.skipUnless(includeSlowTests, 'slow test')
     def testcheckinstall(self):
         self.assert_(self.cli.checkinstall("checkinstall", "libc6", []) is None)
-        self.assert_(self.cli.checkinstall("checkinstall", "ffmpeg", ["lenny-multimedia"]) is None)
+        self.assert_(self.cli.checkinstall("checkinstall", "ffmpeg", ["sid-multimedia"]) is None)
         self.assert_(self.cli.checkinstall("checkinstall", "nosuchpackage", []) is None)
         self.cli.options.verbose = True
         self.assert_(self.cli.checkinstall("checkinstall", "libc6", []) is None)

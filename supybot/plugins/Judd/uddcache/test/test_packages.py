@@ -57,9 +57,7 @@ class ReleaseTests(unittest.TestCase):
         self.assert_(rs)
         ra = Release(self.udd.psql, arch='ia64')
         self.assert_(ra)
-        rb = Release(self.udd.psql, release=['lenny', 'lenny-backports'])
-        self.assert_(rb)
-        rb = Release(self.udd.psql, release=('lenny', 'lenny-backports'))
+        rb = Release(self.udd.psql, release=['squeeze', 'squeeze-backports'])
         self.assert_(rb)
 
 
@@ -76,7 +74,7 @@ class ReleaseTests(unittest.TestCase):
         ra = Release(self.udd.psql, arch='ia64')
         self.assertFalse(ra.Package('libc6').Found(), 'Check a package that is not in this arch')
 
-        rb = Release(self.udd.psql, release=['lenny', 'lenny-backports'])
+        rb = Release(self.udd.psql, release=['squeeze', 'squeeze-backports'])
         self.assert_(rb.Package('debhelper').Found())
         self.assert_(rb.Package('flashplugin-nonfree').Found())
 
@@ -147,13 +145,13 @@ class PackageTests(unittest.TestCase):
         rne = Package(self.udd.psql, package="libc6", arch='ia64')
         self.assert_(rne, "Test package that doesn't exist on specified arch")
         self.assertFalse(rne.Found(), "Test package that doesn't exist on specified arch")
-        rne = Package(self.udd.psql, package="latexdraw", release='lenny')
+        rne = Package(self.udd.psql, package="nodejs", release='wheezy')
         self.assert_(rne)
         self.assertFalse(rne.Found())
-        rb = Package(self.udd.psql, package="flashplugin-nonfree", release=['lenny', 'lenny-backports'])
+        rb = Package(self.udd.psql, package="youtube-dl", release=['squeeze', 'squeeze-backports'])
         self.assert_(rb)
         self.assert_(rb.Found())
-        rnb = Package(self.udd.psql, package="flashplugin-nonfree", release=['lenny'])
+        rnb = Package(self.udd.psql, package="youtube-dl", release=['squeeze'])
         self.assert_(rnb)
         self.assertFalse(rnb.Found())
         rne = Package(self.udd.psql, package="nosuchpackage")

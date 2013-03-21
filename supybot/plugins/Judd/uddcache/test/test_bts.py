@@ -58,7 +58,7 @@ class BtsTests(unittest.TestCase):
         bugs = [500000, 500001, 500002, 666666]
         self.assertTrue(self.bts.bugs(bugs))
         self.assertEqual(len(self.bts.bugs(bugs)), 4)
-        self.assertEqual(len(self.btsc.bugs(bugs)), 1)
+        self.assertEqual(len(self.btsc.bugs(bugs)), 0)
 
     def testBug(self):
         b = self.bts.bug(500000)

@@ -46,7 +46,7 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('versions libc6')                   # all versions; show oldstable->experimental
         self.assertNotError('versions libc6 --release sid')     # one version; only show sid
         self.assertNotError('versions libc6 --arch amd64')      # one arch; show amd64 instead
-        self.assertNotError('versions libc6 --release qwerty')  # no such release; defaults to lenny
+        self.assertNotError('versions libc6 --release qwerty')  # no such release; defaults to stable
         self.assertNotError('versions libc6 --arch qwerty')     # no such arch; defaults to i386
         self.assertNotError('versions libc6 amd64')             # implicit arch; show amd64 instead of i386
         self.assertNotError('versions libc6 sid')               # implicit release; show sid only
@@ -104,7 +104,6 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('rprovides nosuchpackage')          # no rproviders; no packages provide this
 
     def testSource(self):
-        self.assertNotError('src libc6 --release lenny')        # source package; glibc has libc6 in lenny
         self.assertNotError('src libc6 --release sid')          # source package; eglibc has libc6 in sid
         self.assertNotError('src nosuchpackage')                # package not found; no such package in the archive
 
@@ -121,9 +120,9 @@ class DebianTestCase(PluginTestCase):
 
     def testCheckDeps(self):
         self.assertNotError('checkdeps libc6')                  # all dependencies present; all depends, recommends and suggests are fulfilled
-        self.assertNotError('checkdeps openjdk-6-jre-headless --release lenny')  # missing recommends; package ca-certificates-java is recommended but not in lenny
+        self.assertNotError('checkdeps --type suggests cbedic') # missing suggested package; package cbedic suggests kbedic
         self.assertNotError('checkdeps openjdk-6-jre-headless')  # check release selection; all relations fulfilled
-        self.assertNotError('checkdeps ffmpeg --release lenny-multimedia')  # check release fallback; all relations fulfilled only if fallback to main archive
+        self.assertNotError('checkdeps ffmpeg --release sid-multimedia')  # check release fallback; all relations fulfilled only if fallback to main archive
         self.assertNotError('checkdeps nosuchpackage')          # package not found; no such package in the archive
         self.assertNotError('checkdeps libc6 --type depends')   # check relation type; check that depends are selectable
         self.assertNotError('checkdeps libc6 --type recommends')  # check relation type; check that recommends are selectable
@@ -133,21 +132,21 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('checkbuilddeps eglibc --release sid')  # source package selection; build-deps are fulfilled
         self.assertNotError('checkbuilddeps stage --release sid')   # source package selection; build-deps are uninstallable
         self.assertNotError('checkbuilddeps libc6')             # binary package selection; build-deps are fulfilled
-        self.assertNotError('checkbuilddeps ffmpeg --release lenny-multimedia')  # fallback to official repo; all build-deps are fulfilled but only if lenny itself is included
+        self.assertNotError('checkbuilddeps ffmpeg --release sid-multimedia')  # fallback to official repo; all build-deps are fulfilled but only if sid itself is included
         self.assertNotError('checkbuilddeps nosuchpackage')     # package not found; no such package in the archive
 
     def testCheckInstall(self):
         self.assertNotError('checkinstall libc6')               # installable package; default release
         self.assertNotError('checkinstall libc6 --release sid') # installable package, select release
         self.assertNotError('checkinstall when')                # installable package, no dependencies
-        self.assertNotError('checkinstall openjdk-6-jre-headless --norecommends --release lenny') # installable package; all installable without recommends
-        self.assertNotError('checkinstall openjdk-6-jre-headless --release lenny') # missing recommends in lenny; ca-certificates missing from recommends chain
+        #self.assertNotError('checkinstall openjdk-6-jre-headless --norecommends --release lenny') # installable package; all installable without recommends
+        #self.assertNotError('checkinstall openjdk-6-jre-headless --release lenny') # missing recommends in lenny; ca-certificates missing from recommends chain
         self.assertNotError('checkinstall nosuchpackage')       # package not found; no such package in the archive
 
     def testCheckbackport(self):
         self.assertNotError('checkbackport debhelper')          # simple sid backport; all build-deps should be fulfilled
         self.assertNotError('checkbackport iceweasel')          # backport requires bpo as well; all build-deps should be fulfilled with some from backports.org
-        self.assertNotError('checkbackport iceweasel --torelease lenny')  # backport not possible; impossible build-deps even with backports
+        self.assertNotError('checkbackport gcc --torelease oldstable')  # backport not possible; impossible build-deps even with backports
         self.assertNotError('checkbackport xserver-xorg-video-intel') # from/to release selection; only possible backport with backports
         self.assertNotError('checkbackport python-pyx')         # bin2src autoselection; simple backport
         self.assertNotError('checkbackport debhelper --verbose') # verbose output; single release used

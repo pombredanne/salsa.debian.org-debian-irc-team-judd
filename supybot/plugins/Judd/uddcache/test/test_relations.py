@@ -120,7 +120,6 @@ class RelationshipOptionsTests(unittest.TestCase):
 class RelationshipOptionsListTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
-#        self.checker = RelationChecker(self.udd.BindRelease(arch="i386",release="lenny"))
 
     def tearDown(self):
         self.udd = None
@@ -265,9 +264,9 @@ class BuildDepStatusTests(unittest.TestCase):
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))
         self.assert_(bdstatus.AllFound())
 
-        release = self.udd.BindRelease(arch="i386", release="sid")
+        release = self.udd.BindRelease(arch="kfreebsd-amd64", release="sid")
         checker = Checker(release)
-        p = release.Source("stage")   # has been BD-uninstallable since 2009
+        p = release.Source("fuse-umfuse-fat")   # has been BD-uninstallable since 2009
         bdstatus = BuildDepStatus(bd=checker.CheckRelationshipOptionsList(p.BuildDependsList()),
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))
         self.assertFalse(bdstatus.AllFound())

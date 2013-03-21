@@ -38,6 +38,7 @@ class AvailableData:
     release_map = {}
     releases = []
     devel_release = ''
+    stable_release = ''
     arches = []
 
     relations = [
@@ -136,25 +137,24 @@ class DebianData(AvailableData):
                     'testing':             'wheezy',
                     'stable':              'squeeze',
                     'stable-backports':    'squeeze-backports',
-                    'oldstable':           'lenny',
-                    'oldstable-backports': 'lenny-backports',
-                    'oldstable-backports-sloppy': 'lenny-backports-sloppy'
+                    #'oldstable':           'lenny',
+                    #'oldstable-backports': 'lenny-backports',
+                    #'oldstable-backports-sloppy': 'lenny-backports-sloppy'
                 }
 
     releases = [
-                    'lenny',
-                    'lenny-multimedia',
-                    'lenny-security',
-                    'lenny-backports',
-                    'lenny-backports-sloppy',
-                    'lenny-volatile',
                     'squeeze',
                     'squeeze-security',
                     'squeeze-updates',
+                    'squeeze-proposed-updates',
                     'squeeze-backports',
+                    'squeeze-backports-sloppy',
                     'squeeze-multimedia',
                     'wheezy',
                     'wheezy-security',
+                    'wheezy-updates',
+                    'wheezy-proposed-updates',
+                    'wheezy-backports',
                     'wheezy-multimedia',
                     'sid',
                     'sid-multimedia',
@@ -168,3 +168,5 @@ class DebianData(AvailableData):
                'kfreebsd-amd64', 'kfreebsd-i386',
                'mips', 'mipsel', 'powerpc', 's390', 's390x',
                'sparc', 'all']
+
+    stable_release = 'squeeze'

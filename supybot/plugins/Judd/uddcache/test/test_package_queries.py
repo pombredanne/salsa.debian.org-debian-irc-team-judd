@@ -115,18 +115,18 @@ class commands(unittest.TestCase):
         # TODO: it would be nice to actually test the accuracy of the tests
         self.assert_(self.dispatcher.checkdeps('libc6', 'squeeze', 'i386', ['depends']))
         self.assert_(self.dispatcher.checkdeps('libc6', 'squeeze', 'i386', ['depends', 'recommends', 'suggests']))
-        self.assert_(self.dispatcher.checkdeps('openjdk-6-jre-headless', 'lenny', 'i386', ['depends', 'recommends']), 'broken recommends not handled correctly')
+        self.assert_(self.dispatcher.checkdeps('cbedic', 'sid', 'i386', ['suggests']), 'broken relations not handled correctly')
         self.assertRaises(PackageNotFoundError, self.dispatcher.checkdeps, 'nosuchpackage', 'squeeze', 'i386', ['depends'])
 
     @unittest.skipUnless(includeSlowTests, 'slow test')
     def testCheckInstall(self):
         """Test installability for packages"""
         # TODO: it would be nice to actually test the accuracy of the tests
-        self.assert_(self.dispatcher.checkInstall('libc6', 'lenny', 'i386', False))
-        self.assert_(self.dispatcher.checkInstall('perl', 'lenny', 'i386', True))
-        self.assert_(self.dispatcher.checkInstall('openjdk-6-jre-headless', 'lenny', 'i386', False))
-        self.assert_(self.dispatcher.checkInstall('openjdk-6-jre-headless', 'lenny', 'i386', True))
-        self.assertRaises(PackageNotFoundError, self.dispatcher.checkInstall, 'nosuchpackage', 'lenny', 'i386', True)
+        self.assert_(self.dispatcher.checkInstall('libc6', 'sid', 'i386', False))
+        self.assert_(self.dispatcher.checkInstall('perl', 'sid', 'i386', True))
+        #self.assert_(self.dispatcher.checkInstall('openjdk-6-jre-headless', 'lenny', 'i386', False))
+        #self.assert_(self.dispatcher.checkInstall('openjdk-6-jre-headless', 'lenny', 'i386', True))
+        self.assertRaises(PackageNotFoundError, self.dispatcher.checkInstall, 'nosuchpackage', 'sid', 'i386', True)
 
     @unittest.skipUnless(includeSlowTests, 'slow test')
     def testWhy(self):
@@ -152,8 +152,8 @@ class commands(unittest.TestCase):
                         release=self.udd.data.list_dependent_releases('squeeze', suffixes=['backports']))
         self.assert_(self.dispatcher.checkBackport('libxfont1', fr, trbp), 'Check possible backport that requires bpo')
 
-        tro = self.udd.BindRelease(arch='i386', release='lenny')
-        self.assert_(self.dispatcher.checkBackport('iceweasel', fr, tro), 'Check impossible backport')
+        tro = self.udd.BindRelease(arch='i386', release="squeeze")
+        self.assert_(self.dispatcher.checkBackport('gcc', fr, tro), 'Check impossible backport')
 
         self.assert_(self.dispatcher.checkBackport('openjdk-6', fr, tr), 'Check resolution of arch-dependent build-deps')
 

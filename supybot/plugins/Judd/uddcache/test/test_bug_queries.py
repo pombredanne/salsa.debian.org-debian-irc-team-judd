@@ -66,7 +66,7 @@ class commands(unittest.TestCase):
         self.assertTrue(self.dispatcher.bug("#123456", True))
 
     def testBug_package(self):
-        self.assertFalse(self.dispatcher.bug_package("ktikz")) #no bugs
+        self.assertFalse(self.dispatcher.bug_package("when")) #no bugs
         self.assertTrue(self.dispatcher.bug_package("qtikz"))
         self.assertTrue(self.dispatcher.bug_package("src:ktikz"))
         self.assertTrue(self.dispatcher.bug_package("htdig"))

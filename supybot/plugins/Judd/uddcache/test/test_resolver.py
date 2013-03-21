@@ -51,7 +51,8 @@ if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_T
 class CheckerTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
-        self.checker = Checker(self.udd.BindRelease(arch="i386", release="lenny"))
+        self.checker = Checker(self.udd.BindRelease()) # i386 stable
+        self.sidchecker = Checker(self.udd.BindRelease(release='sid')) # i386
 
     def tearDown(self):
         self.udd = None
@@ -124,7 +125,7 @@ class CheckerTests(unittest.TestCase):
         r = Relationship(relation="libc6 (<< 1.0.1)")
         self.assertFalse(self.checker.RelationSatisfied(r))
         # =
-        r = Relationship(relation="spline (= 1.1-11)")
+        r = Relationship(relation="spline (= 1.2-1)")
         self.assert_(self.checker.RelationSatisfied(r))
         r = Relationship(relation="dpkg (= 1.14.1)")
         self.assertFalse(self.checker.RelationSatisfied(r))
@@ -164,14 +165,14 @@ class CheckerTests(unittest.TestCase):
         self.assert_(c)
         self.assert_(len(c.good) > 0)
         self.assert_(len(c.bad) == 0)
-        # known bad package [ca-certificates-java is not in lenny]
-        c = self.checker.Check(package="openjdk-6-jre-headless", relation='recommends')
+        # known bad package [cbedic has unsatisfied suggests]
+        c = self.sidchecker.Check(package="cbedic", relation='suggests')
         self.assert_(c)
         self.assert_(len(c.bad) > 0)
         # non-existent package
         self.assertRaises(PackageNotFoundError, self.checker.Check, package="no-such-package")
         # conflicts in a package
-        c = self.checker.Check(package="dpkg", relation="conflicts")
+        c = self.checker.Check(package="libc6", relation="conflicts")
         self.assert_(c)
         self.assert_(len(c.good) > 0)
         self.assert_(len(c.bad) == 0)
@@ -231,7 +232,7 @@ class BuildDepCheckerTests(unittest.TestCase):
 class InstallCheckerTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
-        self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="lenny"))
+        self.checker = InstallChecker(self.udd.BindRelease())
 
     def tearDown(self):
         self.udd = None

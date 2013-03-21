@@ -36,14 +36,17 @@ import psycopg2
 import psycopg2.extras
 from psycopg2.extensions import adapt
 from relations import *
+import data
 
 
 class Release(object):
     """ Class that represents the contents of a release
     i.e lists of binary and source packages """
-    def __init__(self, dbconn, arch="i386", release="lenny", pins=None):
+    def __init__(self, dbconn, arch="i386", release=None, pins=None):
         self.dbconn = dbconn
         self.arch = arch
+        if release is None:
+            release = data.DebianData.stable_release
         if type(release) is tuple:
             self.release = release
         elif type(release) is list:
@@ -137,7 +140,7 @@ class AbstractPackage(object):
     pins = []
     data = []
 
-    def __init__(self, dbconn, arch="i386", release="lenny", package=None,
+    def __init__(self, dbconn, arch="i386", release=None, package=None,
                  pins=None, version=None, operator=None):
         """
         Bind a specified binary or source package.
@@ -162,6 +165,8 @@ class AbstractPackage(object):
                                 type(package))
         self.dbconn = dbconn
         self.arch = arch
+        if release is None:
+            release = data.DebianData.stable_release
         if type(release) is tuple:
             self.release = release
         elif type(release) is list:
@@ -231,7 +236,7 @@ class AbstractPackage(object):
 
 
 class Package(AbstractPackage):
-    def __init__(self, dbconn, arch="i386", release="lenny", package=None,
+    def __init__(self, dbconn, arch="i386", release=None, package=None,
                  pins=None, version=None, operator=None):
         """
         Bind a specified binary package from a releases, list of releases
@@ -343,7 +348,7 @@ class Package(AbstractPackage):
 
 
 class SourcePackage(AbstractPackage):
-    def __init__(self, dbconn, arch="i386", release="lenny", package=None,
+    def __init__(self, dbconn, arch="i386", release=None, package=None,
                  pins=None, version=None, operator=None):
         #self.fields = ['build_depends', 'build_depends_indep', 'version']
         self.table = 'sources'

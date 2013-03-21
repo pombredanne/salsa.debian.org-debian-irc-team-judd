@@ -25,14 +25,14 @@ udd oldstable removal actions:
 * stop importing oldstable (config-judd/Makefile)
 * delete oldoldstable data from database:
   psql
-    => SELECT count(*) FROM packages WHERE release LIKE 'etch%';
-    num archs * num packages (250k?)
-    => DELETE FROM packages WHERE release LIKE 'etch%';
-    => SELECT count(*) FROM sources WHERE release LIKE 'etch%';
+    => SELECT count(*) FROM packages WHERE release LIKE 'lenny%';
+    num archs * num packages (200k?)
+    => DELETE FROM packages WHERE release LIKE 'lenny%';
+    => SELECT count(*) FROM sources WHERE release LIKE 'lenny%';
     num src packages (15k?)
-    => DELETE FROM sources WHERE release LIKE 'etch%';
+    => DELETE FROM sources WHERE release LIKE 'lenny%';
 * delete oldoldstable data from disk cache
-    /org/ftp.debian.org/dists/etch /org/backports.org/dists/etch-backports /org/security.debian.org/etch /org/debian-multimedia.org/dists/etch /org/volatile.debian.org/dists/etch
+    /srv/mirrors/debian/dists/lenny /srv/mirrors/debian-backports/dists/lenny-backports /srv/mirrors/debian-backports/dists/lenny-backports-sloppy /srv/mirrors/debian-security/lenny /srv/mirrors/debian-multimedia.org/dists/lenny /srv/mirrors/debian-volatile
 * add oldoldstable to the list of old timestamps to ignore in udd-check-updates
 
 udd release actions:
@@ -51,11 +51,13 @@ Maintenance notes for Judd
 ==========================
 
 judd oldstable removal:
-* shift/remove oldstable alias
+* shift/remove oldstable alias in uddcache/data.py
+* fix tests that no longer work :(
+* delete unneeded contents links from supybot/data/judd
 
 judd release actions:
-* add new -backports, -backports-sloppy, -updates etc to plugin.py
-* shift stable alias
+* add new -backports, -backports-sloppy, -updates etc in uddcache/data.py
+* shift stable alias in uddcache/data.py
 
 judd new testing actions
 * add new (testing) release to plugin.py

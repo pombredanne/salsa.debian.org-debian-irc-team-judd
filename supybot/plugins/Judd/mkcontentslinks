@@ -86,7 +86,7 @@ do
   fi
   mkdir -p "$TARGET/$RELDIR/"{main,contrib,non-free}
   case "$release" in
-    *lenny*|*squeeze*)
+    *squeeze*)
         for c in "$DIR"/Contents*gz
         do
           if [ -f "$c" ]

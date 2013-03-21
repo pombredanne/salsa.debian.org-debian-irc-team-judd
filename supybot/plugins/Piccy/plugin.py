@@ -60,8 +60,8 @@ release_map = { 'trunk'             : 'trunk',
                 'testing'           : 'wheezy',
                 'stable-backports'  : 'squeeze-backports',
                 'stable'            : 'squeeze',
-                'oldstable-backports'  : 'lenny-backports',
-                'oldstable'            : 'lenny'
+                #'oldstable-backports'  : 'lenny-backports',
+                #'oldstable'            : 'lenny'
                }
 
 class Piccy(callbacks.Plugin):
@@ -140,8 +140,8 @@ class Piccy(callbacks.Plugin):
         map(lambda page: hcllink.append(self.registryValue('wiki_url') % page), self.checkWikiLink(extras.union(module)))
 
         reply = "[%s:%s] is '%s' from '%s' %s See also %s%s" % \
-                ( vendor, device, dname, vname, 
-                  moduletext, 
+                ( vendor, device, dname, vname,
+                  moduletext,
                   " ".join(hcllink), extramodules )
 
         irc.reply(reply)
@@ -179,10 +179,10 @@ class Piccy(callbacks.Plugin):
         reply = ""
         if devices:
             devicelist = ", ".join(
-                    map(lambda d: 
-                      "%s '%s' from '%s'" % 
-                            (  self.bold("[%s:%s]" % (d[0], d[2])), 
-                               d[3], d[1]  ), 
+                    map(lambda d:
+                      "%s '%s' from '%s'" %
+                            (  self.bold("[%s:%s]" % (d[0], d[2])),
+                               d[3], d[1]  ),
                       devices ))
             reply = "'%s' matched: %s" % (origname, devicelist)
         else:
@@ -506,7 +506,7 @@ class Piccy(callbacks.Plugin):
 
     def findxorgdriver(self, vendor, device, release):
         """
-        Search through xorg's /usr/share/xserver-xorg/pci/* maps for a 
+        Search through xorg's /usr/share/xserver-xorg/pci/* maps for a
         PCI-Id match
         """
         mapdir  = self.registryValue('xorg_maps') % release
@@ -537,7 +537,7 @@ class Piccy(callbacks.Plugin):
 
     def inxorgmap(self, id, mapfilename):
         """
-        Search through a single xorg /usr/share/xserver-xorg/pci/*.ids 
+        Search through a single xorg /usr/share/xserver-xorg/pci/*.ids
         map for a PCI-Id match
         """
 

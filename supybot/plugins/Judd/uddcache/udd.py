@@ -62,7 +62,7 @@ class Udd():
         self.psql = None
         self._connect(logfile)
         if distro == 'debian':
-            self.data = DebianData()
+            self.data = DebianData
         elif distro == 'ubuntu':
             raise NotImplementedError("Only distro='debian' implemented")
             # TODO: add this in
@@ -96,25 +96,31 @@ class Udd():
     def _disconnect(self):
         self.psql.close()
 
-    def BindRelease(self, release="lenny", arch="i386", **kwargs):
+    def BindRelease(self, release=None, arch="i386", **kwargs):
         """
         Select a release from the database
         """
+        if release is None:
+            release = self.data.stable_release
         r = Release(self.psql, arch=arch, release=release, **kwargs)
         return r
 
-    def BindPackage(self, package="", release="lenny", arch="i386"):
+    def BindPackage(self, package="", release=None, arch="i386"):
         """
         Select a package from the database
         """
+        if release is None:
+            release = self.data.stable_release
         r = Release(self.psql, arch=arch, release=release)
         p = r.Package(package)
         return p
 
-    def BindSourcePackage(self, package="", release="lenny"):
+    def BindSourcePackage(self, package="", release=None):
         """
         Select a source package from the database
         """
+        if release is None:
+            release = self.data.stable_release
         r = Release(self.psql, release=release)
         p = r.Source(package)
         return p
