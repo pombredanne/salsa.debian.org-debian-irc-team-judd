@@ -61,6 +61,7 @@ class Cli(clibase.CliBase):
                 'rfa':          self.wnpp,
                 'ita':          self.wnpp,
                 'orphan':       self.wnpp,
+                'stats':        self.stats,
                 }
         self.command_aliases = {
                 }
@@ -152,3 +153,25 @@ class Cli(clibase.CliBase):
             print "No release critical bugs were found for '%s'." % package
             return
         print "\n".join([str(b) for b in bugs])
+
+    def stats(self, command, _, __):
+        statistics = self.dispatcher.stats()
+        print \
+        """UDD currently knows about the following release critical bugs:
+
+In Total: %(total)d
+
+    Affecting testing: %(testing)d That's the number we need to get down
+    to zero before the release. They can be split in two big categories:
+
+        Affecting testing and unstable: %(testing_unstable)d
+            Those need someone to find a fix, or to finish the work to upload
+            a fix to unstable:
+            %(testing_patch)d bugs are tagged 'patch'.
+            %(unstable_done)d bugs are marked as done, but still affect unstable.
+            %(nostatus)d bugs are neither tagged patch, nor marked done.
+
+        Affecting testing only: %(testing_only)d Those are already fixed in
+        unstable, but the fix still needs to migrate to wheezy.
+        """ % statistics
+

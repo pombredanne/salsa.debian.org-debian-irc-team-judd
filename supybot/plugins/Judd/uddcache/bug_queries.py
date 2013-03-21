@@ -143,3 +143,69 @@ class Commands(object):
         if verbose:
             tracker.get_bugs_tags(bugs)
         return bugs
+
+    def stats(self):
+        """
+        Generate a dictionary of bug statistics for the next release. See
+        http://udd.debian.org/cgi-bin/rcblog.cgi for more details.
+        """
+        queries = {
+            "total" : """
+                SELECT COUNT(*) FROM bugs
+                WHERE status != 'done'
+                    AND NOT
+                        (id IN (SELECT id FROM bugs_merged_with
+                                WHERE id > merged_with))
+                    AND (severity >= 'serious')""",
+            "testing" : """
+                SELECT COUNT(ID) FROM bugs
+                WHERE id IN (SELECT id FROM bugs_rt_affects_testing)
+                    AND NOT (id IN (SELECT id FROM bugs_merged_with
+                                    WHERE id > merged_with))
+                    AND (severity >= 'serious')""",
+            "testing_unstable": """
+                SELECT COUNT(id) FROM bugs
+                WHERE id IN (SELECT id FROM bugs_rt_affects_testing)
+                    AND id IN (SELECT id FROM bugs_rt_affects_unstable)
+                    AND NOT (id IN (SELECT id FROM bugs_merged_with
+                                    WHERE id > merged_with))
+                    AND (severity >= 'serious')""",
+            "testing_only": """
+                SELECT COUNT(id) FROM bugs
+                WHERE id IN (SELECT id FROM bugs_rt_affects_testing)
+                    AND id NOT IN (SELECT id FROM bugs_rt_affects_unstable)
+                    AND NOT (id IN (SELECT id FROM bugs_merged_with
+                                    WHERE id > merged_with))
+                    AND (severity >= 'serious')""",
+            "testing_patch": """
+                SELECT COUNT(id) FROM bugs
+                WHERE id IN (SELECT id FROM bugs_rt_affects_testing)
+                    AND id IN (SELECT id FROM bugs_rt_affects_unstable)
+                    AND id IN (SELECT id FROM bugs_tags where tag='patch')
+                    AND NOT (id IN (SELECT id FROM bugs_merged_with
+                                    WHERE id > merged_with))
+                    AND (severity >= 'serious')""",
+            "unstable_done": """
+                SELECT COUNT(id) FROM bugs
+                WHERE id IN (SELECT id FROM bugs_rt_affects_testing)
+                    AND id IN (SELECT id FROM bugs_rt_affects_unstable)
+                    AND status = 'done'
+                    AND NOT (id IN (SELECT id FROM bugs_merged_with
+                                    WHERE id > merged_with))
+                    AND (severity >= 'serious')""",
+            "nostatus": """
+                SELECT COUNT(id) FROM bugs
+                WHERE id IN (SELECT id FROM bugs_rt_affects_testing)
+                    AND id IN (SELECT id FROM bugs_rt_affects_unstable)
+                    AND NOT (id IN (SELECT id FROM bugs_tags where tag='patch'))
+                    AND status != 'done'
+                    AND NOT (id IN (SELECT id FROM bugs_merged_with
+                                    WHERE id > merged_with))
+                    AND (severity >= 'serious')"""
+            }
+        stats = {}
+        c = self.udd.psql.cursor()
+        for query in queries.keys():
+            c.execute(queries[query])
+            stats[query] = c.fetchone()[0]
+        return stats
