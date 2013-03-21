@@ -96,4 +96,8 @@ In #debian-next:
 ----------------
 config channel supybot.plugins.Judd.default_release testing
 
+In #debian-mentors:
+-------------------
+config channel supybot.plugins.Judd.default_release sid
+
 
