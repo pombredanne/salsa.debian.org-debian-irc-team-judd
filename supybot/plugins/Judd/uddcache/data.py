@@ -134,12 +134,12 @@ class DebianData(AvailableData):
     release_map = {
                     'rc-buggy':            'experimental',
                     'unstable':            'sid',
-                    'testing':             'wheezy',
-                    'stable':              'squeeze',
-                    'stable-backports':    'squeeze-backports',
-                    #'oldstable':           'lenny',
-                    #'oldstable-backports': 'lenny-backports',
-                    #'oldstable-backports-sloppy': 'lenny-backports-sloppy'
+                    'testing':             'jessie',
+                    'stable':              'wheezy',
+                    'stable-backports':    'wheezy-backports',
+                    'oldstable':           'squeeze',
+                    'oldstable-backports': 'squeeze-backports',
+                    'oldstable-backports-sloppy': 'squeeze-backports-sloppy',
                 }
 
     releases = [
@@ -156,6 +156,9 @@ class DebianData(AvailableData):
                     'wheezy-proposed-updates',
                     'wheezy-backports',
                     'wheezy-multimedia',
+                    'jessie',
+                    'jessie-security',
+                    'jessie-multimedia',
                     'sid',
                     'sid-multimedia',
                     'experimental',
