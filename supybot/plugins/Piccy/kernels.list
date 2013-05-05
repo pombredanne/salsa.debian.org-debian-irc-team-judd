@@ -13,6 +13,7 @@ experimental,       deb http://ftp.de.debian.org/debian/ experimental main   ,  
 #
 sid,                deb http://ftp.de.debian.org/debian/ sid main     ,  ,
 #
+jessie,             deb http://ftp.de.debian.org/debian/ jessie main  #  deb http://ftp.de.debian.org/debian-security/ jessie/updates main           , ,
 wheezy,             deb http://ftp.de.debian.org/debian/ wheezy main  #  deb http://ftp.de.debian.org/debian-security/ wheezy/updates main           , ,
 squeeze-backports,    deb http://ftp.de.debian.org/debian-backports/ squeeze-backports main,
 squeeze,            deb http://ftp.de.debian.org/debian/ squeeze main  #  deb http://ftp.de.debian.org/debian-security/ squeeze/updates main           , ,
