@@ -70,7 +70,7 @@ fi
 TARGET="$1"
 
 for release in $(udd-sections |
-                grep -e lenny -e squeeze -e wheezy -e sid -e experimental |
+                grep -e squeeze -e wheezy -e jessie -e sid -e experimental |
                 grep -v security)
 do
   # locate the relevant section of the local mirror
