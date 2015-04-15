@@ -46,6 +46,12 @@ udd new testing actions:
 * update cron jobs (~/bin/udd-update-changing)
 * update archs (config-judd/archlist)
 
+arch removal actions:
+* remove the architecture from config-judd/archlist; make; review changes
+* delete packages from database:
+    DELETE FROM packages WHERE release='jessie' AND architecture='ia64';
+* if removed completely, also update udd-cache/data.py's archs list
+
 
 Maintenance notes for Judd
 ==========================
