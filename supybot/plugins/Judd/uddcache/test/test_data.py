@@ -78,8 +78,7 @@ class data(unittest.TestCase):
         # experimental is an overlay to sid
         self.assertEqual(DebianData.list_dependent_releases('experimental'), ['experimental', 'sid'])
         # also support release names
-        self.assertEqual(DebianData.list_dependent_releases('stable-backports'), ['squeeze-backports', 'squeeze'])
-
+        self.assertEqual(DebianData.list_dependent_releases('stable-backports'), ['wheezy-backports', 'wheezy'])
 
     def testArchName(self):
         """Test manipulations of the arch names"""

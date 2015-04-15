@@ -44,11 +44,6 @@ from uddcache.relations import *
 from uddcache.resolver import *
 
 
-includeSlowTests = 1
-if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_TESTS']):
-    #print "Skipping slow tests in %s" % __file__
-    includeSlowTests = 0
-
 class RelationshipTests(unittest.TestCase):
     def testRelationship(self):
         """Test construction/parsing of package relationships"""

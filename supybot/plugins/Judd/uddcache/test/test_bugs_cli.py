@@ -46,11 +46,6 @@ from uddcache.bugs_cli import Cli
 import codecs
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
-includeSlowTests = 1
-if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_TESTS']):
-    #print "Skipping slow tests in %s" % __file__
-    includeSlowTests = 0
-
 
 class cliTests(unittest.TestCase):
 

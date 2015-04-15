@@ -44,11 +44,6 @@ from uddcache.bug_queries import Commands
 from uddcache.bts import BugNotFoundError
 
 
-includeSlowTests = 1
-if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_TESTS']):
-    #print "Skipping slow tests in %s" % __file__
-    includeSlowTests = 0
-
 class commands(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()

@@ -44,10 +44,11 @@ from uddcache.package_queries import Commands
 from uddcache.packages import *
 
 
-includeSlowTests = 1
+exclude_slow_tests = 0
 if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_TESTS']):
     #print "Skipping slow tests in %s" % __file__
-    includeSlowTests = 0
+    exclude_slow_tests = 1
+
 
 class commands(unittest.TestCase):
     def setUp(self):
@@ -73,7 +74,7 @@ class commands(unittest.TestCase):
         self.assertRaises(PackageNotFoundError, self.dispatcher.info, 'nosuchpackage', 'sid', 'i386')
         self.assertRaises(PackageNotFoundError, self.dispatcher.info, 'libc6', 'sid', 'ia64')
 
-    @unittest.skipUnless(includeSlowTests, 'slow test')
+    @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testNames(self):
         """Test package name lookups"""
         self.assert_(self.dispatcher.names('libc6', 'sid', 'i386'))
@@ -109,7 +110,7 @@ class commands(unittest.TestCase):
         p = self.udd.BindSourcePackage('libc6', 'sid')
         self.assert_(self.dispatcher.uploads(p), 'Check uploads with bind to source package via bin2src failed')
 
-    @unittest.skipUnless(includeSlowTests, 'slow test')
+    @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testCheckDeps(self):
         """Test dependency testing for packages"""
         # TODO: it would be nice to actually test the accuracy of the tests
@@ -118,7 +119,7 @@ class commands(unittest.TestCase):
         self.assert_(self.dispatcher.checkdeps('cbedic', 'sid', 'i386', ['suggests']), 'broken relations not handled correctly')
         self.assertRaises(PackageNotFoundError, self.dispatcher.checkdeps, 'nosuchpackage', 'squeeze', 'i386', ['depends'])
 
-    @unittest.skipUnless(includeSlowTests, 'slow test')
+    @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testCheckInstall(self):
         """Test installability for packages"""
         # TODO: it would be nice to actually test the accuracy of the tests
@@ -128,7 +129,7 @@ class commands(unittest.TestCase):
         #self.assert_(self.dispatcher.checkInstall('openjdk-6-jre-headless', 'lenny', 'i386', True))
         self.assertRaises(PackageNotFoundError, self.dispatcher.checkInstall, 'nosuchpackage', 'sid', 'i386', True)
 
-    @unittest.skipUnless(includeSlowTests, 'slow test')
+    @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testWhy(self):
         """Test existence of package dependency chains"""
         # TODO: it would be nice to actually test the accuracy of the tests
@@ -139,7 +140,7 @@ class commands(unittest.TestCase):
         self.assertEqual(self.dispatcher.why('dpkg', 'nosuchpackage', 'squeeze', 'i386', False), [])
         self.assertRaises(PackageNotFoundError, self.dispatcher.why, 'nosuchpackage', 'dpkg', 'squeeze', 'i386', False)
 
-    @unittest.skipUnless(includeSlowTests, 'slow test')
+    @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testCheckBackport(self):
         """Test 'simple sid backport' procedure on packages"""
         # TODO: it would be nice to actually test the accuracy of the tests

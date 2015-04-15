@@ -46,10 +46,10 @@ from uddcache.packages_cli import Cli
 import codecs
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
-includeSlowTests = 1
+exclude_slow_tests = 0
 if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_TESTS']):
     #print "Skipping slow tests in %s" % __file__
-    includeSlowTests = 0
+    exclude_slow_tests = 1
 
 
 class cliTests(unittest.TestCase):
@@ -180,7 +180,7 @@ class cliTests(unittest.TestCase):
         self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "stage", ["amd64", "sid"]) is None)
         self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "nosuchpackage", []) is None)
 
-    @unittest.skipUnless(includeSlowTests, 'slow test')
+    @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testcheckinstall(self):
         self.assert_(self.cli.checkinstall("checkinstall", "libc6", []) is None)
         self.assert_(self.cli.checkinstall("checkinstall", "ffmpeg", ["sid-multimedia"]) is None)
@@ -194,7 +194,7 @@ class cliTests(unittest.TestCase):
         self.assert_(self.cli.why("why", "nosuchpackage", ["nosuchpackage"]) is None)
         self.assertRaises(ValueError, self.cli.why, "why", "nosuchpackage", [])
 
-    @unittest.skipUnless(includeSlowTests, 'slow test')
+    @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testcheckbackport(self):
         """Test the checkbackport command"""
         self.assert_(self.cli.checkbackport("checkbackport", "java-imaging-utilities", []) is None)

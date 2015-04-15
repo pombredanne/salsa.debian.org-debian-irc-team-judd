@@ -42,10 +42,10 @@ from uddcache.udd import Udd
 from uddcache.resolver import *
 import unittest2 as unittest
 
-includeSlowTests = 1
+exclude_slow_tests = 0
 if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_TESTS']):
     #print "Skipping slow tests in %s" % __file__
-    includeSlowTests = 0
+    exclude_slow_tests = 1
 
 
 class CheckerTests(unittest.TestCase):
@@ -238,7 +238,7 @@ class InstallCheckerTests(unittest.TestCase):
         self.udd = None
         self.checker = None
 
-    @unittest.skipUnless(includeSlowTests, 'slow test')
+    @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testCheck(self):
         """Test installability of packages"""
         # FIXME: it would be good to check if these results are right
