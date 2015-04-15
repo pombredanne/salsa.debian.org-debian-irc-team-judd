@@ -128,7 +128,7 @@ class cliTests(unittest.TestCase):
 
     def testbinaries(self):
         self.assert_(self.cli.binaries("binaries", "dpkg", []) is None)
-        self.assert_(self.cli.binaries("binaries", "eglibc", []) is None)
+        self.assert_(self.cli.binaries("binaries", "glibc", []) is None)
         self.assert_(self.cli.binaries("binaries", "nosuchpackage", []) is None)
 
     def testbuilddeps(self):
@@ -169,13 +169,13 @@ class cliTests(unittest.TestCase):
     def testcheckdeps(self):
         self.assert_(self.cli.checkdeps("checkdeps", "libc6", []) is None)
         self.assert_(self.cli.checkdeps("checkdeps", "libdvdcss2", ["sid-multimedia"]) is None)
-        self.assert_(self.cli.checkdeps("checkdeps", "drizzle", ["ia64", "sid"]) is None)
+        self.assert_(self.cli.checkdeps("checkdeps", "drizzle", ["armhf", "sid"]) is None)
         self.assert_(self.cli.checkdeps("checkdeps", "nosuchpackage", []) is None)
         self.cli.options.deptype = ['suggests', 'depends']
         self.assert_(self.cli.checkdeps("checkdeps", "dpkg", []) is None)
 
     def testcheckbuilddeps(self):
-        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "eglibc", []) is None)
+        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "glibc", []) is None)
         self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "libdvdcss", ["squeeze-multimedia"]) is None)
         self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "stage", ["amd64", "sid"]) is None)
         self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "nosuchpackage", []) is None)
