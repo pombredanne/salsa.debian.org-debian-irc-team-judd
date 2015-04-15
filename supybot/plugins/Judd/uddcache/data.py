@@ -145,6 +145,7 @@ class DebianData(AvailableData):
     releases = [
                     'squeeze',
                     'squeeze-security',
+                    'squeeze-security-lts',
                     'squeeze-updates',
                     'squeeze-proposed-updates',
                     'squeeze-backports',
