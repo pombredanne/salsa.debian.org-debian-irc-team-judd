@@ -38,6 +38,7 @@ from udd import Udd
 import bts
 from packages import PackageNotFoundError
 from bts import BugNotFoundError
+import re
 
 try:
     from debian import debian_support
@@ -119,9 +120,9 @@ class Commands(object):
                     'status': bts.open_status
                 }
         if bugtype:
-            filter['title'] = r'''^["']?%s\s*(:|--|)\s*%s ''' % (bugtype, package)
+            filter['title'] = r'''^["']?%s\s*(:|--|)\s*%s ''' % (bugtype, re.escape(package))
         else:
-            filter['title'] = r'''^["']?(%s)\s*(:|--|)\s*%s ''' % ('|'.join(bts.wnpp_types), package)
+            filter['title'] = r'''^["']?(%s)\s*(:|--|)\s*%s ''' % ('|'.join(bts.wnpp_types), re.escape(package))
         return tracker.get_bugs(filter)
 
     def rcbugs(self, package, verbose=True):
