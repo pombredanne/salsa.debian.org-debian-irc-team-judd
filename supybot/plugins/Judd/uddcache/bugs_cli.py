@@ -96,9 +96,10 @@ class Cli(clibase.CliBase):
             else:
                 bugs = self.dispatcher.bug_package_search(search, args[0], verbose=self.options.verbose, archived=False)
                 if self.options.verbose:
-                    print "\n".join([str(b) for b in bugs])
+                    print (u"\n".join([str(b) for b in bugs])).encode("UTF-8")
                 else:
-                    print "\n".join(["#%d: %s" % (b.id, b.title) for b in bugs])
+                    allbugs = ["#%d: %s" % (b.id, b.title) for b in bugs]
+                    print (u"\n".join(allbugs)).encode("UTF-8")
 
 
     def rm(self, command, package, args):
@@ -144,11 +145,11 @@ class Cli(clibase.CliBase):
                 "Owner: %s" % b.owner,
                 ""
             ]
-            print "\n".join(s)
+            print (u"\n".join(s)).encode("UTF-8")
 
     def rcbugs(self, command, package, args):
         bugs = self.dispatcher.rcbugs(package)
         if not bugs:
             print "No release critical bugs were found for '%s'." % package
             return
-        print "\n".join([str(b) for b in bugs])
+        print (u"\n".join([str(b) for b in bugs])).encode("UTF-8")

@@ -168,6 +168,8 @@ class DebianTestCase(PluginTestCase):
 
     def testMaintainer(self):
         self.assertNotError('maint perl')                  # show maintainer; maintianer, uploader and changer
+        self.assertNotError('maint cpputest')              # maintainer with non-ascii characters; maintianer, uploader and changer
+        self.assertNotError('maint sl-modem')              # maintainer with non-ascii characters; maintianer, uploader and changer
         self.assertNotError('maint python-pyx')            # auto bin2src test; maintianer, uploader and changer for source package pyx
         self.assertNotError('maint nosuchpackage')         # package not found; no such package in the archive
 

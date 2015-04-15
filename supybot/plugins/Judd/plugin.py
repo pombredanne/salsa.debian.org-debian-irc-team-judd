@@ -828,14 +828,14 @@ class Judd(callbacks.Plugin):
             return
 
         for u in uploads:
-            reply = "Package %s version %s was uploaded by %s on %s, " \
+            reply = u"Package %s version %s was uploaded by %s on %s, " \
                         "last changed by %s and maintained by %s." % \
                     (u['source'], u['version'], u['signed_by_name'],
                         u['date'].date(),
                         u['changed_by_name'], u['maintainer_name'])
             if u['nmu']:
-                reply += " (non-maintainer upload)"
-            irc.reply(reply.encode('UTF-8'))
+                reply += u" (non-maintainer upload)"
+            irc.reply(reply.encode("UTF-8"))
 
     def recent(self, irc, msg, args, package, version):
         """<packagename>
@@ -1013,9 +1013,9 @@ class Judd(callbacks.Plugin):
                 irc.reply("No bugs were found in package %s." % package)
                 return
 
-            irc.reply((u"Bug summary for package %s: %s" % \
+            irc.reply("Bug summary for package %s: %s" % \
                         (package, ", ".join(bug_count))
-                      ).encode('UTF-8'))
+                      )
 
         def rc(self, irc, msg, args, package):
             """<package>
@@ -1036,9 +1036,9 @@ class Judd(callbacks.Plugin):
                 [status.append(t) for t in bug.tags if t not in status]
                 buglist.append("#%d (%s)" % (bug.id, ", ".join(status)))
 
-            irc.reply((u"Release critical bugs in package %s (%d): %s" % \
+            irc.reply("Release critical bugs in package %s (%d): %s" % \
                         (package, len(bugs), ", ".join(buglist))
-                      ).encode('UTF-8'))
+                      )
 
         rc = wrap(rc, ['something'] )
 

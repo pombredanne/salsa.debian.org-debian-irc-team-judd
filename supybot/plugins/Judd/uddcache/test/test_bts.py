@@ -69,6 +69,7 @@ class BtsTests(unittest.TestCase):
         self.assertEqual(b.status, "done")
         self.assertEqual(b.archived, True)
         self.assertTrue(self.bts.bug("500000"))
+        self.assertTrue(self.bts.bug("544925"))
         self.assertTrue(self.bts.bug("#500000"))
         self.assertRaises(BugNotFoundError, self.bts.bug, -1)
         self.assertRaises(BugNotFoundError, self.bts.bug, 99999999)

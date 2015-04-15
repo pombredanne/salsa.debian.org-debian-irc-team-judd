@@ -160,7 +160,7 @@ class AbstractPackage(object):
             raise ValueError("Package name not specified")
 #        if type(package) is Package:
 #            return package
-        if not type(package) is str:
+        if type(package) is not str and type(package) is not unicode:
             raise ValueError("What did you do to 'package'? It was a %s" % \
                                 type(package))
         self.dbconn = dbconn

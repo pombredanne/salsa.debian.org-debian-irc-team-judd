@@ -35,6 +35,7 @@ import os
 import time
 import psycopg2
 import psycopg2.extras
+import psycopg2.extensions
 
 import logging
 
@@ -63,6 +64,9 @@ def Connect(logfile, **kwargs):
     else:
         psql = psycopg2.connect(**kwargs)
     psql.set_isolation_level(0)
+    psql.set_client_encoding('UTF8')
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
     return psql
 
 
