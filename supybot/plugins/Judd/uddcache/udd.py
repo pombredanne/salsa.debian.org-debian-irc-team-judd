@@ -36,7 +36,6 @@
 
 
 import re
-import psycopg2
 import database
 from data import DebianData
 from config import Config
