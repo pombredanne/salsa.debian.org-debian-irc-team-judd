@@ -114,11 +114,11 @@ class Judd(callbacks.Plugin):
         irc.reply(message % (package, tag))
 
     def versions(self, irc, msg, args, package, optlist, something):
-        """<pattern> [--arch <i386>] [--release <stable>]
+        """<pattern> [--arch <amd64>] [--release <stable>]
 
         Show the available versions of a package in the optionally specified
         release and for the given architecture.
-        All current releases and i386 are searched by default. By default,
+        All current releases and amd64 are searched by default. By default,
         binary packages are searched; prefix the packagename with "src:" to
         search source packages.
         """
@@ -153,10 +153,10 @@ class Judd(callbacks.Plugin):
                                 any('something')])
 
     def names(self, irc, msg, args, package, optlist, something):
-        """<pattern> [--arch <i386>] [--release <stable>]
+        """<pattern> [--arch <amd64>] [--release <stable>]
 
         Search package names with * and ? as wildcards.
-        The current stable release and i386 are searched by default.
+        The current stable release and amd64 are searched by default.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -189,11 +189,11 @@ class Judd(callbacks.Plugin):
                           any('something')])
 
     def info(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>]
+        """<packagename> [--arch <amd64>] [--release <stable>]
 
         Show the short description and some other brief details about a package
         in the specified release and architecture. By default, the current
-        stable release and i386 are used.
+        stable release and amd64 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -264,11 +264,11 @@ class Judd(callbacks.Plugin):
                                 any('something')])
 
     def rprovides(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>]
+        """<packagename> [--arch <amd64>] [--release <stable>]
 
         Show the packages that 'Provide' the specified virtual package
         ('reverse provides').
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -298,11 +298,11 @@ class Judd(callbacks.Plugin):
                                       any('something')])
 
     def provides(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>]
+        """<packagename> [--arch <amd64>] [--release <stable>]
 
         Show the list of "provided" packages for the specified binary package
         in the given release and architecture. By default, the current
-        stable release and i386 are used.
+        stable release and amd64 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -340,7 +340,7 @@ class Judd(callbacks.Plugin):
 
         Show the name of the source package from which a given binary package
         is derived.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -367,7 +367,7 @@ class Judd(callbacks.Plugin):
 
         Show the name of the binary package(s) that are derived from a given
         source package.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -422,10 +422,10 @@ class Judd(callbacks.Plugin):
         "conflicts", "depends", "recommends", "suggests", "enhances".
 
         The standard usage for each of these functions is accepted:
-            relationship <packagename> [--arch <i386>] [--release <stable>]
+            relationship <packagename> [--arch <amd64>] [--release <stable>]
 
         Show the packages that are listed as 'Depends' for a given package.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         known_relations = [ 'conflicts',
                            'depends',
@@ -452,11 +452,11 @@ class Judd(callbacks.Plugin):
             return self.notfound(irc, package, release, arch)
 
     def conflicts(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>]
+        """<packagename> [--arch <amd64>] [--release <stable>]
 
         Show the binary packages listed as conflicting with a given binary
         package.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         self.relationship_helper(irc, msg, args, package, optlist, something, 'conflicts')
 
@@ -465,10 +465,10 @@ class Judd(callbacks.Plugin):
                                  any('something')])
 
     def depends(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>]
+        """<packagename> [--arch <amd64>] [--release <stable>]
 
         Show the packages that are listed as 'Depends' for a given package.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         self.relationship_helper(irc, msg, args, package, optlist, something, 'depends')
 
@@ -477,10 +477,10 @@ class Judd(callbacks.Plugin):
                                  any('something')])
 
     def recommends(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>]
+        """<packagename> [--arch <amd64>] [--release <stable>]
 
         Show the packages that are listed as 'Recommends' for a given package.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         self.relationship_helper(irc, msg, args, package, optlist, something, 'recommends')
 
@@ -489,10 +489,10 @@ class Judd(callbacks.Plugin):
                                    any('something')])
 
     def suggests(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>]
+        """<packagename> [--arch <amd64>] [--release <stable>]
 
         Show the packages that are listed as 'Suggests' for a given package.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         self.relationship_helper(irc, msg, args, package, optlist, something, 'suggests')
 
@@ -501,10 +501,10 @@ class Judd(callbacks.Plugin):
                                any('something')])
 
     def enhances(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>]
+        """<packagename> [--arch <amd64>] [--release <stable>]
 
         Show the packages that are listed as 'Enhances' for a given package.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         self.relationship_helper(irc, msg, args, package, optlist, something, 'enhances')
 
@@ -513,12 +513,12 @@ class Judd(callbacks.Plugin):
                                any('something')])
 
     def checkdeps(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>] [--type depends|recommends|suggests]
+        """<packagename> [--arch <amd64>] [--release <stable>] [--type depends|recommends|suggests]
 
         Check that the dependencies listed by a package are satisfiable for the
         specified release and architecture.
         By default, all dependency types with the current stable release and
-        i386 are used.
+        amd64 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -562,12 +562,12 @@ class Judd(callbacks.Plugin):
                                   any('something')])
 
     def checkinstall(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--arch <i386>] [--release <stable>] [--norecommends]
+        """<packagename> [--arch <amd64>] [--release <stable>] [--norecommends]
 
         Check that the package is installable (i.e. dependencies checked
         recursively) within the specified release and architecture.
         By default, recommended packages are checked too and the current
-        stable release and i386 are used.
+        stable release and amd64 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -610,12 +610,12 @@ class Judd(callbacks.Plugin):
                                         any('something')])
 
     def why(self, irc, msg, args, package1, package2, optlist, something):
-        """<package1> <package2> [--arch <i386>] [--release <stable>] [--norecommends]
+        """<package1> <package2> [--arch <amd64>] [--release <stable>] [--norecommends]
 
         Find dependency chains  between the two packages within the specified
         release and architecture.
         By default, recommended packages are checked too and the current
-        stable release and i386 are used.
+        stable release and amd64 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -680,11 +680,11 @@ class Judd(callbacks.Plugin):
                     ', '.join(status.ReleaseMap().keys())
 
     def checkbuilddeps(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--release <stable>] [--arch <i386>]
+        """<packagename> [--release <stable>] [--arch <amd64>]
 
         Check that the build-dependencies listed by a package are satisfiable
         for the specified release and host architecture.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         channel = msg.args[0]
         release = self.udd.data.clean_release_name(optlist=optlist,
@@ -709,13 +709,13 @@ class Judd(callbacks.Plugin):
                                             any('something')])
 
     def checkbackport(self, irc, msg, args, package, optlist, something):
-        """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <i386>] [--verbose]
+        """<packagename> [--fromrelease <sid>] [--torelease <stable>] [--arch <amd64>] [--verbose]
 
         Check that the build-dependencies listed by a package in the release
         specified as "fromrelease" are satisfiable for in "torelease" for the
         given host architecture.
         By default, a backport from unstable to the current stable release
-        and i386 are used.
+        and amd64 are used.
         """
         channel = msg.args[0]
         fromrelease = self.udd.data.clean_release_name(optlist=optlist,
@@ -1076,14 +1076,14 @@ class Judd(callbacks.Plugin):
         rfs = wrap(rfs, ['something'])
 
     def file(self, irc, msg, args, glob, optlist, something):
-        """<pattern> [--arch <i386>] [--release <stable>] [--regex | --exact]
+        """<pattern> [--arch <amd64>] [--release <stable>] [--regex | --exact]
 
         Returns packages that include files matching <pattern> which, by
         default, is interpreted as a glob (see glob(7)).
         If --regex is given, the pattern is treated as a extended regex
         (see regex(7); note not PCRE!).
         If --exact is given, the exact filename is required.
-        The current stable release and i386 are searched by default.
+        The current stable release and amd64 are searched by default.
         """
         # Based on the file command in the Debian plugin by James Vega
 

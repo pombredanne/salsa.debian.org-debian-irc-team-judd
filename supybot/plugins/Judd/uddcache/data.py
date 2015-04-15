@@ -78,7 +78,7 @@ class AvailableData:
 
     @classmethod
     def clean_arch_name(cls, name=None, optlist=None, optname="arch",
-                      args=None, default="i386"):
+                      args=None, default="amd64"):
         """
         Sanitised architecture name
         """
@@ -174,3 +174,5 @@ class DebianData(AvailableData):
                'sparc', 'all']
 
     stable_release = 'squeeze'
+
+    default_arch = 'amd64'

@@ -195,7 +195,7 @@ class Cli(clibase.CliBase):
         """
         Show the packages that 'Provide' the specified virtual package
         ('reverse provides').
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
@@ -221,7 +221,7 @@ class Cli(clibase.CliBase):
         """
         Show the list of "provided" packages for the specified binary package
         in the given release and architecture. By default, the current
-        stable release and i386 are used.
+        stable release and amd64 are used.
         """
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
@@ -243,7 +243,7 @@ class Cli(clibase.CliBase):
         """
         Show the name of the source package from which a given binary package
         is derived.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
@@ -262,7 +262,7 @@ class Cli(clibase.CliBase):
         """
         Show the name of the binary package(s) that are derived from a given
         source package.
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
@@ -388,7 +388,7 @@ class Cli(clibase.CliBase):
         specified release and architecture. In contrast to the "checkinstall"
         function, this check is not done recursively.
 
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
@@ -425,7 +425,7 @@ class Cli(clibase.CliBase):
         as listed by a source package is satisfiable for the
         specified release and architecture.
 
-        By default, the current stable release and i386 are used.
+        By default, the current stable release and amd64 are used.
         """
         release = self.udd.data.clean_release_name(self.options.release,
                                                    args=args)
@@ -467,7 +467,7 @@ class Cli(clibase.CliBase):
         specified as "from-release" are satisfiable for in "to-release" for the
         given host architecture.
         By default, a backport from unstable to the current stable release
-        and i386 are used.
+        and amd64 are used.
         """
         fromrelease = self.udd.data.clean_release_name(
                                         self.options.fromrelease,

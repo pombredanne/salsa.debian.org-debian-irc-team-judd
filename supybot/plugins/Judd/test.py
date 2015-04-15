@@ -45,12 +45,12 @@ class DebianTestCase(PluginTestCase):
     def testVersion(self):
         self.assertNotError('versions libc6')                   # all versions; show oldstable->experimental
         self.assertNotError('versions libc6 --release sid')     # one version; only show sid
-        self.assertNotError('versions libc6 --arch amd64')      # one arch; show amd64 instead
+        self.assertNotError('versions libc6 --arch i386')       # one arch; show i386 instead
         self.assertNotError('versions libc6 --release qwerty')  # no such release; defaults to stable
-        self.assertNotError('versions libc6 --arch qwerty')     # no such arch; defaults to i386
-        self.assertNotError('versions libc6 amd64')             # implicit arch; show amd64 instead of i386
+        self.assertNotError('versions libc6 --arch qwerty')     # no such arch; defaults to amd64
+        self.assertNotError('versions libc6 i386')              # implicit arch; show i386 instead of amd64
         self.assertNotError('versions libc6 sid')               # implicit release; show sid only
-        self.assertNotError('versions libc6 amd64 sid')         # implicit release; show amd64,sid only
+        self.assertNotError('versions libc6 i386 sid')          # implicit release; show i386,sid only
         self.assertNotError('versions nosuchpackage')           # package not found; no such package in the archive
 
     def testNames(self):
@@ -104,7 +104,7 @@ class DebianTestCase(PluginTestCase):
         self.assertNotError('rprovides nosuchpackage')          # no rproviders; no packages provide this
 
     def testSource(self):
-        self.assertNotError('src libc6 --release sid')          # source package; eglibc has libc6 in sid
+        self.assertNotError('src libc6 --release sid')          # source package; glibc has libc6 in sid
         self.assertNotError('src nosuchpackage')                # package not found; no such package in the archive
 
     def testBinaries(self):
@@ -129,7 +129,7 @@ class DebianTestCase(PluginTestCase):
         self.assertError('checkdeps dpkg --type nosuchrelation')  # package not found; no such package in the archive
 
     def testCheckBuildDeps(self):
-        self.assertNotError('checkbuilddeps eglibc --release sid')  # source package selection; build-deps are fulfilled
+        self.assertNotError('checkbuilddeps glibc --release sid')  # source package selection; build-deps are fulfilled
         self.assertNotError('checkbuilddeps stage --release sid')   # source package selection; build-deps are uninstallable
         self.assertNotError('checkbuilddeps libc6')             # binary package selection; build-deps are fulfilled
         self.assertNotError('checkbuilddeps ffmpeg --release sid-multimedia')  # fallback to official repo; all build-deps are fulfilled but only if sid itself is included
@@ -202,7 +202,7 @@ class DebianTestCase(PluginTestCase):
 
     def testRcBugs(self):
         self.assertNotError('bug rc pyxplot')                   # no rc bugs; none found
-        self.assertNotError('bug rc eglibc')                    # rc bugs; match via source package name
+        self.assertNotError('bug rc glibc')                    # rc bugs; match via source package name
         self.assertNotError('bug rc libc6')                    # rc bugs; match via binary package name
         self.assertNotError('bug rc nosuchpackage')             # package not found; no such package in the archive
 

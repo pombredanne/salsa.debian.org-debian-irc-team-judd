@@ -111,7 +111,7 @@ conf.registerChannelValue(Judd, 'default_release',
                          registry.String("stable",
                          "default release to use for queries"))
 conf.registerChannelValue(Judd, 'default_arch',
-                         registry.String("i386",
+                         registry.String("amd64",
                          "default architecture to use for queries"))
 conf.registerChannelValue(Judd, 'auto_bug_throttle',
                          registry.Integer(900,
