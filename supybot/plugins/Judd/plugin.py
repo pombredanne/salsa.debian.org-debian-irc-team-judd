@@ -428,6 +428,8 @@ class Judd(callbacks.Plugin):
         By default, the current stable release and amd64 are used.
         """
         known_relations = [ 'conflicts',
+                           'breaks',
+                           'replaces',
                            'depends',
                            'recommends',
                            'suggests',
@@ -461,6 +463,32 @@ class Judd(callbacks.Plugin):
         self.relationship_helper(irc, msg, args, package, optlist, something, 'conflicts')
 
     conflicts = wrap(conflicts, ['something', getopts({'arch':'something',
+                                                       'release':'something'}),
+                                 any('something')])
+
+    def breaks(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <amd64>] [--release <stable>]
+
+        Show the binary packages listed as being broken by a given binary
+        package.
+        By default, the current stable release and amd64 are used.
+        """
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'breaks')
+
+    breaks = wrap(breaks, ['something', getopts({'arch':'something',
+                                                       'release':'something'}),
+                                 any('something')])
+
+    def replaces(self, irc, msg, args, package, optlist, something):
+        """<packagename> [--arch <amd64>] [--release <stable>]
+
+        Show the binary packages listed as being replaced by a given binary
+        package.
+        By default, the current stable release and amd64 are used.
+        """
+        self.relationship_helper(irc, msg, args, package, optlist, something, 'replaces')
+
+    replaces = wrap(replaces, ['something', getopts({'arch':'something',
                                                        'release':'something'}),
                                  any('something')])
 

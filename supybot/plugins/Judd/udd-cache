@@ -72,7 +72,7 @@ def main():
     commands.add_option("--rprovides",
                 help="list which packages Provide a given package")
     commands.add_option("--relations", "--depends", "--recommends",
-                        "--suggests", "--enhances", "--conflicts",
+                        "--suggests", "--enhances", "--conflicts", '--breaks',
                 help="list the relationships of the specified package")
     commands.add_option("--binaries", "--source",
                 help="show which source package generated the binary package "

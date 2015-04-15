@@ -69,6 +69,8 @@ class Cli(clibase.CliBase):
                 'suggests':     self.depends,
                 'enhances':     self.depends,
                 'conflicts':    self.depends,
+                'breaks':       self.depends,
+                'replaces':     self.depends,
                 'checkdeps':    self.checkdeps,
                 'checkbuilddeps': self.checkbuilddeps,
                 'checkinstall': self.checkinstall,
@@ -310,6 +312,10 @@ class Cli(clibase.CliBase):
         self._package_relation_lookup(p, release, 'enhances',
                                      skipErrors=True, skipHeaders=True)
         self._package_relation_lookup(p, release, 'conflicts',
+                                     skipErrors=True, skipHeaders=True)
+        self._package_relation_lookup(p, release, 'breaks',
+                                     skipErrors=True, skipHeaders=True)
+        self._package_relation_lookup(p, release, 'replaces',
                                      skipErrors=True, skipHeaders=True)
 
     def depends(self, command, package, args):
