@@ -74,6 +74,8 @@ class Relationship(object):
         """ architecture specification for the relationship as a list """
         self.archIgnore = False
         """ boolean: this relationship is to be ignored in this architecture"""
+        self.archqual = kwargs.get('archqual', None)
+        """ multi-arch qualifier """
         self.virtual = False
         """ boolean: this relationship is satisfied only by virtual packages"""
         self.packagedata = None
@@ -96,6 +98,8 @@ class Relationship(object):
         m = re.match(r"""(?x)
                   ^\s*
                   (?P<package>[\w\d.+-]+)
+                  (:(?P<archqual>([a-zA-Z0-9][a-zA-Z0-9-]*))
+                  )?
                   (?:
                     \s*
                     \(\s*
@@ -108,7 +112,11 @@ class Relationship(object):
                       (?P<arch>[^]]+)
                     \s*\]
                   )?
-                  \s*$
+                  \s*
+                  (
+                    (?P<restrictions><.+>)
+                  )?\s*
+                  $
                   """, relationship)
         if not m:
             raise ValueError("Couldn't parse the relationship expression")
@@ -116,6 +124,7 @@ class Relationship(object):
         self.operator = m.group('operator')
         self.version = m.group('version')
         self.arch = self._archsplit(m.group('arch'))
+        self.archqual = m.group('archqual')
 
     def isVersioned(self):
         return self.operator != None
