@@ -170,10 +170,10 @@ class Checker(object):
             rel: a Relationship object
             Return true if satisfied
         """
-#        print "Checking relationship for '%s', '%s', '%s' on %s" % \
-#                     (rel.package, rel.operator, rel.version, rel.arch)
+        # print "Checking relationship for '%s', '%s', '%s' on %s" % \
+                    #(rel.package, rel.operator, rel.version, " ".join(rel.arch))
         if not self.CheckRelationArch(rel.arch):
-            #print "    doesn't apply"
+            # print "    doesn't apply"
             rel.archIgnore = True
             return True
 

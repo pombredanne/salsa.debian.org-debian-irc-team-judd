@@ -94,7 +94,7 @@ class Relationship(object):
         self._checkOperatorSyntax()
 
     def _ParseRelation(self, relationship):
-        #print "checking item %s" % item
+        #print "checking item %s" % relationship
         m = re.match(r"""(?x)
                   ^\s*
                   (?P<package>[\w\d.+-]+)
@@ -137,7 +137,7 @@ class Relationship(object):
 
     def _archsplit(self, value):
         """ split up whitespace separated into list of archs accept lists"""
-        if value and type(value) is str:
+        if value and type(value) is str or type(value) is unicode:
             return re.split(r"\s+", value.strip())
         elif type(value) is list:
             return value
