@@ -135,21 +135,21 @@ class RelationshipOptionsListTests(unittest.TestCase):
         self.assert_(rl)
         self.assert_(rl.ReleaseMap()['unresolved'])
 
-        release = self.udd.BindRelease(arch="i386", release="squeeze")
+        release = self.udd.BindRelease(arch="i386", release="sid")
         checker = Checker(release)
 
         # all resolvable, options, versioned deps
         p = release.Package("build-essential")
         rl = checker.CheckRelationshipOptionsList(p.RelationshipOptionsList("depends"))
         self.assert_(rl.good.ReleaseMap())
-        self.assert_(rl.good.ReleaseMap()['squeeze'])
+        self.assert_(rl.good.ReleaseMap()['sid'])
         self.assertFalse('unresolved' in rl.good.ReleaseMap())
 
         # all resolvable, virtual packages
         p = release.Package("debbugs")
         rl = checker.CheckRelationshipOptionsList(p.RelationshipOptionsList("depends"))
         self.assert_(rl.good.ReleaseMap())
-        self.assert_(rl.good.ReleaseMap()['squeeze'])
+        self.assert_(rl.good.ReleaseMap()['sid'])
         self.assertFalse('unresolved' in rl.good.ReleaseMap())
         self.assert_('virtual' in rl.good.ReleaseMap())
         self.assert_(rl.good.ReleaseMap()['virtual'])
@@ -157,10 +157,10 @@ class RelationshipOptionsListTests(unittest.TestCase):
         #print rl
 
         # some arch-specific dependencies
-        p = release.Source("eglibc")
+        p = release.Source("glibc")
         rl = checker.CheckRelationshipOptionsList(p.RelationshipOptionsList("build_depends"))
         self.assert_(rl.good.ReleaseMap())
-        self.assert_(rl.good.ReleaseMap()['squeeze'])
+        self.assert_(rl.good.ReleaseMap()['sid'])
         self.assert_('archignore' in rl.good.ReleaseMap())
         self.assert_(rl.good.ReleaseMap()['archignore'])
 
@@ -172,7 +172,7 @@ class RelationshipOptionsListTests(unittest.TestCase):
         #print rl.PackageSet()
         self.assert_(rl.PackageSet())
 
-        release = self.udd.BindRelease(arch="i386", release="squeeze")
+        release = self.udd.BindRelease(arch="i386", release="sid")
         checker = Checker(release)
 
         # all resolvable, options, versioned deps
@@ -196,7 +196,7 @@ class RelationshipOptionsListTests(unittest.TestCase):
         self.assert_(str(rl))
 
         # list of packages
-        release = self.udd.BindRelease(arch="i386", release="squeeze")
+        release = self.udd.BindRelease(arch="i386", release="sid")
         p = release.Package("build-essential")
         rl = p.RelationshipOptionsList("depends")
         self.assert_(str(rl))
@@ -254,9 +254,9 @@ class BuildDepStatusTests(unittest.TestCase):
         self.assert_(BuildDepStatus(bd=RelationshipStatus(), bdi=RelationshipStatus()))
 
     def testAllFound(self):
-        release = self.udd.BindRelease(arch="i386", release="squeeze")
+        release = self.udd.BindRelease(arch="i386", release="sid")
         checker = Checker(release)
-        p = release.Source("eglibc")
+        p = release.Source("glibc")
         bdstatus = BuildDepStatus(bd=checker.CheckRelationshipOptionsList(p.BuildDependsList()),
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))
         self.assert_(bdstatus.AllFound())
@@ -269,14 +269,14 @@ class BuildDepStatusTests(unittest.TestCase):
         self.assertFalse(bdstatus.AllFound())
 
     def testReleaseMap(self):
-        release = self.udd.BindRelease(arch="i386", release="squeeze")
+        release = self.udd.BindRelease(arch="i386", release="sid")
         checker = Checker(release)
-        p = release.Source("eglibc")
+        p = release.Source("glibc")
         bdstatus = BuildDepStatus(bd=checker.CheckRelationshipOptionsList(p.BuildDependsList()),
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))
         m = bdstatus.ReleaseMap()
-        self.assertEquals(sorted(m.keys()), ['archignore', 'squeeze'])
-        self.assert_(len(m['squeeze']) > 1)
+        self.assertEquals(sorted(m.keys()), ['archignore', 'sid', 'virtual'])
+        self.assert_(len(m['sid']) > 1)
 
         release = self.udd.BindRelease(arch="i386", release=["squeeze", "squeeze-backports"])
         checker = Checker(release)
@@ -290,9 +290,9 @@ class BuildDepStatusTests(unittest.TestCase):
         bdstatus = BuildDepStatus()
         self.assert_(str(bdstatus))
 
-        release = self.udd.BindRelease(arch="i386", release="squeeze")
+        release = self.udd.BindRelease(arch="i386", release="sid")
         checker = Checker(release)
-        p = release.Source("eglibc")
+        p = release.Source("glibc")
         bdstatus = BuildDepStatus(bd=checker.CheckRelationshipOptionsList(p.BuildDependsList()),
                                   bdi=checker.CheckRelationshipOptionsList(p.BuildDependsIndepList()))
         self.assert_(str(bdstatus))
@@ -306,7 +306,7 @@ class RelationshipStatusTests(unittest.TestCase):
         self.udd = None
 
     def testPackageSets(self):
-        release = self.udd.BindRelease(arch="i386", release="squeeze")
+        release = self.udd.BindRelease(arch="i386", release="sid")
         s = RelationshipStatus()
         s.good.append(release.Package('dpkg').DependsList()[0])
         s.good.append(release.Package('dpkg').DependsList()[0])

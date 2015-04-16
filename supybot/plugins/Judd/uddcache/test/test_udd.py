@@ -75,7 +75,7 @@ class database(unittest.TestCase):
 
     def testSource(self):
         """Test binding to a source package and doing a lookup"""
-        r = self.udd.BindSourcePackage('eglibc', 'sid')
+        r = self.udd.BindSourcePackage('glibc', 'sid')
         self.assert_(r)
         self.assert_(r.Found())
         r = self.udd.BindSourcePackage('libc6', 'sid')

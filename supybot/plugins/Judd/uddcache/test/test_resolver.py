@@ -186,7 +186,7 @@ class CheckerTests(unittest.TestCase):
 class BuildDepCheckerTests(unittest.TestCase):
     def setUp(self):
         self.udd = Udd()
-        self.checker = BuildDepsChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
+        self.checker = BuildDepsChecker(self.udd.BindRelease(arch="i386", release="sid"))
 
     def tearDown(self):
         self.udd = None

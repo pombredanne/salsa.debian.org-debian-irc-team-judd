@@ -63,9 +63,9 @@ class commands(unittest.TestCase):
         """Test version lookups"""
         self.assert_(self.dispatcher.versions('libc6', 'sid', 'i386'))
         self.assertRaises(PackageNotFoundError, self.dispatcher.versions, 'nosuchpackage', 'sid', 'i386')
-        self.assertRaises(PackageNotFoundError, self.dispatcher.versions, 'libc6', 'sid', 'ia64')
+        self.assertRaises(PackageNotFoundError, self.dispatcher.versions, 'libc0.1', 'sid', 'armhf')
         self.assert_(self.dispatcher.versions('libc6', None, 'amd64'))
-        self.assert_(self.dispatcher.versions('src:eglibc', 'sid', 'i386'))
+        self.assert_(self.dispatcher.versions('src:glibc', 'sid', 'i386'))
         self.assertRaises(PackageNotFoundError, self.dispatcher.versions, 'src:nosuchpackage', 'sid', 'i386')
 
     def testInfo(self):
@@ -82,9 +82,9 @@ class commands(unittest.TestCase):
         self.assert_(self.dispatcher.names('libc6*', 'sid', 'i386'))
         self.assert_(self.dispatcher.names('*bc6', 'sid', 'i386'))
         self.assert_(self.dispatcher.names('l*6', 'sid', 'i386'))
-        self.assertFalse(self.dispatcher.names('libc6', 'sid', 'ia64'))
-        self.assert_(self.dispatcher.names('libc6*', 'sid', 'ia64'))
-        self.assert_(self.dispatcher.names('src:eglibc', 'sid', 'ia64'))
+        self.assertFalse(self.dispatcher.names('libc0.1', 'sid', 'armhf'))
+        self.assert_(self.dispatcher.names('libc6*', 'sid', 'armhf'))
+        self.assert_(self.dispatcher.names('src:glibc', 'sid', 'armhf'))
         self.assertFalse(self.dispatcher.names('src:nosuchpackage', 'sid', 'i386'))
 
     def testArchs(self):
@@ -99,13 +99,13 @@ class commands(unittest.TestCase):
 
     def testUploads(self):
         """Test upload/maintainer data lookups"""
-        self.assert_(self.dispatcher.uploads('eglibc', max=10))
-        self.assert_(self.dispatcher.uploads('eglibc'))
+        self.assert_(self.dispatcher.uploads('glibc', max=10))
+        self.assert_(self.dispatcher.uploads('glibc'))
         self.assert_(self.dispatcher.uploads('eglibc', '2.9-11'))
         self.assertRaises(PackageNotFoundError, self.dispatcher.uploads, 'nosuchpackage')
-        self.assertRaises(PackageNotFoundError, self.dispatcher.uploads, 'eglibc', 'nosuchversion')
+        self.assertRaises(PackageNotFoundError, self.dispatcher.uploads, 'glibc', 'nosuchversion')
         self.assertRaises(PackageNotFoundError, self.dispatcher.uploads, 'libc6')  # only does source packages
-        p = self.udd.BindSourcePackage('eglibc', 'sid')
+        p = self.udd.BindSourcePackage('glibc', 'sid')
         self.assert_(self.dispatcher.uploads(p), 'Check uploads with bind to source package failed')
         p = self.udd.BindSourcePackage('libc6', 'sid')
         self.assert_(self.dispatcher.uploads(p), 'Check uploads with bind to source package via bin2src failed')
@@ -114,8 +114,8 @@ class commands(unittest.TestCase):
     def testCheckDeps(self):
         """Test dependency testing for packages"""
         # TODO: it would be nice to actually test the accuracy of the tests
-        self.assert_(self.dispatcher.checkdeps('libc6', 'squeeze', 'i386', ['depends']))
-        self.assert_(self.dispatcher.checkdeps('libc6', 'squeeze', 'i386', ['depends', 'recommends', 'suggests']))
+        self.assert_(self.dispatcher.checkdeps('libc6', 'sid', 'i386', ['depends']))
+        self.assert_(self.dispatcher.checkdeps('libc6', 'sid', 'i386', ['depends', 'recommends', 'suggests']))
         self.assert_(self.dispatcher.checkdeps('cbedic', 'sid', 'i386', ['suggests']), 'broken relations not handled correctly')
         self.assertRaises(PackageNotFoundError, self.dispatcher.checkdeps, 'nosuchpackage', 'squeeze', 'i386', ['depends'])
 
