@@ -67,7 +67,7 @@ class Bts(object):
         for b in bugnumbers:
             if type(b) is int:
                 cleanbugs.append(b)
-            if type(b) is str:
+            if type(b) is str or type(b) is unicode:
                 b = b.replace('#', '')
                 cleanbugs.append(int(b))
         cleanbugs = tuple(cleanbugs)
