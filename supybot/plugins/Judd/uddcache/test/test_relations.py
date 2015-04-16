@@ -63,6 +63,8 @@ class RelationshipTests(unittest.TestCase):
         self.assert_(r.package == "pkg" and not(r.operator) and not(r.version) and r.arch == ["!amd64"])
         r = Relationship(relation="pkg (>> 1.0) [amd64]")
         self.assert_(r.package == "pkg" and r.operator == ">>" and r.version == "1.0" and r.arch == ["amd64"])
+        r = Relationship(relation="pkg:any (>> 1.0)")
+        self.assert_(r.package == "pkg" and r.operator == ">>" and r.version == "1.0" and r.archqual == 'any')
 
         r = Relationship(package="pkg", operator=">>", version="1.0", arch="amd64")
         self.assert_(r.package == "pkg" and r.operator == ">>" and r.version == "1.0" and r.arch == ["amd64"])
