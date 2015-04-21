@@ -456,7 +456,7 @@ class BuildDepStatus(UnicodeMixin):
         """
         bdm = self.bd.good.ReleaseMap()
         bdim = self.bdi.good.ReleaseMap()
-        releases = dict([(k, []) for k in bdm.keys() + bdim.keys()])
+        releases = dict([(k, []) for k in list(bdm.keys()) + list(bdim.keys())])
 
         [releases[r].extend(bdm[r]) for r in bdm.keys()]
         [releases[r].extend(bdim[r]) for r in bdim.keys()]

@@ -49,7 +49,7 @@ from uddcache.udd import Udd
 from uddcache.resolver import *
 
 exclude_slow_tests = 0
-if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_TESTS']):
+if 'UDD_SKIP_SLOW_TESTS' in os.environ and int(os.environ['UDD_SKIP_SLOW_TESTS']):
     #print "Skipping slow tests in %s" % __file__
     exclude_slow_tests = 1
 

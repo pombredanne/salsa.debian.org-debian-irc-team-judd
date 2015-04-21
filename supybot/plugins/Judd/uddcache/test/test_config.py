@@ -70,12 +70,12 @@ class config(unittest.TestCase):
     def testEnvironment(self):
         """Test loading config file from environment"""
         origEnv = False
-        if os.environ.has_key('UDD_CACHE_CONFIG'):
+        if 'UDD_CACHE_CONFIG' in os.environ:
             origEnv = os.environ['UDD_CACHE_CONFIG']
         os.environ['UDD_CACHE_CONFIG'] = "/path/to/no/such/file"
         self.assertRaises(IOError, Config)
         os.environ['UDD_CACHE_CONFIG'] = "udd-cache.conf"
-        self.assert_(Config(skipDefaultFiles=True))
+        self.assertTrue(Config(skipDefaultFiles=True))
         os.environ['UDD_CACHE_CONFIG'] = ""
         self.assertRaises(ValueError, Config, skipDefaultFiles=True)
         if origEnv:
