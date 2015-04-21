@@ -52,8 +52,8 @@ class data(unittest.TestCase):
         """Test switching to Debian data sets"""
         dat = DebianData()
         self.assertEqual(dat.release_map['unstable'], 'sid')
-        self.assert_('i386' in dat.arches)
-        self.assert_('sid' in dat.releases)
+        self.assertTrue('i386' in dat.arches)
+        self.assertTrue('sid' in dat.releases)
 
     def testReleaseName(self):
         """Test manipulations of the release names"""

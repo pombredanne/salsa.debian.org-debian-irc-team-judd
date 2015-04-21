@@ -81,128 +81,128 @@ class cliTests(unittest.TestCase):
         self.cli = None
 
     def testnotfound(self):
-        self.assert_(self.cli.notfound("nosuchpackage") is None)
-        self.assert_(self.cli.notfound("nosuchpackage", release="stable") is None)
-        self.assert_(self.cli.notfound("nosuchpackage", arch="i386") is None)
-        self.assert_(self.cli.notfound("nosuchpackage", arch="i386", release="stable") is None)
-        self.assert_(self.cli.notfound("nosuchpackage", arch="i386", release="stable", message="foo %s bar %s") is None)
+        self.assertTrue(self.cli.notfound("nosuchpackage") is None)
+        self.assertTrue(self.cli.notfound("nosuchpackage", release="stable") is None)
+        self.assertTrue(self.cli.notfound("nosuchpackage", arch="i386") is None)
+        self.assertTrue(self.cli.notfound("nosuchpackage", arch="i386", release="stable") is None)
+        self.assertTrue(self.cli.notfound("nosuchpackage", arch="i386", release="stable", message="foo %s bar %s") is None)
         self.assertRaises(TypeError, self.cli.notfound, "nosuchpackage", arch="i386", release="stable", message="bad format %s")
         self.assertRaises(TypeError, self.cli.notfound, "nosuchpackage", message="bad format %s")
 
     def testversions(self):
-        self.assert_(self.cli.versions("versions", "dpkg", []) is None)
-        self.assert_(self.cli.versions("versions", "dpkg", ["amd64"]) is None)
-        self.assert_(self.cli.versions("versions", "sun-java6-jre", []) is None)
-        self.assert_(self.cli.versions("versions", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.versions("versions", "dpkg", []) is None)
+        self.assertTrue(self.cli.versions("versions", "dpkg", ["amd64"]) is None)
+        self.assertTrue(self.cli.versions("versions", "sun-java6-jre", []) is None)
+        self.assertTrue(self.cli.versions("versions", "nosuchpackage", []) is None)
 
     def testinfo(self):
-        self.assert_(self.cli.info("info", "dpkg", []) is None)
-        self.assert_(self.cli.info("info", "latexdraw", []) is None)
-        self.assert_(self.cli.info("info", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.info("info", "dpkg", []) is None)
+        self.assertTrue(self.cli.info("info", "latexdraw", []) is None)
+        self.assertTrue(self.cli.info("info", "nosuchpackage", []) is None)
 
     def testnames(self):
-        self.assert_(self.cli.names("names", "dpkg*", []) is None)
-        self.assert_(self.cli.names("names", "sun-java*", []) is None)
-        self.assert_(self.cli.names("names", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.names("names", "dpkg*", []) is None)
+        self.assertTrue(self.cli.names("names", "sun-java*", []) is None)
+        self.assertTrue(self.cli.names("names", "nosuchpackage", []) is None)
 
     def testarchs(self):
-        self.assert_(self.cli.archs("archs", "dpkg", []) is None)
-        self.assert_(self.cli.archs("archs", "sun-java6-jre", []) is None)
-        self.assert_(self.cli.archs("archs", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.archs("archs", "dpkg", []) is None)
+        self.assertTrue(self.cli.archs("archs", "sun-java6-jre", []) is None)
+        self.assertTrue(self.cli.archs("archs", "nosuchpackage", []) is None)
 
     def testrprovides(self):
-        self.assert_(self.cli.rprovides("rprovides", "dpkg", []) is None)
-        self.assert_(self.cli.rprovides("rprovides", "mail-transport-agent", []) is None)
-        self.assert_(self.cli.rprovides("rprovides", "imagemagick", []) is None)
-        self.assert_(self.cli.rprovides("rprovides", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.rprovides("rprovides", "dpkg", []) is None)
+        self.assertTrue(self.cli.rprovides("rprovides", "mail-transport-agent", []) is None)
+        self.assertTrue(self.cli.rprovides("rprovides", "imagemagick", []) is None)
+        self.assertTrue(self.cli.rprovides("rprovides", "nosuchpackage", []) is None)
 
     def testprovides(self):
-        self.assert_(self.cli.provides("provides", "dpkg", []) is None)
-        self.assert_(self.cli.provides("provides", "postfix", []) is None)
-        self.assert_(self.cli.provides("provides", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.provides("provides", "dpkg", []) is None)
+        self.assertTrue(self.cli.provides("provides", "postfix", []) is None)
+        self.assertTrue(self.cli.provides("provides", "nosuchpackage", []) is None)
 
     def testsource(self):
-        self.assert_(self.cli.source("source", "dpkg", []) is None)
-        self.assert_(self.cli.source("source", "libc6", []) is None)
-        self.assert_(self.cli.source("source", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.source("source", "dpkg", []) is None)
+        self.assertTrue(self.cli.source("source", "libc6", []) is None)
+        self.assertTrue(self.cli.source("source", "nosuchpackage", []) is None)
 
     def testbinaries(self):
-        self.assert_(self.cli.binaries("binaries", "dpkg", []) is None)
-        self.assert_(self.cli.binaries("binaries", "glibc", []) is None)
-        self.assert_(self.cli.binaries("binaries", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.binaries("binaries", "dpkg", []) is None)
+        self.assertTrue(self.cli.binaries("binaries", "glibc", []) is None)
+        self.assertTrue(self.cli.binaries("binaries", "nosuchpackage", []) is None)
 
     def testbuilddeps(self):
-        self.assert_(self.cli.builddeps("builddeps", "perl", []) is None)
-        self.assert_(self.cli.builddeps("builddeps", "texlive", []) is None)
-        self.assert_(self.cli.builddeps("builddeps", "libc6", []) is None)
-        self.assert_(self.cli.builddeps("builddeps", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.builddeps("builddeps", "perl", []) is None)
+        self.assertTrue(self.cli.builddeps("builddeps", "texlive", []) is None)
+        self.assertTrue(self.cli.builddeps("builddeps", "libc6", []) is None)
+        self.assertTrue(self.cli.builddeps("builddeps", "nosuchpackage", []) is None)
 
     def testrelations(self):
-        self.assert_(self.cli.relations("relations", "perl", []) is None)
-        self.assert_(self.cli.relations("relations", "texlive", []) is None)
-        self.assert_(self.cli.relations("relations", "libc6", []) is None)
-        self.assert_(self.cli.relations("relations", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.relations("relations", "perl", []) is None)
+        self.assertTrue(self.cli.relations("relations", "texlive", []) is None)
+        self.assertTrue(self.cli.relations("relations", "libc6", []) is None)
+        self.assertTrue(self.cli.relations("relations", "nosuchpackage", []) is None)
 
     def testdepends(self):
-        self.assert_(self.cli.depends("depends", "perl", []) is None)
-        self.assert_(self.cli.depends("recommends", "dpkg", []) is None)
-        self.assert_(self.cli.depends("suggests", "dpkg", []) is None)
-        self.assert_(self.cli.depends("enhances", "kipi-plugins", []) is None)
-        self.assert_(self.cli.depends("conflicts", "libc6", []) is None)
-        self.assert_(self.cli.depends("depends", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.depends("depends", "perl", []) is None)
+        self.assertTrue(self.cli.depends("recommends", "dpkg", []) is None)
+        self.assertTrue(self.cli.depends("suggests", "dpkg", []) is None)
+        self.assertTrue(self.cli.depends("enhances", "kipi-plugins", []) is None)
+        self.assertTrue(self.cli.depends("conflicts", "libc6", []) is None)
+        self.assertTrue(self.cli.depends("depends", "nosuchpackage", []) is None)
 
     def testrecent(self):
-        self.assert_(self.cli.recent("recent", "pyx", []) is None)
-        self.assert_(self.cli.recent("recent", "libc6", []) is None)
-        self.assert_(self.cli.recent("recent", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.recent("recent", "pyx", []) is None)
+        self.assertTrue(self.cli.recent("recent", "libc6", []) is None)
+        self.assertTrue(self.cli.recent("recent", "nosuchpackage", []) is None)
 
     def testmaint(self):
-        self.assert_(self.cli.maint("maint", "pyx", []) is None)
-        self.assert_(self.cli.maint("maint", "pyx", ["0.10-0+nmu3"]) is None)
-        self.assert_(self.cli.maint("maint", "libc6", []) is None)
-        self.assert_(self.cli.maint("maint", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.maint("maint", "pyx", []) is None)
+        self.assertTrue(self.cli.maint("maint", "pyx", ["0.10-0+nmu3"]) is None)
+        self.assertTrue(self.cli.maint("maint", "libc6", []) is None)
+        self.assertTrue(self.cli.maint("maint", "nosuchpackage", []) is None)
 
     def testpopcon(self):
-        self.assert_(self.cli.popcon("popcon", "libc6", []) is None)
-        self.assert_(self.cli.popcon("popcon", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.popcon("popcon", "libc6", []) is None)
+        self.assertTrue(self.cli.popcon("popcon", "nosuchpackage", []) is None)
 
     def testcheckdeps(self):
-        self.assert_(self.cli.checkdeps("checkdeps", "libc6", []) is None)
-        self.assert_(self.cli.checkdeps("checkdeps", "libdvdcss2", ["sid-multimedia"]) is None)
-        self.assert_(self.cli.checkdeps("checkdeps", "drizzle", ["armhf", "sid"]) is None)
-        self.assert_(self.cli.checkdeps("checkdeps", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.checkdeps("checkdeps", "libc6", []) is None)
+        self.assertTrue(self.cli.checkdeps("checkdeps", "libdvdcss2", ["sid-multimedia"]) is None)
+        self.assertTrue(self.cli.checkdeps("checkdeps", "drizzle", ["armhf", "sid"]) is None)
+        self.assertTrue(self.cli.checkdeps("checkdeps", "nosuchpackage", []) is None)
         self.cli.options.deptype = ['suggests', 'depends']
-        self.assert_(self.cli.checkdeps("checkdeps", "dpkg", []) is None)
+        self.assertTrue(self.cli.checkdeps("checkdeps", "dpkg", []) is None)
 
     def testcheckbuilddeps(self):
-        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "glibc", []) is None)
-        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "libdvdcss", ["squeeze-multimedia"]) is None)
-        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "stage", ["amd64", "sid"]) is None)
-        self.assert_(self.cli.checkbuilddeps("checkbuilddeps", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.checkbuilddeps("checkbuilddeps", "glibc", []) is None)
+        self.assertTrue(self.cli.checkbuilddeps("checkbuilddeps", "libdvdcss", ["squeeze-multimedia"]) is None)
+        self.assertTrue(self.cli.checkbuilddeps("checkbuilddeps", "stage", ["amd64", "sid"]) is None)
+        self.assertTrue(self.cli.checkbuilddeps("checkbuilddeps", "nosuchpackage", []) is None)
 
     @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testcheckinstall(self):
-        self.assert_(self.cli.checkinstall("checkinstall", "libc6", []) is None)
-        self.assert_(self.cli.checkinstall("checkinstall", "ffmpeg", ["sid-multimedia"]) is None)
-        self.assert_(self.cli.checkinstall("checkinstall", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.checkinstall("checkinstall", "libc6", []) is None)
+        self.assertTrue(self.cli.checkinstall("checkinstall", "ffmpeg", ["sid-multimedia"]) is None)
+        self.assertTrue(self.cli.checkinstall("checkinstall", "nosuchpackage", []) is None)
         self.cli.options.verbose = True
-        self.assert_(self.cli.checkinstall("checkinstall", "libc6", []) is None)
+        self.assertTrue(self.cli.checkinstall("checkinstall", "libc6", []) is None)
 
     def testwhy(self):
-        self.assert_(self.cli.why("why", "dpkg", ["libc6"]) is None)
-        self.assert_(self.cli.why("why", "dpkg", ["dolphin"]) is None)
-        self.assert_(self.cli.why("why", "nosuchpackage", ["nosuchpackage"]) is None)
+        self.assertTrue(self.cli.why("why", "dpkg", ["libc6"]) is None)
+        self.assertTrue(self.cli.why("why", "dpkg", ["dolphin"]) is None)
+        self.assertTrue(self.cli.why("why", "nosuchpackage", ["nosuchpackage"]) is None)
         self.assertRaises(ValueError, self.cli.why, "why", "nosuchpackage", [])
 
     @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testcheckbackport(self):
         """Test the checkbackport command"""
-        self.assert_(self.cli.checkbackport("checkbackport", "java-imaging-utilities", []) is None)
-        self.assert_(self.cli.checkbackport("checkbackport", "xserver-xorg-video-intel", []) is None)
-        self.assert_(self.cli.checkbackport("checkbackport", "pyxplot", []) is None)
-        self.assert_(self.cli.checkbackport("checkbackport", "libv4l-0", []) is None)
-        self.assert_(self.cli.checkbackport("checkbackport", "libxfont1", []) is None)
-        self.assert_(self.cli.checkbackport("checkbackport", "nosuchpackage", []) is None)
+        self.assertTrue(self.cli.checkbackport("checkbackport", "java-imaging-utilities", []) is None)
+        self.assertTrue(self.cli.checkbackport("checkbackport", "xserver-xorg-video-intel", []) is None)
+        self.assertTrue(self.cli.checkbackport("checkbackport", "pyxplot", []) is None)
+        self.assertTrue(self.cli.checkbackport("checkbackport", "libv4l-0", []) is None)
+        self.assertTrue(self.cli.checkbackport("checkbackport", "libxfont1", []) is None)
+        self.assertTrue(self.cli.checkbackport("checkbackport", "nosuchpackage", []) is None)
 
 ###########################################################
 if __name__ == "__main__":

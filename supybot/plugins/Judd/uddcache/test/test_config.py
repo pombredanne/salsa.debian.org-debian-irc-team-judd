@@ -48,13 +48,13 @@ class config(unittest.TestCase):
 
     def testNoFileName(self):
         """Test no specified filename to load"""
-        self.assert_(Config())
+        self.assertTrue(Config())
         self.assertRaises(ValueError, Config, skipDefaultFiles=True)
 
     def testGoodFileName(self):
         """Test loading of config file"""
         conf = Config("udd-cache.conf")
-        self.assert_(conf)
+        self.assertTrue(conf)
         self.assertEqual(conf.db()['hostname'], 'localhost')
 
     def testBadFileName(self):
@@ -82,7 +82,7 @@ class config(unittest.TestCase):
         origEnv = False
         cd = {'database': 'quux', 'username': 'foobar'}
         conf = Config(skipDefaultFiles=True, confdict=cd)
-        self.assert_(conf)
+        self.assertTrue(conf)
         self.assertEqual(conf.get('database', 'database'), 'quux')
         self.assertEqual(conf.get('database', 'username'), 'foobar')
 
@@ -94,7 +94,7 @@ class config(unittest.TestCase):
 
     def testLogging(self):
         conf = Config()
-        self.assert_(conf.db_logging())
+        self.assertTrue(conf.db_logging())
 
 ###########################################################
 if __name__ == "__main__":

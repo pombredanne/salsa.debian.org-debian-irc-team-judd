@@ -61,82 +61,82 @@ class commands(unittest.TestCase):
 
     def testVersions(self):
         """Test version lookups"""
-        self.assert_(self.dispatcher.versions('libc6', 'sid', 'i386'))
+        self.assertTrue(self.dispatcher.versions('libc6', 'sid', 'i386'))
         self.assertRaises(PackageNotFoundError, self.dispatcher.versions, 'nosuchpackage', 'sid', 'i386')
         self.assertRaises(PackageNotFoundError, self.dispatcher.versions, 'libc0.1', 'sid', 'armhf')
-        self.assert_(self.dispatcher.versions('libc6', None, 'amd64'))
-        self.assert_(self.dispatcher.versions('src:glibc', 'sid', 'i386'))
+        self.assertTrue(self.dispatcher.versions('libc6', None, 'amd64'))
+        self.assertTrue(self.dispatcher.versions('src:glibc', 'sid', 'i386'))
         self.assertRaises(PackageNotFoundError, self.dispatcher.versions, 'src:nosuchpackage', 'sid', 'i386')
 
     def testInfo(self):
         """Test package information lookups"""
-        self.assert_(self.dispatcher.info('libc6', 'sid', 'i386'))
+        self.assertTrue(self.dispatcher.info('libc6', 'sid', 'i386'))
         self.assertRaises(PackageNotFoundError, self.dispatcher.info, 'nosuchpackage', 'sid', 'i386')
         self.assertRaises(PackageNotFoundError, self.dispatcher.info, 'libc6', 'sid', 'ia64')
 
     @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testNames(self):
         """Test package name lookups"""
-        self.assert_(self.dispatcher.names('libc6', 'sid', 'i386'))
-        self.assert_(self.dispatcher.names('lib?6', 'sid', 'i386'))
-        self.assert_(self.dispatcher.names('libc6*', 'sid', 'i386'))
-        self.assert_(self.dispatcher.names('*bc6', 'sid', 'i386'))
-        self.assert_(self.dispatcher.names('l*6', 'sid', 'i386'))
+        self.assertTrue(self.dispatcher.names('libc6', 'sid', 'i386'))
+        self.assertTrue(self.dispatcher.names('lib?6', 'sid', 'i386'))
+        self.assertTrue(self.dispatcher.names('libc6*', 'sid', 'i386'))
+        self.assertTrue(self.dispatcher.names('*bc6', 'sid', 'i386'))
+        self.assertTrue(self.dispatcher.names('l*6', 'sid', 'i386'))
         self.assertFalse(self.dispatcher.names('libc0.1', 'sid', 'armhf'))
-        self.assert_(self.dispatcher.names('libc6*', 'sid', 'armhf'))
-        self.assert_(self.dispatcher.names('src:glibc', 'sid', 'armhf'))
+        self.assertTrue(self.dispatcher.names('libc6*', 'sid', 'armhf'))
+        self.assertTrue(self.dispatcher.names('src:glibc', 'sid', 'armhf'))
         self.assertFalse(self.dispatcher.names('src:nosuchpackage', 'sid', 'i386'))
 
     def testArchs(self):
         """Test architecture availability lookups"""
-        self.assert_(self.dispatcher.archs('libc6', 'sid'))
+        self.assertTrue(self.dispatcher.archs('libc6', 'sid'))
         self.assertRaises(PackageNotFoundError, self.dispatcher.archs, 'nosuchpackage', 'sid')
 
     def testPopcon(self):
         """Test popcon data lookups"""
-        self.assert_(self.dispatcher.popcon('libc6'))
+        self.assertTrue(self.dispatcher.popcon('libc6'))
         self.assertRaises(PackageNotFoundError, self.dispatcher.popcon, 'nosuchpackage')
 
     def testUploads(self):
         """Test upload/maintainer data lookups"""
-        self.assert_(self.dispatcher.uploads('glibc', max=10))
-        self.assert_(self.dispatcher.uploads('glibc'))
-        self.assert_(self.dispatcher.uploads('eglibc', '2.9-11'))
+        self.assertTrue(self.dispatcher.uploads('glibc', max=10))
+        self.assertTrue(self.dispatcher.uploads('glibc'))
+        self.assertTrue(self.dispatcher.uploads('eglibc', '2.9-11'))
         self.assertRaises(PackageNotFoundError, self.dispatcher.uploads, 'nosuchpackage')
         self.assertRaises(PackageNotFoundError, self.dispatcher.uploads, 'glibc', 'nosuchversion')
         self.assertRaises(PackageNotFoundError, self.dispatcher.uploads, 'libc6')  # only does source packages
         p = self.udd.BindSourcePackage('glibc', 'sid')
-        self.assert_(self.dispatcher.uploads(p), 'Check uploads with bind to source package failed')
+        self.assertTrue(self.dispatcher.uploads(p), 'Check uploads with bind to source package failed')
         p = self.udd.BindSourcePackage('libc6', 'sid')
-        self.assert_(self.dispatcher.uploads(p), 'Check uploads with bind to source package via bin2src failed')
+        self.assertTrue(self.dispatcher.uploads(p), 'Check uploads with bind to source package via bin2src failed')
 
     @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testCheckDeps(self):
         """Test dependency testing for packages"""
         # TODO: it would be nice to actually test the accuracy of the tests
-        self.assert_(self.dispatcher.checkdeps('libc6', 'sid', 'i386', ['depends']))
-        self.assert_(self.dispatcher.checkdeps('libc6', 'sid', 'i386', ['depends', 'recommends', 'suggests']))
-        self.assert_(self.dispatcher.checkdeps('cbedic', 'sid', 'i386', ['suggests']), 'broken relations not handled correctly')
+        self.assertTrue(self.dispatcher.checkdeps('libc6', 'sid', 'i386', ['depends']))
+        self.assertTrue(self.dispatcher.checkdeps('libc6', 'sid', 'i386', ['depends', 'recommends', 'suggests']))
+        self.assertTrue(self.dispatcher.checkdeps('cbedic', 'sid', 'i386', ['suggests']), 'broken relations not handled correctly')
         self.assertRaises(PackageNotFoundError, self.dispatcher.checkdeps, 'nosuchpackage', 'squeeze', 'i386', ['depends'])
 
     @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testCheckInstall(self):
         """Test installability for packages"""
         # TODO: it would be nice to actually test the accuracy of the tests
-        self.assert_(self.dispatcher.checkInstall('libc6', 'sid', 'i386', False))
-        self.assert_(self.dispatcher.checkInstall('perl', 'sid', 'i386', True))
-        #self.assert_(self.dispatcher.checkInstall('openjdk-6-jre-headless', 'lenny', 'i386', False))
-        #self.assert_(self.dispatcher.checkInstall('openjdk-6-jre-headless', 'lenny', 'i386', True))
+        self.assertTrue(self.dispatcher.checkInstall('libc6', 'sid', 'i386', False))
+        self.assertTrue(self.dispatcher.checkInstall('perl', 'sid', 'i386', True))
+        #self.assertTrue(self.dispatcher.checkInstall('openjdk-6-jre-headless', 'lenny', 'i386', False))
+        #self.assertTrue(self.dispatcher.checkInstall('openjdk-6-jre-headless', 'lenny', 'i386', True))
         self.assertRaises(PackageNotFoundError, self.dispatcher.checkInstall, 'nosuchpackage', 'sid', 'i386', True)
 
     @unittest.skipIf(exclude_slow_tests, 'slow test')
     def testWhy(self):
         """Test existence of package dependency chains"""
         # TODO: it would be nice to actually test the accuracy of the tests
-        self.assert_(self.dispatcher.why('dpkg', 'libc6', 'squeeze', 'i386', False))
+        self.assertTrue(self.dispatcher.why('dpkg', 'libc6', 'squeeze', 'i386', False))
         self.assertEqual(self.dispatcher.why('dpkg', 'dolphin', 'squeeze','i386', False), [])
         self.assertEqual(self.dispatcher.why('dpkg', 'libc6-i686', 'squeeze', 'i386', False), [])
-        self.assert_(self.dispatcher.why('dpkg', 'libc6-i686', 'squeeze', 'i386', True))
+        self.assertTrue(self.dispatcher.why('dpkg', 'libc6-i686', 'squeeze', 'i386', True))
         self.assertEqual(self.dispatcher.why('dpkg', 'nosuchpackage', 'squeeze', 'i386', False), [])
         self.assertRaises(PackageNotFoundError, self.dispatcher.why, 'nosuchpackage', 'dpkg', 'squeeze', 'i386', False)
 
@@ -147,20 +147,20 @@ class commands(unittest.TestCase):
         fr = self.udd.BindRelease(arch='i386', release='sid')
 
         tr = self.udd.BindRelease(arch='i386', release='squeeze')
-        self.assert_(self.dispatcher.checkBackport('iceweasel', fr, tr), 'Check [im]possible backport that requires bpo')
+        self.assertTrue(self.dispatcher.checkBackport('iceweasel', fr, tr), 'Check [im]possible backport that requires bpo')
 
         trbp = self.udd.BindRelease(arch='i386',
                         release=self.udd.data.list_dependent_releases('squeeze', suffixes=['backports']))
-        self.assert_(self.dispatcher.checkBackport('libxfont1', fr, trbp), 'Check possible backport that requires bpo')
+        self.assertTrue(self.dispatcher.checkBackport('libxfont1', fr, trbp), 'Check possible backport that requires bpo')
 
         tro = self.udd.BindRelease(arch='i386', release="squeeze")
-        self.assert_(self.dispatcher.checkBackport('gcc', fr, tro), 'Check impossible backport')
+        self.assertTrue(self.dispatcher.checkBackport('gcc', fr, tro), 'Check impossible backport')
 
-        self.assert_(self.dispatcher.checkBackport('openjdk-6', fr, tr), 'Check resolution of arch-dependent build-deps')
+        self.assertTrue(self.dispatcher.checkBackport('openjdk-6', fr, tr), 'Check resolution of arch-dependent build-deps')
 
-        self.assert_(self.dispatcher.checkBackport('pyxplot', fr, tr), 'Check resolution of virtual build-deps')
+        self.assertTrue(self.dispatcher.checkBackport('pyxplot', fr, tr), 'Check resolution of virtual build-deps')
 
-        self.assert_(self.dispatcher.checkBackport('libv4l-0', fr, tr), 'Check resolution of virtual build-deps')
+        self.assertTrue(self.dispatcher.checkBackport('libv4l-0', fr, tr), 'Check resolution of virtual build-deps')
 
         self.assertRaises(PackageNotFoundError, self.dispatcher.checkBackport, 'nosuchpackage', fr, tr)
 

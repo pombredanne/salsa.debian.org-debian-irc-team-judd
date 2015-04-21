@@ -51,37 +51,37 @@ class database(unittest.TestCase):
 
     def testDBTypes(self):
         """Test creating a Debian and derivative UDD instance"""
-        self.assert_(Udd(distro='debian'))
+        self.assertTrue(Udd(distro='debian'))
         self.assertRaises(NotImplementedError, Udd,  distro='ubuntu')   # TODO: update when implemented
         self.assertRaises(ValueError, Udd,  distro='nosuchdistro')
 
     def testPassConfig(self):
         """Test loading a config file manually"""
         config = Config()
-        self.assert_(Udd(config=config))
+        self.assertTrue(Udd(config=config))
 
     def testRelease(self):
         """Test binding to a release and doing a lookup"""
         r = self.udd.BindRelease('sid', 'i386')
-        self.assert_(r)
+        self.assertTrue(r)
         r = self.udd.BindRelease(['stable', 'stable-backports'], 'i386')
-        self.assert_(r)
+        self.assertTrue(r)
 
     def testPackage(self):
         """Test binding to a binary package and doing a lookup"""
         r = self.udd.BindPackage('libc6', 'sid', 'i386')
-        self.assert_(r)
-        self.assert_(r.Found())
+        self.assertTrue(r)
+        self.assertTrue(r.Found())
 
     def testSource(self):
         """Test binding to a source package and doing a lookup"""
         r = self.udd.BindSourcePackage('glibc', 'sid')
-        self.assert_(r)
-        self.assert_(r.Found())
+        self.assertTrue(r)
+        self.assertTrue(r.Found())
         r = self.udd.BindSourcePackage('libc6', 'sid')
-        self.assert_(r)
-        self.assert_(r.Found())
-        self.assert_(r.data['version'])
+        self.assertTrue(r)
+        self.assertTrue(r.Found())
+        self.assertTrue(r.data['version'])
 
     def testBts(self):
         """Test binding to a source package and doing a lookup"""

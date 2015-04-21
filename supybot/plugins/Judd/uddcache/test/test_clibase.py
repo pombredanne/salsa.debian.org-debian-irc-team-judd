@@ -81,15 +81,15 @@ class cliTests(unittest.TestCase):
     def testis_valid_command(self):
         self.cli.command_map = {'versions': self._dummy_func}
         self.cli.command_aliases = {'show': 'versions'}
-        self.assert_(self.cli.is_valid_command("versions"))
-        self.assert_(self.cli.is_valid_command("show"))    # test an alias
+        self.assertTrue(self.cli.is_valid_command("versions"))
+        self.assertTrue(self.cli.is_valid_command("show"))    # test an alias
         self.assertFalse(self.cli.is_valid_command("nosuchcommand"))
 
     def testrun(self):
         self.cli.command_map = {'versions': self._dummy_func}
         self.cli.command_aliases = {'show': 'versions'}
-        self.assert_(self.cli.run("versions", "dpkg", []) is None)
-        self.assert_(self.cli.run("show", "dpkg", []) is None)
+        self.assertTrue(self.cli.run("versions", "dpkg", []) is None)
+        self.assertTrue(self.cli.run("show", "dpkg", []) is None)
         self.assertRaises(ValueError, self.cli.run, "nosuchcommand", "", [])
 
 ###########################################################

@@ -52,81 +52,81 @@ class ReleaseTests(unittest.TestCase):
     def testRelease(self):
         """Test binding the release"""
         rd = Release(self.udd.psql)
-        self.assert_(rd)
+        self.assertTrue(rd)
         rs = Release(self.udd.psql, release='sid')
-        self.assert_(rs)
+        self.assertTrue(rs)
         ra = Release(self.udd.psql, arch='armhf')
-        self.assert_(ra)
+        self.assertTrue(ra)
         rb = Release(self.udd.psql, release=['squeeze', 'squeeze-backports'])
-        self.assert_(rb)
+        self.assertTrue(rb)
 
 
     def testPackage(self):
         """Test looking up an individual binary package"""
         rd = Release(self.udd.psql)
-        self.assert_(rd.Package('libc6'))
-        self.assert_(rd.Package('libc6').Found())
+        self.assertTrue(rd.Package('libc6'))
+        self.assertTrue(rd.Package('libc6').Found())
         self.assertFalse(rd.Package('ktikz').Found(), 'Check a package that is not in stable')
 
         rs = Release(self.udd.psql, release='sid')
-        self.assert_(rs.Package('ktikz').Found())
+        self.assertTrue(rs.Package('ktikz').Found())
 
         ra = Release(self.udd.psql, arch='armhf')
         self.assertFalse(ra.Package('libc0.1').Found(), 'Check a package that is not in this arch')
 
         rb = Release(self.udd.psql, release=['wheezy', 'wheezy-backports'])
-        self.assert_(rb.Package('debhelper').Found())
-        self.assert_(rb.Package('pepperflashplugin-nonfree').Found())
+        self.assertTrue(rb.Package('debhelper').Found())
+        self.assertTrue(rb.Package('pepperflashplugin-nonfree').Found())
 
         rb = Release(self.udd.psql, release=['wheezy', 'wheezy-backports'], pins='illegal value')
         self.assertRaises(ValueError, rb.Package, 'debhelper')
 
         rb = Release(self.udd.psql, release=['wheezy', 'wheezy-backports'])
-        self.assert_(rb.Package('debhelper').data['version'] > '8.0.0')
+        self.assertTrue(rb.Package('debhelper').data['version'] > '8.0.0')
         rb = Release(self.udd.psql, release=['squeeze', 'squeeze-backports'], pins={'squeeze':2, 'squeeze-backports':1})
-        self.assert_(rb.Package('debhelper').data['version'] == '8.0.0', 'Check pinning of package from stable')
+        self.assertTrue(rb.Package('debhelper').data['version'] == '8.0.0', 'Check pinning of package from stable')
         rb = Release(self.udd.psql, release=['squeeze', 'squeeze-backports'], pins={'no-such-release':2})
-        self.assert_(rb.Package('debhelper').data['version'] > '8.0.0', 'Nonsense pinning ignored')
+        self.assertTrue(rb.Package('debhelper').data['version'] > '8.0.0', 'Nonsense pinning ignored')
 
         rb = Release(self.udd.psql, release='squeeze')
-        self.assert_(rb.Package('debhelper', version='7.0.0', operator='>>').Found())
+        self.assertTrue(rb.Package('debhelper', version='7.0.0', operator='>>').Found())
         self.assertFalse(rb.Package('debhelper', version='8.0.0', operator='<<').Found())
 
 
     def testSource(self):
         """Test looking up an individual source package"""
         rd = Release(self.udd.psql, release='sid')
-        self.assert_(rd.Source('glibc'))
-        self.assert_(rd.Source('glibc').Found())
+        self.assertTrue(rd.Source('glibc'))
+        self.assertTrue(rd.Source('glibc').Found())
         self.assertRaises(PackageNotFoundError, rd.Source, 'nosuchpackage')
-        self.assert_(rd.Source('libc6').Found())
+        self.assertTrue(rd.Source('libc6').Found())
         self.assertRaises(PackageNotFoundError, rd.Source, 'libc6', autoBin2Src=False)
 
     def testArchApplies(self):
         """Test matching arch names and wildcard archs"""
         rd = Release(self.udd.psql, release='sid', arch='i386')
-        self.assert_(rd.arch_applies('i386'))
-        self.assert_(not rd.arch_applies('amd64'))
-        self.assert_(rd.arch_applies('linux-any'))
-        self.assert_(rd.arch_applies('any-i386'))
-        self.assert_(not rd.arch_applies('any-amd64'))
-        self.assert_(not rd.arch_applies('kfreebsd-any'))
+        self.assertTrue(rd.arch_applies('i386'))
+        self.assertTrue(not rd.arch_applies('amd64'))
+        self.assertTrue(rd.arch_applies('linux-any'))
+        self.assertTrue(rd.arch_applies('any-i386'))
+        self.assertTrue(not rd.arch_applies('any-amd64'))
+        self.assertTrue(not rd.arch_applies('kfreebsd-any'))
 
         rd = Release(self.udd.psql, release='sid', arch='kfreebsd-i386')
-        self.assert_(rd.arch_applies('kfreebsd-i386'))
-        self.assert_(not rd.arch_applies('i386'))
-        self.assert_(not rd.arch_applies('linux-any'))
-        self.assert_(rd.arch_applies('any-i386'))
-        self.assert_(not rd.arch_applies('any-amd64'))
-        self.assert_(rd.arch_applies('kfreebsd-any'))
+        self.assertTrue(rd.arch_applies('kfreebsd-i386'))
+        self.assertTrue(not rd.arch_applies('i386'))
+        self.assertTrue(not rd.arch_applies('linux-any'))
+        self.assertTrue(rd.arch_applies('any-i386'))
+        self.assertTrue(not rd.arch_applies('any-amd64'))
+        self.assertTrue(rd.arch_applies('kfreebsd-any'))
 
-    def testStr(self):
+    def testUnicode(self):
         rd = Release(self.udd.psql, release='sid', arch='i386')
-        self.assert_(str(rd))
+        self.assertTrue(unicode(rd))
         rd.Package('libc6')
-        self.assert_(str(rd))
+        self.assertTrue(unicode(rd))
         rd.Source('glibc')
-        self.assert_(str(rd))
+        self.assertTrue(unicode(rd))
 
 
 class PackageTests(unittest.TestCase):
@@ -140,19 +140,19 @@ class PackageTests(unittest.TestCase):
         """Test binding a package"""
         self.assertRaises(ValueError, Package, self.udd.psql)
         rs = Package(self.udd.psql, package="libc6")
-        self.assert_(rs)
-        self.assert_(rs.Found())
+        self.assertTrue(rs)
+        self.assertTrue(rs.Found())
         rne = Package(self.udd.psql, package="libc0.1", arch='armhf')
-        self.assert_(rne, "Test package that doesn't exist on specified arch")
+        self.assertTrue(rne, "Test package that doesn't exist on specified arch")
         self.assertFalse(rne.Found(), "Test package that doesn't exist on specified arch")
         rne = Package(self.udd.psql, package="nodejs", release='wheezy')
-        self.assert_(rne)
+        self.assertTrue(rne)
         self.assertFalse(rne.Found())
         rb = Package(self.udd.psql, package="nodejs", release=['wheezy', 'wheezy-backports'])
-        self.assert_(rb)
-        self.assert_(rb.Found())
+        self.assertTrue(rb)
+        self.assertTrue(rb.Found())
         rnb = Package(self.udd.psql, package="youtube-dl", release=['wheezy'])
-        self.assert_(rnb)
+        self.assertTrue(rnb)
         self.assertFalse(rnb.Found())
         rne = Package(self.udd.psql, package="nosuchpackage")
         self.assertFalse(rne.Found())
@@ -161,17 +161,17 @@ class PackageTests(unittest.TestCase):
     def testProviders(self):
         """Test searching for provided packages"""
         rm = Package(self.udd.psql, package="mail-transport-agent")
-        self.assert_(len(rm.ProvidersList()), "Test rprovides for mail-transport-agent")
+        self.assertTrue(len(rm.ProvidersList()), "Test rprovides for mail-transport-agent")
         rne = Package(self.udd.psql, package="nosuchpackage")
         self.assertFalse(len(rne.ProvidersList()), "Test rprovides for non-existent package")
         rne = Package(self.udd.psql, package="imagemagick")
-        self.assert_(len(rne.ProvidersList()), "Test rprovides for real+virtual package")
+        self.assertTrue(len(rne.ProvidersList()), "Test rprovides for real+virtual package")
 
     def testIsVirtual(self):
         """Test virtual package identification"""
         # pure virtual, many providers
         p = Package(self.udd.psql, package="mail-transport-agent")
-        self.assert_(p.IsVirtual())
+        self.assertTrue(p.IsVirtual())
         # neither concrete nor virtual
         p = Package(self.udd.psql, package="no-such-package")
         self.assertFalse(p.IsVirtual())
@@ -180,13 +180,13 @@ class PackageTests(unittest.TestCase):
         self.assertFalse(p.IsVirtual())
         # both concrete and virtual
         p = Package(self.udd.psql, package="imagemagick")
-        self.assert_(p.IsVirtual())
+        self.assertTrue(p.IsVirtual())
 
     def testIsVirtualOnly(self):
         """Test purely virtual package identification"""
         # pure virtual, many providers
         p = Package(self.udd.psql, package="mail-transport-agent")
-        self.assert_(p.IsVirtualOnly())
+        self.assertTrue(p.IsVirtualOnly())
         # neither concrete nor virtual
         p = Package(self.udd.psql, package="no-such-package")
         self.assertFalse(p.IsVirtualOnly())
@@ -201,48 +201,48 @@ class PackageTests(unittest.TestCase):
         """Test package finding for concrete/virtual packges"""
         # pure virtual, many providers
         p = Package(self.udd.psql, package="mail-transport-agent")
-        self.assert_(p.IsAvailable())
+        self.assertTrue(p.IsAvailable())
         # neither concrete nor virtual
         p = Package(self.udd.psql, package="no-such-package")
         self.assertFalse(p.IsVirtual())
         # concrete only
         p = Package(self.udd.psql, package="libc6")
-        self.assert_(p.IsAvailable())
+        self.assertTrue(p.IsAvailable())
         # both concrete and virtual
         p = Package(self.udd.psql, package="imagemagick")
-        self.assert_(p.IsAvailable())
+        self.assertTrue(p.IsAvailable())
 
     def testRelationEntry(self):
         """Test getting the relationships between packages"""
         p = Package(self.udd.psql, package="libc6", release='sid')
         self.assertFalse(p.RelationEntry('pre_depends'), "Test package with no dependencies")
         self.assertFalse(p.PreDepends(), "Test package with no dependencies")
-        self.assert_(p.RelationEntry('depends'), "Test package with dependencies")
-        self.assert_(p.Depends(), "Test package with dependencies")
-        self.assert_(p.RelationEntry('suggests'), "Test package with dependencies")
-        self.assert_(p.Suggests(), "Test package with dependencies")
-        self.assert_(p.RelationEntry('conflicts'), "Test package with dependencies")
-        self.assert_(p.Conflicts(), "Test package with dependencies")
-        self.assert_(p.RelationEntry('breaks'), "Test package with dependencies")
-        self.assert_(p.Breaks(), "Test package with dependencies")
+        self.assertTrue(p.RelationEntry('depends'), "Test package with dependencies")
+        self.assertTrue(p.Depends(), "Test package with dependencies")
+        self.assertTrue(p.RelationEntry('suggests'), "Test package with dependencies")
+        self.assertTrue(p.Suggests(), "Test package with dependencies")
+        self.assertTrue(p.RelationEntry('conflicts'), "Test package with dependencies")
+        self.assertTrue(p.Conflicts(), "Test package with dependencies")
+        self.assertTrue(p.RelationEntry('breaks'), "Test package with dependencies")
+        self.assertTrue(p.Breaks(), "Test package with dependencies")
         self.assertFalse(p.RelationEntry('enhances'), "Test package with no dependencies")
         self.assertFalse(p.Enhances(), "Test package with no dependencies")
 
         p = Package(self.udd.psql, package="ktikz", release='sid')
-        self.assert_(p.RelationEntry('recommends'), "Test package with dependencies")
-        self.assert_(p.Recommends(), "Test package with dependencies")
+        self.assertTrue(p.RelationEntry('recommends'), "Test package with dependencies")
+        self.assertTrue(p.Recommends(), "Test package with dependencies")
 
         p = Package(self.udd.psql, package="dpkg", release='sid')
-        self.assert_(p.RelationEntry('pre_depends'), "Test package with dependencies")
-        self.assert_(p.PreDepends(), "Test package with dependencies")
-        self.assert_(p.RelationEntry('breaks'), "Test package with dependencies")
-        self.assert_(p.Breaks(), "Test package with dependencies")
-        self.assert_(p.RelationEntry('replaces'), "Test package with dependencies")
-        self.assert_(p.Replaces(), "Test package with dependencies")
+        self.assertTrue(p.RelationEntry('pre_depends'), "Test package with dependencies")
+        self.assertTrue(p.PreDepends(), "Test package with dependencies")
+        self.assertTrue(p.RelationEntry('breaks'), "Test package with dependencies")
+        self.assertTrue(p.Breaks(), "Test package with dependencies")
+        self.assertTrue(p.RelationEntry('replaces'), "Test package with dependencies")
+        self.assertTrue(p.Replaces(), "Test package with dependencies")
 
         p = Package(self.udd.psql, package="libc6", release='sid')
-        self.assert_(p.RelationEntry('replaces'), "Test package with dependencies")
-        self.assert_(p.Replaces(), "Test package with dependencies")
+        self.assertTrue(p.RelationEntry('replaces'), "Test package with dependencies")
+        self.assertTrue(p.Replaces(), "Test package with dependencies")
 
         p = Package(self.udd.psql, package="nosuchpackage")
         self.assertRaises(LookupError, p.RelationEntry, 'depends')
@@ -255,22 +255,22 @@ class PackageTests(unittest.TestCase):
         p = Package(self.udd.psql, package="libc6", release='sid')
         self.assertFalse(len(p.RelationshipOptionsList('pre_depends')), "Test package with dependencies")
         self.assertFalse(len(p.PreDependsList()), "Test package with dependencies")
-        self.assert_(len(p.RelationshipOptionsList('depends')), "Test package with dependencies")
-        self.assert_(len(p.DependsList()), "Test package with dependencies")
-        self.assert_(len(p.RelationshipOptionsList('suggests')), "Test package with dependencies")
-        self.assert_(len(p.SuggestsList()), "Test package with dependencies")
-        self.assert_(len(p.RelationshipOptionsList('conflicts')), "Test package with dependencies")
-        self.assert_(len(p.ConflictsList()), "Test package with dependencies")
+        self.assertTrue(len(p.RelationshipOptionsList('depends')), "Test package with dependencies")
+        self.assertTrue(len(p.DependsList()), "Test package with dependencies")
+        self.assertTrue(len(p.RelationshipOptionsList('suggests')), "Test package with dependencies")
+        self.assertTrue(len(p.SuggestsList()), "Test package with dependencies")
+        self.assertTrue(len(p.RelationshipOptionsList('conflicts')), "Test package with dependencies")
+        self.assertTrue(len(p.ConflictsList()), "Test package with dependencies")
         self.assertFalse(len(p.RelationshipOptionsList('enhances')), "Test package with no dependencies")
         self.assertFalse(len(p.EnhancesList()), "Test package with no dependencies")
-        self.assert_(len(p.RelationshipOptionsList('breaks')), "Test package with no dependencies")
-        self.assert_(len(p.BreaksList()), "Test package with no dependencies")
-        self.assert_(len(p.RelationshipOptionsList('replaces')), "Test package with no dependencies")
-        self.assert_(len(p.ReplacesList()), "Test package with no dependencies")
+        self.assertTrue(len(p.RelationshipOptionsList('breaks')), "Test package with no dependencies")
+        self.assertTrue(len(p.BreaksList()), "Test package with no dependencies")
+        self.assertTrue(len(p.RelationshipOptionsList('replaces')), "Test package with no dependencies")
+        self.assertTrue(len(p.ReplacesList()), "Test package with no dependencies")
 
         p = Package(self.udd.psql, package="ktikz", release='sid')
-        self.assert_(len(p.RelationshipOptionsList('recommends')), "Test package with dependencies")
-        self.assert_(len(p.RecommendsList()), "Test package with dependencies")
+        self.assertTrue(len(p.RelationshipOptionsList('recommends')), "Test package with dependencies")
+        self.assertTrue(len(p.RecommendsList()), "Test package with dependencies")
 
         p = Package(self.udd.psql, package="nosuchpackage")
         self.assertRaises(LookupError, p.RelationshipOptionsList, 'depends')
@@ -278,11 +278,11 @@ class PackageTests(unittest.TestCase):
         p = Package(self.udd.psql, package="libc6")
         self.assertRaises(KeyError, p.RelationshipOptionsList, 'nosuchrelation')
 
-    def testStr(self):
+    def testUnicode(self):
         p = Package(self.udd.psql, package="libc6", release='sid')
-        self.assert_(str(p))
+        self.assertTrue(unicode(p))
         p = Package(self.udd.psql, package="no-such-package", release='sid')
-        self.assert_(str(p))
+        self.assertTrue(unicode(p))
 
 
 class SourcePackageTests(unittest.TestCase):
@@ -296,25 +296,25 @@ class SourcePackageTests(unittest.TestCase):
         """Test binding a package"""
         self.assertRaises(ValueError, Package, self.udd.psql)
         rs = SourcePackage(self.udd.psql, package="glibc", release='sid')
-        self.assert_(rs)
-        self.assert_(rs.Found())
+        self.assertTrue(rs)
+        self.assertTrue(rs.Found())
         rne = SourcePackage(self.udd.psql, package="nosuchpackage")
         self.assertFalse(rne.Found())
 
     def testBinaries(self):
         """Test listing the binary packages compiled by a source package"""
         ps = SourcePackage(self.udd.psql, package="glibc", arch="i386", release="sid")
-        self.assert_(ps.Binaries())
+        self.assertTrue(ps.Binaries())
         pne = SourcePackage(self.udd.psql, package="nosuchpackage")
         self.assertFalse(pne.Binaries())
 
     def testBuildDeps(self):
         """Test listing the build-dep and build-dep-indep packages"""
         ps = SourcePackage(self.udd.psql, package="glibc", arch="i386", release="sid")
-        self.assert_(ps.BuildDepends())
-        self.assert_(ps.BuildDependsIndep())
-        self.assert_(ps.BuildDependsList())
-        self.assert_(ps.BuildDependsIndepList())
+        self.assertTrue(ps.BuildDepends())
+        self.assertTrue(ps.BuildDependsIndep())
+        self.assertTrue(ps.BuildDependsList())
+        self.assertTrue(ps.BuildDependsIndepList())
         # package has no build-deps-indep
         ps = SourcePackage(self.udd.psql, package="perl", arch="i386", release="sid")
         self.assertFalse(ps.BuildDependsIndep())
@@ -323,11 +323,11 @@ class SourcePackageTests(unittest.TestCase):
 
 class PackageNotFoundErrorTests(unittest.TestCase):
     def testInit(self):
-        self.assert_(PackageNotFoundError("packagename"))
+        self.assertTrue(PackageNotFoundError("packagename"))
 
-    def testStr(self):
+    def testUnicode(self):
         e = PackageNotFoundError("packagename")
-        self.assertTrue("packagename" in str(e))
+        self.assertTrue("packagename" in unicode(e))
 
 ###########################################################
 if __name__ == "__main__":

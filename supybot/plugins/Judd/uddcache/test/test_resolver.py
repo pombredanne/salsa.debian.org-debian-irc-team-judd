@@ -67,46 +67,46 @@ class CheckerTests(unittest.TestCase):
         # package with no dependencies
         p = self.udd.BindPackage(package="libjiu-java", release="sid")
         r = self.checker.CheckRelationshipOptionsList(p.RelationshipOptionsList('depends'))
-        self.assert_(r != None)
+        self.assertTrue(r != None)
         # package with one dependency
         p = self.udd.BindPackage(package="patch")
         r = self.checker.CheckRelationshipOptionsList(p.RelationshipOptionsList('depends'))
-        self.assert_(r)
+        self.assertTrue(r)
         # package with lots of dependencies
         p = self.udd.BindPackage(package="perl")
         r = self.checker.CheckRelationshipOptionsList(p.RelationshipOptionsList('depends'))
-        self.assert_(r)
+        self.assertTrue(r)
         # package with lots of dependencies including options
         p = self.udd.BindPackage(package="php5")
         r = self.checker.CheckRelationshipOptionsList(p.RelationshipOptionsList('depends'))
-        self.assert_(r)
+        self.assertTrue(r)
         # package with dependencies including virtual package with no alternatives listed
         p = self.udd.BindPackage(package="bcron-run")
         r = self.checker.CheckRelationshipOptionsList(p.RelationshipOptionsList('depends'))
-        self.assert_(r)
+        self.assertTrue(r)
         # bad input object
         r = self.checker.CheckRelationshipOptionsList(None)
-        self.assert_(not r is None)
+        self.assertTrue(not r is None)
 
     def testCheckRelationArch(self):
         """Check architecture-specific dependency syntax"""
         # note: self.checker is configured to be i386
         # nothing specified implies everything satisfies
-        self.assert_(self.checker.CheckRelationArch(""))
-        self.assert_(self.checker.CheckRelationArch(None))
-        self.assert_(self.checker.CheckRelationArch([]))
+        self.assertTrue(self.checker.CheckRelationArch(""))
+        self.assertTrue(self.checker.CheckRelationArch(None))
+        self.assertTrue(self.checker.CheckRelationArch([]))
         # single options
-        self.assert_(self.checker.CheckRelationArch(["i386"]))
+        self.assertTrue(self.checker.CheckRelationArch(["i386"]))
         self.assertFalse(self.checker.CheckRelationArch(["amd64"]))
-        self.assert_(self.checker.CheckRelationArch(["!amd64"]))
+        self.assertTrue(self.checker.CheckRelationArch(["!amd64"]))
         # multiple options
-        self.assert_(self.checker.CheckRelationArch(["!alpha", "!amd64", "!ia64"]))
+        self.assertTrue(self.checker.CheckRelationArch(["!alpha", "!amd64", "!ia64"]))
         self.assertFalse(self.checker.CheckRelationArch(["!alpha", "!amd64", "!i386", "!ia64"]))
         # wildcard archs
-        self.assert_(self.checker.CheckRelationArch(["linux-any"]))
-        self.assert_(self.checker.CheckRelationArch(["any-i386"]))
+        self.assertTrue(self.checker.CheckRelationArch(["linux-any"]))
+        self.assertTrue(self.checker.CheckRelationArch(["any-i386"]))
         self.assertFalse(self.checker.CheckRelationArch(["kfreebsd-any"]))
-        self.assert_(self.checker.CheckRelationArch(["!kfreebsd-i386"]))
+        self.assertTrue(self.checker.CheckRelationArch(["!kfreebsd-i386"]))
         self.assertFalse(self.checker.CheckRelationArch(["!linux-any",  "!hurd-any"]))
         # bad input
         self.assertRaises(TypeError, self.checker.CheckRelationArch, 1)
@@ -116,71 +116,71 @@ class CheckerTests(unittest.TestCase):
         # NOTE: self.checker is an i386 instance
         # >>
         r = Relationship(relation="libc6 (>> 1.0.1)")
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         r = Relationship(relation="libc6 (>> 10:1.0.1)")
         self.assertFalse(self.checker.RelationSatisfied(r))
         # <<
         r = Relationship(relation="libc6 (<< 10.0.1)")
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         r = Relationship(relation="libc6 (<< 1.0.1)")
         self.assertFalse(self.checker.RelationSatisfied(r))
         # =
         r = Relationship(relation="spline (= 1.2-1)")
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         r = Relationship(relation="dpkg (= 1.14.1)")
         self.assertFalse(self.checker.RelationSatisfied(r))
         # >=
         r = Relationship(relation="spline (>= 1.1-11)")
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         r = Relationship(relation="dpkg (>= 1.12.0)")
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         # <=
         r = Relationship(relation="dpkg (<= 1.14.1)")
         self.assertFalse(self.checker.RelationSatisfied(r))
         r = Relationship(relation="dpkg (<= 5:1.14.27)")
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         # simple relations
         r = Relationship(relation="libc6")
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         r = Relationship(relation="no-such-package")
         self.assertFalse(self.checker.RelationSatisfied(r))
         # arch specific
         r = Relationship(relation="libc6 [i386]")
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         r = Relationship(relation="libc6.1 [amd64]")  # irrelevant for i386
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         r = Relationship(relation="no-such-package [amd64]")  # irrelevant for i386
-        self.assert_(self.checker.RelationSatisfied(r))
+        self.assertTrue(self.checker.RelationSatisfied(r))
         r = Relationship(relation="no-such-package [i386]")
         self.assertFalse(self.checker.RelationSatisfied(r))
 
     def testCheck(self):
         # package with no dependencies
         c = self.checker.Check(package="when")
-        self.assert_(not c is None)
-        self.assert_(len(c.good) == 0)
-        self.assert_(len(c.bad) == 0)
+        self.assertTrue(not c is None)
+        self.assertTrue(len(c.good) == 0)
+        self.assertTrue(len(c.bad) == 0)
         # known good package
         c = self.checker.Check(package="libc6")
-        self.assert_(c)
-        self.assert_(len(c.good) > 0)
-        self.assert_(len(c.bad) == 0)
+        self.assertTrue(c)
+        self.assertTrue(len(c.good) > 0)
+        self.assertTrue(len(c.bad) == 0)
         # known bad package [cbedic has unsatisfied suggests]
         c = self.sidchecker.Check(package="cbedic", relation='suggests')
-        self.assert_(c)
-        self.assert_(len(c.bad) > 0)
+        self.assertTrue(c)
+        self.assertTrue(len(c.bad) > 0)
         # non-existent package
         self.assertRaises(PackageNotFoundError, self.checker.Check, package="no-such-package")
         # conflicts in a package
         c = self.checker.Check(package="libc6", relation="conflicts")
-        self.assert_(c)
-        self.assert_(len(c.good) > 0)
-        self.assert_(len(c.bad) == 0)
+        self.assertTrue(c)
+        self.assertTrue(len(c.good) > 0)
+        self.assertTrue(len(c.bad) == 0)
         # non-existent conflicts in a package
         c = self.checker.Check(package="libapr1", relation="conflicts")
-        self.assert_(c)
-        self.assert_(len(c.good) > 0)
-        self.assert_(len(c.bad) == 0)
+        self.assertTrue(c)
+        self.assertTrue(len(c.good) > 0)
+        self.assertTrue(len(c.bad) == 0)
 
 
 class BuildDepCheckerTests(unittest.TestCase):
@@ -196,35 +196,35 @@ class BuildDepCheckerTests(unittest.TestCase):
         """Test checking the build-dependencies of a package"""
         # simple package, check by source package name
         b = self.checker.Check(package="pyxplot")
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
-        self.assert_(len(b.bd.bad) == 0)
+        self.assertTrue(b)
+        self.assertTrue(len(b.bd.good) > 0)
+        self.assertTrue(len(b.bd.bad) == 0)
         # big complicated package with lots of arch-dependent entries, check by binary name
         b = self.checker.Check(package="libc6")
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
-        self.assert_(len(b.bdi.good) > 0)
-        self.assert_(len(b.bd.bad) == 0)
-        self.assert_(len(b.bdi.bad) == 0)
+        self.assertTrue(b)
+        self.assertTrue(len(b.bd.good) > 0)
+        self.assertTrue(len(b.bdi.good) > 0)
+        self.assertTrue(len(b.bd.bad) == 0)
+        self.assertTrue(len(b.bdi.bad) == 0)
         # check by SourcePackage object
         p = self.udd.BindSourcePackage(package="latexdraw", release="squeeze")
         b = self.checker.Check(package=p)
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
-        self.assert_(len(b.bd.bad) == 0)
+        self.assertTrue(b)
+        self.assertTrue(len(b.bd.good) > 0)
+        self.assertTrue(len(b.bd.bad) == 0)
         # non-existent package
         self.assertRaises(PackageNotFoundError, self.checker.Check, package="no-such-package")
         # bd and bdi lists
         p = self.udd.BindSourcePackage(package="libc6")
         bd = p.RelationshipOptionsList("build_depends")
         b = self.checker.Check(bdList=bd)
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
+        self.assertTrue(b)
+        self.assertTrue(len(b.bd.good) > 0)
         b = self.checker.Check(bdList=p.RelationshipOptionsList("build_depends"),
                                bdiList=p.RelationshipOptionsList("build_depends"))
-        self.assert_(b)
-        self.assert_(len(b.bd.good) > 0)
-        self.assert_(len(b.bdi.good) > 0)
+        self.assertTrue(b)
+        self.assertTrue(len(b.bd.good) > 0)
+        self.assertTrue(len(b.bdi.good) > 0)
         self.assertRaises(ValueError, self.checker.Check)
         self.assertRaises(ValueError, self.checker.Check, bdList=[])
 
@@ -242,16 +242,16 @@ class InstallCheckerTests(unittest.TestCase):
     def testCheck(self):
         """Test installability of packages"""
         # FIXME: it would be good to check if these results are right
-        self.assert_(self.checker.Check('libc6'))
+        self.assertTrue(self.checker.Check('libc6'))
         self.assertRaises(PackageNotFoundError, self.checker.Check, 'nosuchpackage')
-        self.assert_(self.checker.Check('perl', True))
-        self.assert_(self.checker.Check('openjdk-6-jre-headless', True))   # missing recommended package
+        self.assertTrue(self.checker.Check('perl', True))
+        self.assertTrue(self.checker.Check('openjdk-6-jre-headless', True))   # missing recommended package
 
 #
 #
 #class PackageListsTests(unittest.TestCase):
 #    def testRelationshipOptions(self):
-#        self.assert_(----)
+#        self.assertTrue(----)
 
 class SolverHierarchyTests(unittest.TestCase):
     def setUp(self):
@@ -262,14 +262,14 @@ class SolverHierarchyTests(unittest.TestCase):
 
     def testInit(self):
         s = SolverHierarchy('dpkg')
-        self.assert_(not s is None)
+        self.assertTrue(not s is None)
 
     def testGet(self):
         s = SolverHierarchy('')
         rs = RelationshipStatus()
         rs.good.append('dpkg')
         s.depends.extend(rs)
-        self.assert_(s.get('depends'))
+        self.assertTrue(s.get('depends'))
         self.assertFalse(s.get('recommends'))
         rs2 = RelationshipStatus()
         rs2.bad.append('dpkg2')
@@ -280,25 +280,23 @@ class SolverHierarchyTests(unittest.TestCase):
         self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
         s = self.checker.Check('perl', True)
         f = s.flatten()
-        self.assert_(f)
-        self.assert_(len(f.depends))
+        self.assertTrue(f)
+        self.assertTrue(len(f.depends))
 
     def testChains(self):
         self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
         s = self.checker.Check('pyxplot', True)
         c = s.chains()
-        self.assert_(c)
-        self.assert_(len(c))
+        self.assertTrue(c)
+        self.assertTrue(len(c))
 
     def testStr(self):
         self.checker = InstallChecker(self.udd.BindRelease(arch="i386", release="squeeze"))
         s = self.checker.Check('perl', True)
-        self.assert_(unicode(s))
-        self.assert_(str(s))
+        self.assertTrue(unicode(s))
+        #self.assertTrue(str(s))
         f = s.flatten()
-        self.assert_(unicode(f))
-        #print unicode(s).encode("UTF-8")
-        #print str(s)
+        self.assertTrue(unicode(f))
 
 ###########################################################
 if __name__ == "__main__":
