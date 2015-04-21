@@ -97,7 +97,8 @@ the database for package names.</p>
 <a id="judd-depends" />
 <h3>Package relationships</h3>
 <p>The packages declared as <code>Depends</code>, <code>Recommends</code>,
-<code>Suggests</code>, <code>Enhances</code> and <code>Conflicts</code>
+<code>Suggests</code>, <code>Enhances</code>, <code>Conflicts</code>,
+<code>Breaks</code>, and <code>Replaces</code>
 for any binary package can be found:</p>
 
 <div class="example">
@@ -118,6 +119,14 @@ for any binary package can be found:</p>
                 [ --release <span class="var">release</span> ]
     </div>
     <div class="synopsis input">conflicts <span class="var">packagename</span>
+                [ --arch  <span class="var">architecture</span> ]
+                [ --release <span class="var">release</span> ]
+    </div>
+    <div class="synopsis input">breaks <span class="var">packagename</span>
+                [ --arch  <span class="var">architecture</span> ]
+                [ --release <span class="var">release</span> ]
+    </div>
+    <div class="synopsis input">replaces <span class="var">packagename</span>
                 [ --arch  <span class="var">architecture</span> ]
                 [ --release <span class="var">release</span> ]
     </div>
