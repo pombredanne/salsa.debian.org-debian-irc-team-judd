@@ -37,9 +37,15 @@
 
 """ Unit tests for packages """
 
+from __future__ import unicode_literals
+
 from uddcache.udd import Udd
 from uddcache.packages import *
-import unittest2 as unittest
+
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 
 class ReleaseTests(unittest.TestCase):

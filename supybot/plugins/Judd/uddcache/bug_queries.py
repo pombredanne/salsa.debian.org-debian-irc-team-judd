@@ -34,11 +34,14 @@
 #
 ###
 
-from udd import Udd
-import bts
-from packages import PackageNotFoundError
-from bts import BugNotFoundError
+from __future__ import absolute_import, unicode_literals
+
 import re
+
+from .udd import Udd
+from . import bts
+from .packages import PackageNotFoundError
+from .bts import BugNotFoundError
 
 try:
     from debian import debian_support

@@ -31,12 +31,15 @@
 
 ###
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import re
 import psycopg2
 import psycopg2.extras
 from psycopg2.extensions import adapt
-from relations import *
-import data
+
+from .relations import *
+from . import data
 
 
 class Release(object):

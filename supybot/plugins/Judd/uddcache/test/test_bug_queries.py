@@ -37,8 +37,14 @@
 
 """ Unit tests for generic UDD commands """
 
+from __future__ import unicode_literals
+
 import os
-import unittest2 as unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
 from uddcache.udd import Udd
 from uddcache.bug_queries import Commands
 from uddcache.bts import BugNotFoundError

@@ -30,6 +30,8 @@
 
 """ Wrapper functions for logging of psycopg2 database connections """
 
+from __future__ import unicode_literals
+
 import types
 import os
 import time

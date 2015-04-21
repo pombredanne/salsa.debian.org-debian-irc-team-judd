@@ -37,13 +37,23 @@
 
 """ Command line interface to udd - output to stdout """
 
-import clibase
-import udd
-import package_queries
-import bug_queries
+from __future__ import print_function, absolute_import, unicode_literals
 
-from packages import PackageNotFoundError
-from bts import BugNotFoundError
+import sys
+
+from . import clibase
+from . import udd
+from . import package_queries
+from . import bug_queries
+
+from .packages import PackageNotFoundError
+from .bts import BugNotFoundError
+
+
+# permit use of unicode() in py2 and str() in py3 to always get unicode results
+if sys.version_info > (3, 0):
+    unicode = str
+
 
 class Cli(clibase.CliBase):
     """ Run a specified command sending output to stdout """
@@ -103,7 +113,7 @@ class Cli(clibase.CliBase):
                 tag = " in %s" % arch
             else:
                 tag = ""
-        print message % (package, tag)
+        print(message % (package, tag))
 
     def versions(self, command, package, args):
         """ look up the version of a package in a release or releases """
@@ -126,8 +136,8 @@ class Cli(clibase.CliBase):
                                 ("%s/%s:" % (row['release'], row['component']),
                                   row['version']))
 
-        print "Package: %s %s/%s\n%s" % (package, release, arch,
-                                        "\n".join(replies))
+        print("Package: %s %s/%s\n%s" % (package, release, arch,
+                                        "\n".join(replies)))
 
     def info(self, command, package, args):
         """ show info (version, size, homepage, screenshot) about a package """
@@ -140,17 +150,17 @@ class Cli(clibase.CliBase):
         except PackageNotFoundError:
             return self.notfound(package, release, arch)
 
-        print "Package: %s (%s, %s)" % \
-                        (package, p['section'], p['priority'])
-        print "Release: %s/%s" % (release, arch)
-        print "Version: %s" % p['version']
-        print "Size: %0.1fk" % (p['size'] / 1024.0)
-        print "Installed-Size: %dk" % p['installed_size']
+        print("Package: %s (%s, %s)" % \
+                        (package, p['section'], p['priority']))
+        print("Release: %s/%s" % (release, arch))
+        print("Version: %s" % p['version'])
+        print("Size: %0.1fk" % (p['size'] / 1024.0))
+        print("Installed-Size: %dk" % p['installed_size'])
         if p['homepage']:
-            print "Homepage: %s" % p['homepage']
+            print("Homepage: %s" % p['homepage'])
         if p['screenshot_url']:
-            print "Screenshot: %s" % p['screenshot_url']
-        print "Description: %s" % p['description']
+            print("Screenshot: %s" % p['screenshot_url'])
+        print("Description: %s" % p['description'])
 
     def names(self, command, package, args):
         """ search for package names with wildcard (? and *) expressions """
@@ -173,7 +183,7 @@ class Cli(clibase.CliBase):
                                 (row['package'], row['version'],
                                   row['component']))
 
-        print "%s in %s/%s:\n%s" % (package, release, arch, "\n".join(replies))
+        print("%s in %s/%s:\n%s" % (package, release, arch, "\n".join(replies)))
 
     def archs(self, command, package, args):
         """
@@ -191,7 +201,7 @@ class Cli(clibase.CliBase):
         replies = []
         for row in pkgs:
             replies.append("%s (%s)" % (row[0], row[1]))
-        print "%s: %s" % (package, ", ".join(replies))
+        print("%s: %s" % (package, ", ".join(replies)))
 
     def rprovides(self, command, package, args):
         """
@@ -217,7 +227,7 @@ class Cli(clibase.CliBase):
                 reply = "No packages provide '%s' in %s/%s." % \
                                                 (package, release, arch)
 
-        print reply
+        print(reply)
 
     def provides(self, command, package, args):
         """
@@ -233,11 +243,11 @@ class Cli(clibase.CliBase):
 
         if p.Found():
             if p.data['provides']:
-                print "%s in %s/%s provides: %s." % \
-                            (package, release, arch, p.data['provides'])
+                print("%s in %s/%s provides: %s." % \
+                            (package, release, arch, p.data['provides']))
             else:
-                print "%s in %s/%s provides no additional packages." % \
-                            (package, release, arch)
+                print("%s in %s/%s provides no additional packages." % \
+                            (package, release, arch))
         else:
             return self.notfound(package, release, arch)
 
@@ -258,7 +268,7 @@ class Cli(clibase.CliBase):
         except PackageNotFoundError:
             return self.notfound(package, release, arch)
 
-        print "Source: %s" % p
+        print("Source: %s" % p)
 
     def binaries(self, command, package, args):
         """
@@ -275,7 +285,7 @@ class Cli(clibase.CliBase):
         except PackageNotFoundError:
             return self.notfound(package, release, arch)
 
-        print "Binaries: %s" % ", ".join(p.Binaries())
+        print("Binaries: %s" % ", ".join(p.Binaries()))
 
     def builddeps(self, command, package, args):
         """
@@ -339,12 +349,12 @@ class Cli(clibase.CliBase):
 
         uploads = self.dispatcher.uploads(p, max=10)
         format = "%-20s %-10s %-20s %-20s %s"
-        print format % ('version', 'date', 'changer', 'signer', 'nmu')
+        print(format % ('version', 'date', 'changer', 'signer', 'nmu'))
         for u in uploads:
             nmu = ['', 'nmu'][u['nmu']]
-            print format % \
+            print(format % \
                 (u['version'], u['date'].date(),
-                    u['changed_by_name'], u['signed_by_name'], nmu)
+                    u['changed_by_name'], u['signed_by_name'], nmu))
 
     def maint(self, command, package, args):
         release = self.udd.data.clean_release_name(self.options.release,
@@ -360,15 +370,15 @@ class Cli(clibase.CliBase):
 
         uploads = self.dispatcher.uploads(p, max=1, version=version)
         u = uploads[0]
-        print "Version: %s" % u['version']
-        print "Date: %s" % u['date'].date()
-        print "Uploader: %s <%s>" % (u['signed_by_name'], u['signed_by_email'])
-        print "Changer: %s <%s>" % \
-                (u['changed_by_name'], u['changed_by_email'])
-        print "Maintainer: %s <%s>" % \
-                (u['maintainer_name'], u['maintainer_email'])
+        print("Version: %s" % u['version'])
+        print("Date: %s" % u['date'].date())
+        print("Uploader: %s <%s>" % (u['signed_by_name'], u['signed_by_email']))
+        print("Changer: %s <%s>" % \
+                (u['changed_by_name'], u['changed_by_email']))
+        print("Maintainer: %s <%s>" % \
+                (u['maintainer_name'], u['maintainer_email']))
         if u['nmu']:
-            print "NMU: yes"
+            print("NMU: yes")
 
     def popcon(self, command, package, args):
         release = self.udd.data.clean_release_name(self.options.release,
@@ -378,12 +388,12 @@ class Cli(clibase.CliBase):
         except PackageNotFoundError:
             return self.notfound(package)
 
-        print "Popcon data for %s:" % package
-        print "  installed: %d" % d['insts']
-        print "  vote:      %d" % d['vote']
-        print "  old:       %d" % d['olde']
-        print "  recent:    %d" % d['recent']
-        print "  nofiles:   %d" % d['nofiles']
+        print("Popcon data for %s:" % package)
+        print("  installed: %d" % d['insts'])
+        print("  vote:      %d" % d['vote'])
+        print("  old:       %d" % d['olde'])
+        print("  recent:    %d" % d['recent'])
+        print("  nofiles:   %d" % d['nofiles'])
 
     def checkdeps(self, command, package, args):
         """
@@ -417,10 +427,10 @@ class Cli(clibase.CliBase):
             if rel in relation:
                 label = rel.title().replace('_', '-')
                 if status[rel].bad:
-                    print "%s: unsatisfied: %s" % \
-                            (label, str(status[rel].bad))
+                    print("%s: unsatisfied: %s" % \
+                            (label, status[rel].bad))
                 else:
-                    print "%s: satisfied" % label
+                    print("%s: satisfied" % label)
 
 
     def checkbuilddeps(self, command, package, args):
@@ -444,9 +454,9 @@ class Cli(clibase.CliBase):
         except PackageNotFoundError:
             return self.notfound(package)
 
-        print "Build-dependency check for %s in %s/%s:" % \
-                (package, release, arch)
-        print "Checked: %s" % ", ".join(r.release)
+        print("Build-dependency check for %s in %s/%s:" % \
+                (package, release, arch))
+        print("Checked: %s" % ", ".join(r.release))
 
         self._builddeps_status_formatter(status)
 
@@ -463,9 +473,9 @@ class Cli(clibase.CliBase):
             return self.notfound(package, release, arch)
 
         flatlist = solverh.flatten()
-        print flatlist
+        print(flatlist)
         if self.options.verbose:
-            print solverh
+            print(solverh)
 
     def checkbackport(self, command, package, args):
         """
@@ -497,9 +507,9 @@ class Cli(clibase.CliBase):
         except PackageNotFoundError:
             return self.notfound(package)
 
-        print "Backport check for %s in %s->%s/%s:" % \
-                (package, fromrelease, torelease, arch,)
-        print "Checked: %s" % ", ".join(tr.release)
+        print("Backport check for %s in %s→%s/%s:" % \
+                (package, fromrelease, torelease, arch,))
+        print("Checked: %s" % ", ".join(tr.release))
 
         self._builddeps_status_formatter(status)
 
@@ -528,21 +538,21 @@ class Cli(clibase.CliBase):
             return self.notfound(package, release, arch)
 
         if chains:
-            print "Packages %s and %s are linked by %d chains." \
-                    % (package, package2, len(chains))
+            print("Packages %s and %s are linked by %d chains." \
+                    % (package, package2, len(chains)))
             for c in chains:
-                print unicode(c).encode('UTF-8')
+                print(c)
         else:
-            print "No dependency chain could be found between %s and %s" \
-                    % (package, package2)
+            print("No dependency chain could be found between %s and %s" \
+                    % (package, package2))
 
     @classmethod
     def _builddeps_status_formatter(self, status):
 
         if not status.AllFound():  # packages missing
             badrels = self._builddeps_formatter(status, data='bad')
-            print "Unsatisfiable build dependencies:"
-            print "\n".join(badrels)
+            print("Unsatisfiable build dependencies:")
+            print("\n".join(badrels))
         else:
             extras = []
             rm = status.ReleaseMap()
@@ -556,14 +566,14 @@ class Cli(clibase.CliBase):
                         #print relation.package.data['package']
                         l.append(unicode(relation.satisfiedBy.packagedata.data['package']))
                     else:
-                        l.append(ur"%s→%s" % (relation.satisfiedBy.package,
+                        l.append("%s→%s" % (relation.satisfiedBy.package,
                             " ".join(relation.satisfiedBy.packagedata.ProvidersList())))
 #                extras.append("%s: %s" % (xr,
 #                    ", ".join([i.package.data['package'] for i in rm[xr]])))
                 if l:
-                    extras.append(ur"%s: %s" % (releasename, ', '.join(l)))
-            print "All build-dependencies satisfied."
-            print u"\n".join(extras).encode("UTF-8")
+                    extras.append("%s: %s" % (releasename, ', '.join(l)))
+            print("All build-dependencies satisfied.")
+            print("\n".join(extras))
 
     @classmethod
     def _package_relation_lookup(cls, package, release, relation,
@@ -575,17 +585,17 @@ class Cli(clibase.CliBase):
                 cls.notfound(package.package, release, package.arch)
             return
         if not skipHeaders:
-            print "Package: %s %s/%s" % \
-                    (package.package, release, package.arch)
-        print "%s: %s" % \
-                    (label, package.RelationEntry(relation))
+            print("Package: %s %s/%s" % \
+                    (package.package, release, package.arch))
+        print("%s: %s" % \
+                    (label, package.RelationEntry(relation)))
 
     @staticmethod
     def _builddeps_formatter(bdstatus, data='bad'):
         """ Print a summary of the build-deps of a package """
         def format_rel(rel, longname):
             if rel:
-                return "%s: %s" % (longname, str(rel))
+                return "%s: %s" % (longname, unicode(rel))
             return None
 
         l = [

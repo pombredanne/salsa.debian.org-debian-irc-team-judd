@@ -37,9 +37,20 @@
 
 """ Unit tests for bts UDD bindings """
 
+from __future__ import unicode_literals
+
+import sys
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
 from uddcache.udd import Udd
 from uddcache.bts import Bts, BugNotFoundError, Bugreport
-import unittest2 as unittest
+
+# permit use of unicode() in py2 and str() in py3 to always get unicode results
+if sys.version_info > (3, 0):
+    unicode = str
 
 
 class BtsTests(unittest.TestCase):

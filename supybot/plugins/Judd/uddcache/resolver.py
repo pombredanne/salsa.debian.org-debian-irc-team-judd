@@ -38,9 +38,25 @@ RelationChecker -- check sets of dependency relationships, installability
 SolverHierarchy -- TODO: complete
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import copy
-from relations import *
-from packages import *
+import sys
+
+from .relations import *
+from .packages import *
+
+
+class UnicodeMixin(object):
+    if sys.version_info > (3, 0):
+        __str__ = lambda x: x.__unicode__()
+    else:
+        __str__ = lambda x: unicode(x).encode('utf-8')
+
+
+# permit use of unicode() in py2 and str() in py3 to always get unicode results
+if sys.version_info > (3, 0):
+    unicode = str
 
 
 class Checker(object):
@@ -107,10 +123,10 @@ class Checker(object):
             return status
 
         for opts in relationlist:
-            #print "Considering fragment %s" % str(opts)
+            #print("Considering fragment %s" % str(opts))
             satisfied = False
             for item in opts:    # item is a RelationshipOptions object
-                #print "== part %s (%d)" % (type(item), len(opts))
+                #print("== part %s (%d)" % (type(item), len(opts)))
                 satisfied = self.RelationSatisfied(item)
                 if satisfied:
                     opts.satisfiedBy = item
@@ -119,10 +135,10 @@ class Checker(object):
                     opts.archIgnore = item.archIgnore
                     break
             if not satisfied:
-                #print "%s not satisfied" % opts
+                #print("%s not satisfied" % opts)
                 status.bad.append(opts)
             else:
-                #print "%s satisfied" % opts
+                #print("%s satisfied" % opts)
                 status.good.append(opts)
         return status
 
@@ -455,22 +471,22 @@ class SolverHierarchy(object):
         """ Generate a unicode tree-like representation of the hierarchy """
 
         def indent(text, sep="  "):
-            return u"".join(sep + line for line in text.splitlines(True))
+            return "".join(sep + line for line in text.splitlines(True))
 
         def strline(rlist, label, last=False):
             if self.level < 0:
                 s = rlist.PackageSets()
-                return u"%s:\n%s" % (label, indent(str(s), "  "))
+                return "%s:\n%s" % (label, indent(unicode(s), "  "))
             s = unicode(rlist)
             if s:
-                tree_tee = u"├─"
-                tree_trunk =  u"│"
+                tree_tee = "├─"
+                tree_trunk =  "│"
                 if last:
-                    tree_tee = u"└─"
-                    tree_trunk =  u" "
-                return u"%s[%d] %s for %s:\n%s" % \
+                    tree_tee = "└─"
+                    tree_trunk =  " "
+                return "%s[%d] %s for %s:\n%s" % \
                             (tree_tee, self.level, label, self.package,
-                                    indent(s, u"%s   " % tree_trunk))
+                                    indent(s, "%s   " % tree_trunk))
         if self.level >= 0:
             for p in [ps for ps in self.depends.good if ps.status][:-1] + \
                      [ps for ps in self.recommends.good if ps.status][:-1]:
@@ -481,4 +497,4 @@ class SolverHierarchy(object):
                              self._last_level and not self.recommends))
         if self.recommends:
             s.append(strline(self.recommends, "Recommends", self._last_level))
-        return u"\n".join(s)
+        return "\n".join(s)

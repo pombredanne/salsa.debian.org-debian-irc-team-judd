@@ -37,7 +37,9 @@
 
 """ Base class for command line interface to udd - output to stdout """
 
-import udd
+from __future__ import absolute_import, unicode_literals
+
+from . import udd
 
 class CliBase(object):
     """ Run a specified command sending output to stdout """

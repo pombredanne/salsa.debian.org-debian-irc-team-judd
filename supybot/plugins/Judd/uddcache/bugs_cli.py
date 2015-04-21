@@ -37,13 +37,23 @@
 
 """ Command line interface to udd - output to stdout """
 
-import clibase
-import udd
-import bug_queries
-import bts
+from __future__ import absolute_import, print_function, unicode_literals
 
-from packages import PackageNotFoundError
-from bts import BugNotFoundError
+import sys
+
+from . import clibase
+from . import udd
+from . import bug_queries
+from . import bts
+
+from .packages import PackageNotFoundError
+from .bts import BugNotFoundError
+
+
+# permit use of unicode() in py2 and str() in py3 to always get unicode results
+if sys.version_info > (3, 0):
+    unicode = str
+
 
 class Cli(clibase.CliBase):
     """ Run a specified command sending output to stdout """
@@ -72,42 +82,42 @@ class Cli(clibase.CliBase):
             try:
                 bug = self.dispatcher.bug(bugnumber, self.options.verbose)
             except BugNotFoundError:
-                print "Sorry, bug %d was not found." % bugnumber
+                print("Sorry, bug %d was not found." % bugnumber)
                 return
-            print bug
+            print(bug)
         else:
             if not args:
                 bugs = self.dispatcher.bug_package(search, verbose=self.options.verbose, archived=False, filter={'status': ('forwarded', 'pending', 'pending-fixed')})
                 if self.options.verbose:
-                    print "\n".join([str(b) for b in bugs])
+                    print("\n".join([unicode(b) for b in bugs]))
                 else:
                     for s in bts.severities:
                         bs = [str(b.id) for b in bugs if b.severity == s]
                         if bs:
-                            print "%s: %d: %s" % (s, len(bs), ", ".join(bs))
+                            print("%s: %d: %s" % (s, len(bs), ", ".join(bs)))
                 bugs = self.dispatcher.wnpp(search)
                 for s in bts.wnpp_types:
                     bl = [b for b in bugs if b.wnpp_type == s]
                     if bl:
-                        print "%s: #%d" % (s, bl[0].id)
+                        print("%s: #%d" % (s, bl[0].id))
                 bugs = self.dispatcher.rm(search)
                 if bugs:
-                    print "RM: %s" % (",".join(["#%d" % b.id for b in bugs]))
+                    print("RM: %s" % (",".join(["#%d" % b.id for b in bugs])))
             else:
                 bugs = self.dispatcher.bug_package_search(search, args[0], verbose=self.options.verbose, archived=False)
                 if self.options.verbose:
-                    print (u"\n".join([str(b) for b in bugs])).encode("UTF-8")
+                    print("\n".join([unicode(b) for b in bugs]))
                 else:
                     allbugs = ["#%d: %s" % (b.id, b.title) for b in bugs]
-                    print (u"\n".join(allbugs)).encode("UTF-8")
+                    print("\n".join(allbugs))
 
 
     def rm(self, command, package, args):
         bugs = self.dispatcher.rm(package)
         if not bugs:
-            print "Sorry, no removal bug for %s was found." % package
+            print("Sorry, no removal bug for %s was found." % package)
             return
-        print bugs[0]
+        print(bugs[0])
 
     def wnpp(self, command, package, args):
         bugtype = command.upper()
@@ -117,9 +127,9 @@ class Cli(clibase.CliBase):
             bugtype = None
         bugs = self.dispatcher.wnpp(package, bugtype)
         if not bugs:
-            print "Sorry, no WNPP bug for %s was found." % package
+            print("Sorry, no WNPP bug for %s was found." % package)
             return
-        print "\n".join([str(b) for b in bugs])
+        print("\n".join([unicode(b) for b in bugs]))
 
     def rfs(self, command, package, args):
         bugfilter={'title': package}
@@ -130,7 +140,7 @@ class Cli(clibase.CliBase):
                                        archived=self.options.verbose,
                                        filter=bugfilter)
         if not bugs:
-            print "No open RFS bugs found for that package"
+            print("No open RFS bugs found for that package")
             return
         for b in bugs:
             s = [
@@ -145,11 +155,11 @@ class Cli(clibase.CliBase):
                 "Owner: %s" % b.owner,
                 ""
             ]
-            print (u"\n".join(s)).encode("UTF-8")
+            print("\n".join(s))
 
     def rcbugs(self, command, package, args):
         bugs = self.dispatcher.rcbugs(package)
         if not bugs:
-            print "No release critical bugs were found for '%s'." % package
+            print("No release critical bugs were found for '%s'." % package)
             return
-        print (u"\n".join([str(b) for b in bugs])).encode("UTF-8")
+        print("\n".join([unicode(b) for b in bugs]))

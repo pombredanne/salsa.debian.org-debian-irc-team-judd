@@ -32,6 +32,8 @@
 
 """ Static classes describing the data that is available """
 
+from __future__ import unicode_literals
+
 
 class AvailableData:
     """ Base class for available data across all distros """

@@ -55,9 +55,14 @@ the supybot config file as follows:
 # See also:
 # http://docs.python.org/library/configparser.html
 
+from __future__ import unicode_literals
+
 import os
 import os.path
-import ConfigParser
+try:
+    import configparser as ConfigParser
+except:
+    import ConfigParser
 
 
 class Config(object):

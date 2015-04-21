@@ -31,6 +31,8 @@
 
 ###
 
+from __future__ import print_function, unicode_literals
+
 import re
 try:
     from debian import debian_support
@@ -94,7 +96,7 @@ class Relationship(object):
         self._checkOperatorSyntax()
 
     def _ParseRelation(self, relationship):
-        #print "checking item %s" % relationship
+        #print("checking item %s" % relationship)
         m = re.match(r"""(?x)
                   ^\s*
                   (?P<package>[\w\d.+-]+)
@@ -184,7 +186,7 @@ class RelationshipOptions(list):
         self.status = None   # Extended status (SolverHierarchy)
         list.__init__(self)
         for rel in self._SplitOptions(options):
-            #print "found rel=%s" % rel
+            #print("found rel=%s" % rel)
             self.append(Relationship(relation=rel))
 
     def _SplitOptions(self, item):
@@ -216,20 +218,20 @@ class RelationshipOptionsList(list):
         """
         releases = {}
         for i in self.__iter__():
-            #print "%s : %s" % (type(i), i)
+            #print("%s : %s" % (type(i), i))
             # map unresolved packages to a dummy release
             r = "unresolved"
             if i.satisfied:
                 if i.archIgnore:
                     # put deps for the wrong arch somewhere else
-                    # print "ARCHIGNORE DEP %s" % i
+                    # print("ARCHIGNORE DEP %s" % i)
                     r = "archignore"
                 elif i.virtual:
                     # stick virtual relationships into a separate release too
                     r = "virtual"
                 else:
-                    #print "%s : %s" % (type(i), i)
-                    #print "%s : %s" % (type(i.satisfiedBy), i.satisfiedBy)
+                    #print("%s : %s" % (type(i), i))
+                    #print("%s : %s" % (type(i.satisfiedBy), i.satisfiedBy))
                     r = i.satisfiedBy.packagedata.data['release']
             if not r in releases:
                 releases[r] = []
@@ -251,7 +253,7 @@ class RelationshipOptionsList(list):
         """
         d = set()
         for o in self:
-            #print o
+            #print(o)
             if o.satisfiedBy:
                 d.add(o.satisfiedBy.package)
             else:
@@ -285,11 +287,10 @@ class PackageLists(object):
         return getattr(self, name)
 
     def set(self, name, value):
-        # print "setting %s = %s" %(name, value)
         return setattr(self, name, value)
 
 #    def __getattr__(self, name):
-#        print "Using __getattr__ %s:%d" %(__FILE__, __LINE__)
+#        print("Using __getattr__ %s:%d" %(__FILE__, __LINE__))
 #        try:
 #            return self.__dict__[name]
 #        except KeyError:
@@ -325,7 +326,7 @@ class RelationshipStatus(PackageLists):
     status = RelationshipStatus()
     status.good.extend(['perl', 'bash'])
     status.bad.extend(['python', 'ruby'])
-    print status.PackageSets
+    print(status.PackageSets)
     """
     def __init__(self):
         PackageLists.__init__(self, ['good', 'bad', 'unchecked'],
@@ -382,7 +383,7 @@ class RelationshipStatus(PackageLists):
 
     def satisfied(self):
         """Check if there are any 'bad' or 'unchecked' relationships"""
-        # print "Satisfied?: %d %s" % (len(self.bad), len(self.bad)==0)
+        # print("Satisfied?: %d %s" % (len(self.bad), len(self.bad)==0))
         return len(self.unchecked) + len(self.bad) == 0
 
     def __str__(self):
@@ -456,30 +457,34 @@ class BuildDepStatus(object):
 #            releases[r].extend(m[r])
         return releases
 
-    def __str__(self):
+    def __unicode__(self):
         """Compile a string listing of the build-dependencies"""
         return "Build-Depends: %s\nBuild-Depends-Indep: %s\n" % \
                 (self.bd, self.bdi)
 
 
-class PackageRelationship(object):
+class PackageRelationship(UnicodeMixin):
     def __init__(self, packagedata):
         self.packagedata = packagedata
         self._relation_marker = ""
         self._unicode_relation_marker = ""
+        self.distance = 0
 
-    def __str__(self):
-        return "%s%s" % (self._relation_marker, self.packagedata.package)
+    def __lt__(self, other):
+        return self.distance < other.distance
+
+    #def __str__(self):
+        #return "%s%s" % (self._relation_marker, self.packagedata.package)
 
     def __unicode__(self):
-        return u"%s%s" % (self._unicode_relation_marker, self.packagedata.package)
+        return "%s%s" % (self._unicode_relation_marker, self.packagedata.package)
 
 
 class Depends(PackageRelationship):
     def __init__(self, packagedata):
         super(Depends, self).__init__(packagedata)
         self._relation_marker = "=>"
-        self._unicode_relation_marker = u" ▶ " # u"⇒"
+        self._unicode_relation_marker = " ▶ " # u"⇒"
         self.distance = 1
 
 

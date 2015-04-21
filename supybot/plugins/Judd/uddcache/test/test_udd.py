@@ -37,9 +37,15 @@
 
 """ Unit tests for base UDD bindings """
 
+from __future__ import unicode_literals
+
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
 from uddcache.udd import Udd
 from uddcache.config import Config
-import unittest2 as unittest
 
 
 class database(unittest.TestCase):

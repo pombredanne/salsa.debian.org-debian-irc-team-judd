@@ -34,13 +34,22 @@
 #
 ###
 
+from __future__ import absolute_import, unicode_literals
 
 import re
-import database
-from data import DebianData
-from config import Config
-from packages import *
-import bts
+import sys
+
+from . import database
+from .data import DebianData
+from .config import Config
+from .packages import *
+from . import bts
+
+
+# permit use of unicode() in py2 and str() in py3 to always get unicode results
+if sys.version_info > (3, 0):
+    unicode = str
+
 
 class Udd():
     """

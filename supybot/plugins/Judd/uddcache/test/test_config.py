@@ -37,8 +37,14 @@
 
 """Unit test for uddconfig.py"""
 
+from __future__ import unicode_literals
+
 import os
-import unittest2 as unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
 from uddcache.config import Config
 
 

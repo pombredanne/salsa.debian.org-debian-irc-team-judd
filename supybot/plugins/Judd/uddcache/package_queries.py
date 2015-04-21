@@ -34,11 +34,13 @@
 #
 ###
 
-from udd import Udd
-from packages import *
-from relations import *
-from resolver import *
-from packages import PackageNotFoundError
+from __future__ import absolute_import, unicode_literals
+
+from .udd import Udd
+from .packages import *
+from .relations import *
+from .resolver import *
+from .packages import PackageNotFoundError
 
 try:
     from debian import debian_support

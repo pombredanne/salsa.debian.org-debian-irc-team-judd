@@ -37,10 +37,16 @@
 
 """ Unit tests for package resolver """
 
+from __future__ import unicode_literals
+
 import os
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
 from uddcache.udd import Udd
 from uddcache.resolver import *
-import unittest2 as unittest
 
 exclude_slow_tests = 0
 if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_TESTS']):

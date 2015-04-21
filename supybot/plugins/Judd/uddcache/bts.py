@@ -34,6 +34,8 @@
 #
 ###
 
+from __future__ import unicode_literals
+
 import re
 import psycopg2
 import psycopg2.extras
@@ -67,7 +69,7 @@ class Bts(object):
         for b in bugnumbers:
             if type(b) is int:
                 cleanbugs.append(b)
-            if type(b) is str or type(b) is unicode:
+            if isinstance(b, str) or isinstance(b, unicode):
                 b = b.replace('#', '')
                 cleanbugs.append(int(b))
         cleanbugs = tuple(cleanbugs)

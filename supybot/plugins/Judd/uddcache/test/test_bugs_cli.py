@@ -37,10 +37,19 @@
 
 """Unit test for cli.py"""
 
+from __future__ import unicode_literals
+
 import os
 import sys
-import unittest2 as unittest
-from cStringIO import StringIO
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+try:
+    from cStringIO import StringIO
+except:
+    from io import StringIO
+
 from uddcache.bugs_cli import Cli
 
 import codecs

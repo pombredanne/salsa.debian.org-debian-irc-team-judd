@@ -39,9 +39,14 @@
 
 # Fairly sparse tests at this stage
 
+from __future__ import unicode_literals
+
 from uddcache.data import DebianData
 
-import unittest2 as unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 
 class data(unittest.TestCase):
