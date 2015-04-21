@@ -81,11 +81,12 @@ def _wrap(cursor, func):
             return func(*args, **kwargs)
         finally:
             if not isinstance(cursor, psycopg2.extras.LoggingCursor):
-                cursor.connection.log(cursor.query.replace("%", "%%"), cursor)
+                q = cursor.query.replace(b"%", b"%%")
+                cursor.connection.log(q, cursor)
 
-    newfunc = types.FunctionType(wrapper.func_code, wrapper.func_globals,
-                                func.func_name,
-                                wrapper.func_defaults, wrapper.func_closure)
+    newfunc = types.FunctionType(wrapper.__code__, wrapper.__globals__,
+                                func.__name__,
+                                wrapper.__defaults__, wrapper.__closure__)
     newfunc.__doc__ = wrapper.__doc__
     return newfunc
 
@@ -104,6 +105,7 @@ class WrappingLoggingConnection(psycopg2.extras.LoggingConnection):
     def filter(self, msg, curs):
         """Add the total execution time to the log output """
         t = (time.time() - curs.timestamp) * 1000
+        msg = msg.decode('utf-8')
         return "[%d ms] %s" % (t, " ".join([line.strip()
                                             for line in msg.split("\n")]))
         #return msg + os.linesep + "  (execution time: %d ms)" % t
