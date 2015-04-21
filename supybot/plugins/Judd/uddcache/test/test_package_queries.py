@@ -37,15 +37,21 @@
 
 """ Unit tests for generic UDD commands """
 
+from __future__ import unicode_literals
+
 import os
-import unittest2 as unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
 from uddcache.udd import Udd
 from uddcache.package_queries import Commands
 from uddcache.packages import *
 
 
 exclude_slow_tests = 0
-if os.environ.has_key('UDD_SKIP_SLOW_TESTS') and int(os.environ['UDD_SKIP_SLOW_TESTS']):
+if 'UDD_SKIP_SLOW_TESTS' in os.environ and int(os.environ['UDD_SKIP_SLOW_TESTS']):
     #print "Skipping slow tests in %s" % __file__
     exclude_slow_tests = 1
 

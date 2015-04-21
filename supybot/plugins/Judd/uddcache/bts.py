@@ -37,8 +37,22 @@
 from __future__ import unicode_literals
 
 import re
+import sys
 import psycopg2
 import psycopg2.extras
+
+
+# permit use of unicode() in py2 and str() in py3 to always get unicode results
+if sys.version_info > (3, 0):
+    unicode = str
+
+
+class UnicodeMixin(object):
+    if sys.version_info > (3, 0):
+        __str__ = lambda x: x.__unicode__()
+    else:
+        __str__ = lambda x: unicode(x).encode('utf-8')
+
 
 severities = ('wishlist', 'minor', 'normal', 'important',
                     'serious', 'grave', 'critical')
@@ -50,6 +64,7 @@ open_status = ('pending', 'pending-fixed', 'forwarded')
 closed_status = ('done', 'fixed')
 
 wnpp_types = ('RFP', 'ITP', 'RFH', 'RFA', 'ITA', 'O')
+
 
 class Bts(object):
     """ interface to the UDD for extracting bug information """
@@ -195,7 +210,7 @@ class Bts(object):
                      })
 
 
-class Bugreport(object):
+class Bugreport(UnicodeMixin):
     def __init__(self, data=None, archived=False):
         self.id = None
         self.package = None
@@ -251,7 +266,7 @@ class Bugreport(object):
             return m.group(1).upper()
         return
 
-    def __str__(self):
+    def __unicode__(self):
         s = [
                 "Bug: %d" % self.id,
                 "Package: %s" % self.package,

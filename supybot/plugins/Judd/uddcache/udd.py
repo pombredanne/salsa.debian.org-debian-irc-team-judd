@@ -64,7 +64,8 @@ class Udd():
                     or False to suppress loading this setting from the
                     config file
         """
-        if type(config) is str or config is None:
+        if isinstance(config, str) or isinstance(config, unicode) \
+                or config is None:
             config = Config(config)
         self.config = config
         self.psql = None

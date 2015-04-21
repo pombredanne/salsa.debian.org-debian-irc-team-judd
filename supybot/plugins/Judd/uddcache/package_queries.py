@@ -155,7 +155,7 @@ class Commands(object):
         package.
         """
         c = self.udd.psql.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        if type(package) == str:
+        if isinstance(package, str) or isinstance(package, unicode):
             p = package
         else:
             p = package.package

@@ -34,13 +34,26 @@
 from __future__ import print_function, unicode_literals
 
 import re
+import sys
 try:
     from debian import debian_support
 except:
     from debian_bundle import debian_support
 
 
-class Relationship(object):
+class UnicodeMixin(object):
+    if sys.version_info > (3, 0):
+        __str__ = lambda x: x.__unicode__()
+    else:
+        __str__ = lambda x: unicode(x).encode('utf-8')
+
+
+# permit use of unicode() in py2 and str() in py3 to always get unicode results
+if sys.version_info > (3, 0):
+    unicode = str
+
+
+class Relationship(UnicodeMixin):
     """Representation of a single package relationship
 
     Accepts either a textual representation of relationship or
@@ -139,14 +152,14 @@ class Relationship(object):
 
     def _archsplit(self, value):
         """ split up whitespace separated into list of archs accept lists"""
-        if value and type(value) is str or type(value) is unicode:
-            return re.split(r"\s+", value.strip())
-        elif type(value) is list:
+        if type(value) is list:
             return value
+        elif value:
+            return re.split(r"\s+", value.strip())
         else:
             return []
 
-    def __str__(self):
+    def __unicode__(self):
         if self.relation:
             return self.relation
         else:
@@ -154,7 +167,7 @@ class Relationship(object):
               (self.package, self.operator, self.version, " ".join(self.arch))
 
 
-class RelationshipOptions(list):
+class RelationshipOptions(list, UnicodeMixin):
     """
     List of alternatives that form a single package relationship.
 
@@ -192,10 +205,10 @@ class RelationshipOptions(list):
     def _SplitOptions(self, item):
         return re.split(r"\s*\|\s*", item)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.relation
 
-class RelationshipOptionsList(list):
+class RelationshipOptionsList(list, UnicodeMixin):
     """
     List of RelationshipOptions objects
 
@@ -260,12 +273,12 @@ class RelationshipOptionsList(list):
                 d.add(o.relation)
         return d
 
-    def __str__(self):
-        #print "making output %d" % len(self)
-        return ", ".join([str(x) for x in self.__iter__()])
+    def __unicode__(self):
+        #print("making output %d" % len(self))
+        return ", ".join([unicode(x) for x in self.__iter__()])
 
 
-class PackageLists(object):
+class PackageLists(UnicodeMixin):
     """
     Lists of packages as categorised into lists given pre-determined names.
 
@@ -299,7 +312,7 @@ class PackageLists(object):
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
 
-    def __str__(self):
+    def __unicode__(self):
         def strline(label, rlist):
             s = ", ".join(sorted(rlist))
             if s:
@@ -386,15 +399,14 @@ class RelationshipStatus(PackageLists):
         # print("Satisfied?: %d %s" % (len(self.bad), len(self.bad)==0))
         return len(self.unchecked) + len(self.bad) == 0
 
-    def __str__(self):
-        """Convert to string form"""
-        return unicode(self).encode("UTF-8")
+    #def __str__(self):
+        ##"""Convert to string form"""
+        ##return unicode(self).encode("UTF-8")
 
     def __unicode__(self):
         """Convert to unicode form"""
         def strline(label, rlist):
-            #print "making string from %s" %label
-            s = str(rlist)
+            s = unicode(rlist)
             if s:
                 return "%s: %s" % (label, s)
 
@@ -414,7 +426,7 @@ class RelationshipStatus(PackageLists):
         return len(self.good) + len(self.unchecked) + len(self.bad) > 0
 
 
-class BuildDepStatus(object):
+class BuildDepStatus(UnicodeMixin):
     """Contains the status of the build-dependencies of a package
 
     Both the Build-Depends and Build-Depends-Indep data can be found in this
@@ -492,11 +504,11 @@ class Recommends(PackageRelationship):
     def __init__(self, packagedata):
         super(Recommends, self).__init__(packagedata)
         self._relation_marker = "->"
-        self._unicode_relation_marker = u" ▷ " # u"→"
+        self._unicode_relation_marker = " ▷ " # u"→"
         self.distance = 1000
 
 
-class DependencyChain(list):
+class DependencyChain(list, UnicodeMixin):
     def __init__(self, relation=None, chain=None, base=None, *args):
         super(DependencyChain, self).__init__(*args)
         if relation:
@@ -526,14 +538,14 @@ class DependencyChain(list):
             x += p.distance
         return x
 
-    def __str__(self):
-        return "%s%s" % (str(self.base), "".join(str(p) for p in self))
+    #def __str__(self):
+        #return "%s%s" % (str(self.base), "".join(str(p) for p in self))
 
     def __unicode__(self):
-        return "%s%s" % (str(self.base), "".join(unicode(p) for p in self))
+        return "%s%s" % (self.base, "".join("%s" % p for p in self))
 
 
-class DependencyChainList(list):
+class DependencyChainList(list, UnicodeMixin):
 
     def set_base(self, base):
         for c in self:
@@ -544,7 +556,7 @@ class DependencyChainList(list):
         newlist = DependencyChainList()
         c = set()
         for p in self:
-            pkey = str(p)
+            pkey = unicode(p)
             if not pkey in c:
                 newlist.append(p)
             c.add(pkey)

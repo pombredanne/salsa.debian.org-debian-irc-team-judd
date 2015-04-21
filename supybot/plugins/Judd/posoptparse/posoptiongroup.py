@@ -42,8 +42,15 @@ as sub-commands
 # http://corebio.googlecode.com/svn/tags/0.5.0/apidocs/optparse.IndentedHelpFormatter-class.html
 # http://docs.huihoo.com/pydoc/python/2.5/stdlib/optparse.OptionGroup-class.html
 
-import types
+from __future__ import unicode_literals
+
+import sys
 from optparse import Option, IndentedHelpFormatter, OptionGroup
+
+
+# permit use of unicode() in py2 and str() in py3 to always get unicode results
+if sys.version_info > (3, 0):
+    unicode = str
 
 
 class PosOptionGroup(OptionGroup):
@@ -75,7 +82,7 @@ class PosOptionGroup(OptionGroup):
 
     def add_option(self, *args, **kwargs):
         """ Add a new option to the option group """
-        if type(args[0]) is types.StringType:
+        if type(args[0]) is str or type(args[0]) is unicode:
             kwargs['action'] = 'store_true'
             option = Option(*args, **kwargs)
         elif len(args) == 1 and not kwargs:
@@ -85,4 +92,4 @@ class PosOptionGroup(OptionGroup):
         else:
             raise TypeError("invalid arguments")
 
-        self.positional .append(option)
+        self.positional.append(option)

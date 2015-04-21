@@ -52,8 +52,8 @@ except:
 
 from uddcache.bugs_cli import Cli
 
-import codecs
-sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+#import codecs
+#sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
 
 class cliTests(unittest.TestCase):

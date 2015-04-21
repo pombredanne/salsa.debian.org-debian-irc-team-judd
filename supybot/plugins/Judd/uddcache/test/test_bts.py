@@ -129,26 +129,26 @@ class BugReportTests(unittest.TestCase):
         self.assertEqual(Bugreport({'package': 'wnpp', 'title': 'some other badly titled bug'}).wnpp_type, None)
         self.assertRaises(ValueError, getattr, Bugreport(), 'wnpp_type')
 
-    def test_str(self):
+    def test_unicode(self):
         data = {
                 'id': 12345,
                 'package': 'foo',
                 'title' : 'a really nasty bug'
                 }
         b = Bugreport(data)
-        self.assertTrue(str(b))
+        self.assertTrue(unicode(b))
         b.tags = ['help']
-        self.assertTrue(str(b))
+        self.assertTrue(unicode(b))
         b.tags = ['help', 'moreinfo']
-        self.assertTrue(str(b))
+        self.assertTrue(unicode(b))
 
 
 class BugNotFoundErrorTests(unittest.TestCase):
-    def test_str(self):
+    def test_unicode(self):
         e = BugNotFoundError(12345)
-        self.assertIn('12345', str(e))
+        self.assertIn('12345', unicode(e))
         e = BugNotFoundError("12345")
-        self.assertIn('12345', str(e))
+        self.assertIn('12345', unicode(e))
 
 
 ###########################################################

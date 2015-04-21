@@ -322,7 +322,7 @@ class BuildDepsChecker(Checker):
         s = package
         if not s and not (bdList or bdiList):
             raise ValueError("A valid package or bdList/bdiList missing")
-        if type(package) == str:
+        if isinstance(package, str) or isinstance(package, unicode):
             s = self.release.Source(package)
         if not bdList and s:
             bdList = s.BuildDependsList()
@@ -333,7 +333,7 @@ class BuildDepsChecker(Checker):
         return BuildDepStatus(bdstatus, bdistatus)
 
 
-class SolverHierarchy(object):
+class SolverHierarchy(UnicodeMixin):
     """A hierarchy of package objects linked by package dependencies
 
     SolverHierarchy objects are designed to accumulate the package tree
@@ -464,8 +464,8 @@ class SolverHierarchy(object):
             newchains.set_base(self.package)
         return newchains
 
-    def __str__(self):
-        return unicode(self).encode("UTF-8")
+    #def __str__(self):
+        #return unicode(self).encode("UTF-8")
 
     def __unicode__(self):
         """ Generate a unicode tree-like representation of the hierarchy """

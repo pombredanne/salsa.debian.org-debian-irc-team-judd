@@ -165,7 +165,7 @@ class AbstractPackage(object):
             raise ValueError("Package name not specified")
 #        if type(package) is Package:
 #            return package
-        if type(package) is not str and type(package) is not unicode:
+        if not isinstance(package, str) and not isinstance(package, unicode):
             raise ValueError("What did you do to 'package'? It was a %s" % \
                                 type(package))
         self.dbconn = dbconn
@@ -285,7 +285,7 @@ class Package(AbstractPackage):
             # http://www.postgresql.org/docs/8.3/static/functions-matching.html
             packagere = r"(?:\A|[, ])%s(?:\Z|[, ])" % \
                         re.escape(re.sub(r"[^a-z\d\-+.]", "", self.package))
-            # print packagere
+            # print(packagere)
             c = self.dbconn.cursor()
             c.execute(r"""SELECT DISTINCT package
                           FROM packages
