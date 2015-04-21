@@ -52,8 +52,8 @@ except:
 
 from uddcache.packages_cli import Cli
 
-import codecs
-sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+#import codecs
+#sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
 exclude_slow_tests = 0
 if 'UDD_SKIP_SLOW_TESTS' in os.environ and int(os.environ['UDD_SKIP_SLOW_TESTS']):
