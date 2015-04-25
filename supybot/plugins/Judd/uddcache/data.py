@@ -136,12 +136,14 @@ class DebianData(AvailableData):
     release_map = {
                     'rc-buggy':            'experimental',
                     'unstable':            'sid',
-                    'testing':             'jessie',
-                    'stable':              'wheezy',
-                    'stable-backports':    'wheezy-backports',
-                    'oldstable':           'squeeze',
-                    'oldstable-backports': 'squeeze-backports',
-                    'oldstable-backports-sloppy': 'squeeze-backports-sloppy',
+                    'testing':             'stretch',
+                    'stable':              'jessie',
+                    'stable-backports':    'jessie-backports',
+                    'oldstable':           'wheezy',
+                    'oldstable-backports': 'wheezy-backports',
+                    'oldoldstable':        'squeeze',
+                    'oldoldstable-backports': 'squeeze-backports',
+                    'oldoldstable-backports-sloppy': 'squeeze-backports-sloppy',
                 }
 
     releases = [
@@ -185,6 +187,6 @@ class DebianData(AvailableData):
                'mips', 'mipsel', 'powerpc', 's390', 's390x',
                'sparc', 'all']
 
-    stable_release = 'squeeze'
+    stable_release = 'jessie'
 
     default_arch = 'amd64'

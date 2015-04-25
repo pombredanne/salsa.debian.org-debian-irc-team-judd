@@ -64,9 +64,10 @@ judd oldstable removal:
 judd release actions:
 * add new -backports, -backports-sloppy, -updates etc in uddcache/data.py
 * shift stable alias in uddcache/data.py
+* update list of release and mapping in uddcache/data.py
 
 judd new testing actions
-* add new (testing) release to plugin.py
+* add new (testing) release to uddcache/data.py
 * shift testing alias
 * mkcontentslinks
 

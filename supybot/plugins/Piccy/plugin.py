@@ -57,11 +57,13 @@ import subprocess
 release_map = { 'trunk'             : 'trunk',
                 'experimental'      : 'experimental',
                 'unstable'          : 'sid',
-                'testing'           : 'jessie',
-                'stable-backports'  : 'wheezy-backports',
-                'stable'            : 'wheezy',
-                'oldstable-backports'  : 'squeeze-backports',
-                'oldstable'            : 'squeeze',
+                'testing'           : 'stretch',
+                'stable'            : 'jessie',
+                'stable-backports'  : 'jessie-backports',
+                'oldstable-backports'  : 'wheezy-backports',
+                'oldstable'            : 'wheezy',
+                'oldoldstable-backports'  : 'squeeze-backports',
+                'oldoldstable'            : 'squeeze',
                }
 
 class Piccy(callbacks.Plugin):
