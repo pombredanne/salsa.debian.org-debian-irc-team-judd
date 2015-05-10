@@ -164,6 +164,7 @@ class DebianData(AvailableData):
                     'wheezy-multimedia',
                     'jessie',
                     'jessie-security',
+                    'jessie-updates',
                     'jessie-proposed-updates',
                     'jessie-backports',
                     #'jessie-backports-sloppy',
