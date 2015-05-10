@@ -20,13 +20,13 @@ each of the indexed repositories.</p>
                 [ --release <span class="var">release</span> ]
     </div>
     <div class="input">versions libc6</div>
-    <div class="output">Package: libc6 on i386 -- lenny: 2.7-18lenny7; lenny-security: 2.7-18lenny7; squeeze-updates: 2.11.3-3; squeeze: 2.11.3-4; squeeze-proposed-updates: 2.11.3-4; sid: 2.13-35; wheezy: 2.13-35</div>
+    <div class="output">Package: libc6 on amd64 -- lenny: 2.7-18lenny7; lenny-security: 2.7-18lenny7; squeeze-updates: 2.11.3-3; squeeze: 2.11.3-4; squeeze-proposed-updates: 2.11.3-4; sid: 2.13-35; wheezy: 2.13-35</div>
 
     <div class="input">versions libc0.1 --arch kfreebsd-i386</div>
     <div class="output">Package: libc0.1 on kfreebsd-i386 -- squeeze: 2.11.3-4; squeeze-proposed-updates: 2.11.3-4; sid: 2.13-35; wheezy: 2.13-35</div>
 
     <div class="input">versions debhelper --release squeeze-backports</div>
-    <div class="output">Package: debhelper on i386 -- squeeze-backports: 9.20120608~bpo60+1</div>
+    <div class="output">Package: debhelper on amd64 -- squeeze-backports: 9.20120608~bpo60+1</div>
 
     <div class="input">versions libc6 --arch hurd-i386</div>
     <div class="output">No package named 'libc6' was found in hurd-i386.</div>
@@ -63,13 +63,13 @@ are displayed if titled correctly.</p>
                 [ --release <span class="var">release</span> ]
     </div>
     <div class="input">info libc6</div>
-    <div class="output">Package libc6 (libs, required) in squeeze/i386: Embedded GNU C Library: Shared libraries. Version: 2.11.3-4; Size: 3793.4k; Installed: 9360k; Homepage: http://www.eglibc.org</div>
+    <div class="output">Package libc6 (libs, required) in squeeze/amd64: Embedded GNU C Library: Shared libraries. Version: 2.11.3-4; Size: 3793.4k; Installed: 9360k; Homepage: http://www.eglibc.org</div>
 
     <div class="input">info libc6 --arch amd64 --release sid</div>
     <div class="output"> Package libc6 (libs, required) in sid/amd64: Embedded GNU C Library: Shared libraries. Version: 2.13-35; Size: 4242.8k; Installed: 9504k; Homepage: http://www.eglibc.org</div>
 
     <div class="input">info htdig</div>
-    <div class="output">Package htdig (web, optional) in squeeze/i386: web search and indexing system - binaries. Version: 1:3.2.0b6-9.1; Size: 1811.7k; Installed: 6352k; O: #375733</div>
+    <div class="output">Package htdig (web, optional) in squeeze/amd64: web search and indexing system - binaries. Version: 1:3.2.0b6-9.1; Size: 1811.7k; Installed: 6352k; O: #375733</div>
 </div>
 
 <div class="example">
@@ -90,7 +90,7 @@ the database for package names.</p>
     <div class="synopsis input">names <span class="var">keyword</span>
     </div>
     <div class="input">names translate*</div>
-    <div class="output">Search for translate* in squeeze/i386: translate 0.6-11; translate-docformat 0.6-5; translate-toolkit 1.7.0-0.1; translate-toolkit-dev-doc 1.7.0-0.1</div>
+    <div class="output">Search for translate* in squeeze/amd64: translate 0.6-11; translate-docformat 0.6-5; translate-toolkit 1.7.0-0.1; translate-toolkit-dev-doc 1.7.0-0.1</div>
 </div>
 
 
@@ -132,10 +132,10 @@ for any binary package can be found:</p>
     </div>
 
     <div class="input">depends latexdraw --release sid</div>
-    <div class="output">Package latexdraw in sid/i386 -- depends: openjdk-7-jre | openjdk-6-jre | sun-java6-jre, libjiu-java, libjlibeps-java, java-wrappers.</div>
+    <div class="output">Package latexdraw in sid/amd64 -- depends: openjdk-7-jre | openjdk-6-jre | sun-java6-jre, libjiu-java, libjlibeps-java, java-wrappers.</div>
 
     <div class="input">conflicts libc6</div>
-    <div class="output">Package libc6 in squeeze/i386 -- conflicts: prelink (&lt;= 0.0.20090311-1), tzdata (&lt;&lt; 2007k-1), tzdata-etch.</div>
+    <div class="output">Package libc6 in squeeze/amd64 -- conflicts: prelink (&lt;= 0.0.20090311-1), tzdata (&lt;&lt; 2007k-1), tzdata-etch.</div>
 </div>
 
 
@@ -158,10 +158,10 @@ provide a virtual package can be found using the <code>rprovides</code> command.
                 [ --release <span class="var">release</span> ]
     </div>
     <div class="input">provides postfix</div>
-    <div class="output">Package postfix in squeeze/i386 provides: mail-transport-agent, postfix-tls.</div>
+    <div class="output">Package postfix in squeeze/amd64 provides: mail-transport-agent, postfix-tls.</div>
 
     <div class="input">provides php5-cgi</div>
-    <div class="output">Package php5-cgi in squeeze/i386 provides: phpapi-20090626+lfs.</div>
+    <div class="output">Package php5-cgi in squeeze/amd64 provides: phpapi-20090626+lfs.</div>
 </div>
 
 <div class="example">
@@ -170,7 +170,7 @@ provide a virtual package can be found using the <code>rprovides</code> command.
                 [ --release <span class="var">release</span> ]
     </div>
     <div class="input">rprovides mail-transport-agent</div>
-    <div class="output">Package mail-transport-agent in squeeze/i386 is provided by: postfix, msmtp-mta, courier-mta, esmtp-run, sendmail-bin, ssmtp, dma, exim4-daemon-heavy, masqmail, xmail, citadel-mta, exim4-daemon-light, nullmailer.</div>
+    <div class="output">Package mail-transport-agent in squeeze/amd64 is provided by: postfix, msmtp-mta, courier-mta, esmtp-run, sendmail-bin, ssmtp, dma, exim4-daemon-heavy, masqmail, xmail, citadel-mta, exim4-daemon-light, nullmailer.</div>
 </div>
 
 <p>It is also possible to trace through a dependency chain (similar to
@@ -189,10 +189,10 @@ and a soft dependency (<code>Recommends</code>) is indicated by an open arrow (�
                     <span class="var">packagename2</span>
     </div>
     <div class="input">why bacula libfontconfig1</div>
-    <div class="output">Packages bacula and libfontconfig1 in squeeze/i386 are linked by 6 chains: bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libgtk2.0-0 ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libcairo2 ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libgtk2.0-0 ▶ libpango1.0-0 ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libgtk2.0-0 ▶ libpango1.0-0 ▶ libxft2 ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libgtk2.0-0 ▶ libpango1.0-0 ▶ libpango1.0-common ▶ fontconfig ▶ libfontconfig1</div>
+    <div class="output">Packages bacula and libfontconfig1 in squeeze/amd64 are linked by 6 chains: bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libgtk2.0-0 ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libcairo2 ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libgtk2.0-0 ▶ libpango1.0-0 ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libgtk2.0-0 ▶ libpango1.0-0 ▶ libxft2 ▶ libfontconfig1; bacula ▶ bacula-client ▷ bacula-traymonitor ▶ libgtk2.0-0 ▶ libpango1.0-0 ▶ libpango1.0-common ▶ fontconfig ▶ libfontconfig1</div>
 
     <div class="input">why bacular texlive-binaries</div>
-    <div class="output">No dependency chain found between packages bacula and texlive-binaries in squeeze/i386.</div>
+    <div class="output">No dependency chain found between packages bacula and texlive-binaries in squeeze/amd64.</div>
 </div>
 
 <a id="judd-file" />
@@ -210,13 +210,13 @@ used to search through these indices, as can <code>Judd</code>.
     </div>
 
     <div class="input">file /lib/libc.so.6</div>
-    <div class="output">Search for /lib/libc.so.6 in squeeze/i386: libc6: lib/libc.so.6</div>
+    <div class="output">Search for /lib/libc.so.6 in squeeze/amd64: libc6: lib/libc.so.6</div>
 
     <div class="input">file libc.so.6</div>
-    <div class="output">Search for libc.so.6 in squeeze/i386: libc6-amd64: lib64/libc.so.6; libc6: lib/libc.so.6; libc6-i686: lib/i686/cmov/libc.so.6; libc6-xen: lib/i686/nosegneg/libc.so.6</div>
+    <div class="output">Search for libc.so.6 in squeeze/amd64: libc6-amd64: lib64/libc.so.6; libc6: lib/libc.so.6; libc6-i686: lib/i686/cmov/libc.so.6; libc6-xen: lib/i686/nosegneg/libc.so.6</div>
 
     <div class="input">file bin/*gettext* --release sid</div>
-    <div class="output">Search for bin/*gettext* in sid/i386: [truncated] python3.2: usr/bin/pygettext3.2; librep-dev: usr/bin/rep-xgettext; ruby-gettext: usr/bin/rgettext; po-debconf: usr/bin/debconf-gettextize; libgettext-ocaml-dev: usr/bin/ocaml-gettext, usr/bin/ocaml-xgettext; python-nevow: usr/bin/nevow-xmlgettext; python3: usr/bin/pygettext3; libglib2.0-dev: usr/bin/glib-gettextize; python2.7: usr/bin/pygettext2.7; python2.6: usr/bin/pygettext2.6; liblocale-maketext-lexicon-perl: usr/bin/xgettext.pl; gettext: usr/bin/gettextize, usr/bin/xgettext; gettext-base: usr/bin/gettext, usr/bin/gettext.sh, usr/bin/ngettext; python: usr/bin/pygettext; roundup: usr/bin/roundup-gettext; po4a: usr/bin/po4a-gettextize</div>
+    <div class="output">Search for bin/*gettext* in sid/amd64: [truncated] python3.2: usr/bin/pygettext3.2; librep-dev: usr/bin/rep-xgettext; ruby-gettext: usr/bin/rgettext; po-debconf: usr/bin/debconf-gettextize; libgettext-ocaml-dev: usr/bin/ocaml-gettext, usr/bin/ocaml-xgettext; python-nevow: usr/bin/nevow-xmlgettext; python3: usr/bin/pygettext3; libglib2.0-dev: usr/bin/glib-gettextize; python2.7: usr/bin/pygettext2.7; python2.6: usr/bin/pygettext2.6; liblocale-maketext-lexicon-perl: usr/bin/xgettext.pl; gettext: usr/bin/gettextize, usr/bin/xgettext; gettext-base: usr/bin/gettext, usr/bin/gettext.sh, usr/bin/ngettext; python: usr/bin/pygettext; roundup: usr/bin/roundup-gettext; po4a: usr/bin/po4a-gettextize</div>
 </div>
 
 <p>Note that files created by maintainer scripts (such as configuration files)
