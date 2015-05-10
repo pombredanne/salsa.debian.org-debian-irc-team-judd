@@ -26,10 +26,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import unicode_literals, absolute_import
+
 import os
 import re
 import subprocess
-import contents_dict
+
+from . import contents_dict
 
 
 class contents_file(object):
@@ -54,9 +57,9 @@ class contents_file(object):
             filepath = os.path.join(self.base, filename)
             try:
                 packages.update(self._search_file(filepath, regexp))
-            except IOError, e:
+            except IOError as e:
                 errors.append(str(e))
-            except ContentsError, e:
+            except ContentsError as e:
                 errors.append(str(e))
         if len(errors) == len(self.sections):
             raise ContentsError("Errors occurred trying to process request "
@@ -70,7 +73,7 @@ class contents_file(object):
 
         try:
             re_obj = re.compile(regexp, re.I)
-        except re.error, e:
+        except re.error as e:
             raise ContentsError('Error in regexp: %s' % e, e)
 
         if not os.path.isfile(filepath):

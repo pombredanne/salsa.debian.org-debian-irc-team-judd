@@ -30,6 +30,9 @@
 
 """ Contents file results parsing """
 
+from __future__ import unicode_literals
+
+
 class contents_dict(dict):
     """
     Manage a mapping of filenames to packages that contain them
