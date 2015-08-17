@@ -88,7 +88,7 @@ plugins can be found in
 
 <br />
 
-<?
+<?php
 
 include "theme/debfooter.html";
 
