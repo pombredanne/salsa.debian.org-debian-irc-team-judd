@@ -173,6 +173,9 @@ provide a virtual package can be found using the <code>rprovides</code> command.
     <div class="output">Package mail-transport-agent in squeeze/amd64 is provided by: postfix, msmtp-mta, courier-mta, esmtp-run, sendmail-bin, ssmtp, dma, exim4-daemon-heavy, masqmail, xmail, citadel-mta, exim4-daemon-light, nullmailer.</div>
 </div>
 
+<a id="judd-why" />
+<h3>Dependency chains</h3>
+
 <p>It is also possible to trace through a dependency chain (similar to
 <code>aptitude why pkg1 pkg2</code>). Note that for very large dependency
 trees this process is not fast. Each dependency chain is separated by
@@ -181,9 +184,6 @@ A hard dependency (<code>Depends</code>) is indicated by a filled arrow (▶)
 and a soft dependency (<code>Recommends</code>) is indicated by an open arrow (▷).
 </p>
 
-
-<a id="judd-why" />
-<h3>Dependency chains</h3>
 <div class="example">
     <div class="synopsis input">why <span class="var">packagename1</span>
                     <span class="var">packagename2</span>
