@@ -178,11 +178,11 @@ updatekernel() {
   # If this is running on a squeeze or later machine, -m is also needed for depmod
   # (since this is running under "set -e", make sure the command never has a
   # non-zero exit status)
-  DEPMODARGS=$(dpkg --compare-versions $(/sbin/depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m || echo)
-  /sbin/depmod $DEPMODARGS -b "$WD" "$VER"
+  #DEPMODARGS=$(dpkg --compare-versions $(/sbin/depmod -V | cut -f2 -d\ ) gt 3.6 && echo -m || echo)
+  /sbin/depmod -m -b "$WD" "$VER"
 
   # Copy out the map file and kernel config
-  cp "$WD"/lib/modules/*/modules.pcimap "$TARGET/modules.pcimap-$NAME"
+  #cp "$WD"/lib/modules/*/modules.pcimap "$TARGET/modules.pcimap-$NAME"
   cp "$WD"/boot/config-* "$TARGET/config-$NAME"
 
   # Record the versions of the kernels that have been obtained in the
