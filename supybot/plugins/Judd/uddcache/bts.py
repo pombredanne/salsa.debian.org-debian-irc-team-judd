@@ -172,7 +172,7 @@ class Bts(object):
                         arrival, status, severity,
                         submitter, submitter_name, submitter_email,
                         owner, owner_name, owner_email,
-                        done, done_name, done_email, done_date, title,
+                        done, done_name, done_email, title,
                         last_modified, forwarded,
                         affects_oldstable, affects_stable, affects_testing,
                         affects_unstable, affects_experimental
@@ -227,7 +227,6 @@ class Bugreport(UnicodeMixin):
         self.done = None
         self.done_name= None
         self.done_email = None
-        self.done_date = None
         self.title = None
         self.last_modified = None
         self.forwarded = None
