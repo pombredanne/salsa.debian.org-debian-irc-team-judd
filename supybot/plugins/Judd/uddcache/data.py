@@ -136,14 +136,12 @@ class DebianData(AvailableData):
     release_map = {
                     'rc-buggy':            'experimental',
                     'unstable':            'sid',
-                    'testing':             'stretch',
-                    'stable':              'jessie',
-                    'stable-backports':    'jessie-backports',
-                    'oldstable':           'wheezy',
-                    'oldstable-backports': 'wheezy-backports',
-                    'oldoldstable':        'squeeze',
-                    'oldoldstable-backports': 'squeeze-backports',
-                    'oldoldstable-backports-sloppy': 'squeeze-backports-sloppy',
+                    'testing':             'buster',
+                    'stable':              'stretch',
+                    'oldstable':           'jessie',
+                    'oldstable-backports': 'jessie-backports',
+                    'oldoldstable':        'wheezy',
+                    'oldoldstable-backports': 'wheezy-backports',
                 }
 
     releases = [
@@ -167,14 +165,20 @@ class DebianData(AvailableData):
                     'jessie-updates',
                     'jessie-proposed-updates',
                     'jessie-backports',
-                    #'jessie-backports-sloppy',
+                    'jessie-backports-sloppy',
                     'jessie-multimedia',
                     'stretch',
                     'stretch-security',
                     'stretch-proposed-updates',
-                    #'stretch-backports',
+                    'stretch-backports',
                     #'stretch-backports-sloppy',
                     'stretch-multimedia',
+                    'buster',
+                    'buster-security',
+                    'buster-proposed-updates',
+                    #'buster-backports',
+                    #'buster-backports-sloppy',
+                    'buster-multimedia',
                     'sid',
                     'sid-multimedia',
                     'experimental',
@@ -182,12 +186,29 @@ class DebianData(AvailableData):
 
     devel_release = 'sid'
 
-    arches = ['alpha', 'amd64', 'armel', 'armhf',
-               'hppa', 'hurd-i386', 'i386', 'ia64',
-               'kfreebsd-amd64', 'kfreebsd-i386',
-               'mips', 'mipsel', 'powerpc', 's390', 's390x',
-               'sparc', 'all']
+    arches = [
+        'alpha',
+        'amd64',
+        'arm64',
+        'armel',
+        'armhf',
+        'hppa',
+        'hurd-i386',
+        'i386',
+        'ia64',
+        'kfreebsd-amd64',
+        'kfreebsd-i386',
+        'mips',
+        'mipsel',
+        'mips64el',
+        'powerpc',
+        'ppc64el',
+        's390',
+        's390x',
+        'sparc',
+        'all',
+    ]
 
-    stable_release = 'jessie'
+    stable_release = 'stretch'
 
     default_arch = 'amd64'

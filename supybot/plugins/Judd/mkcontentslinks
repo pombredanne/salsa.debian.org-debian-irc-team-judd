@@ -70,7 +70,7 @@ fi
 TARGET="$1"
 
 for release in $(udd-sections |
-                grep -e squeeze -e wheezy -e jessie -e stretch -e sid -e experimental |
+                grep -e wheezy -e jessie -e stretch -e buster -e sid -e experimental |
                 grep -v security)
 do
   # locate the relevant section of the local mirror
@@ -86,16 +86,16 @@ do
   fi
   mkdir -p "$TARGET/$RELDIR/"{main,contrib,non-free}
   case "$release" in
-    *squeeze*)
-        for c in "$DIR"/Contents*gz
-        do
-          if [ -f "$c" ]
-          then
-            ln -s "$c" "$TARGET/$RELDIR/main/"
-            touch "$TARGET/$RELDIR/"{contrib,non-free}/$(basename "$c")
-          fi
-        done
-      ;;
+#     *squeeze*)
+#         for c in "$DIR"/Contents*gz
+#         do
+#           if [ -f "$c" ]
+#           then
+#             ln -s "$c" "$TARGET/$RELDIR/main/"
+#             touch "$TARGET/$RELDIR/"{contrib,non-free}/$(basename "$c")
+#           fi
+#         done
+#       ;;
     *)
         for s in main contrib non-free
         do
