@@ -54,16 +54,16 @@ import subprocess
 # a second entry such as "stable1". This map is also used for the input
 # sanitisation of the release argument -- if it's not in this map, it is
 # ignored.
-release_map = { 'trunk'             : 'trunk',
-                'experimental'      : 'experimental',
-                'unstable'          : 'sid',
-                'testing'           : 'stretch',
-                'stable'            : 'jessie',
-                'stable-backports'  : 'jessie-backports',
-                'oldstable-backports'  : 'wheezy-backports',
-                'oldstable'            : 'wheezy',
-                'oldoldstable-backports'  : 'squeeze-backports',
-                'oldoldstable'            : 'squeeze',
+release_map = { 'trunk': 'trunk',
+                'experimental': 'experimental',
+                'unstable': 'sid',
+                'testing': 'buster',
+                'stable': 'stretch',
+                'stable-backports': 'stretch-backports',
+                'oldstable': 'jessie',
+                'oldstable-backports': 'jessie-backports',
+                'oldoldstable-backports': 'wheezy-backports',
+                'oldoldstable': 'wheezy',
                }
 
 class Piccy(callbacks.Plugin):

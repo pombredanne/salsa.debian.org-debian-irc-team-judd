@@ -13,7 +13,10 @@ experimental,       deb http://ftp.de.debian.org/debian/ experimental main   ,  
 #
 sid,                deb http://ftp.de.debian.org/debian/ sid main     ,  ,
 #
-stretch,                deb http://ftp.de.debian.org/debian/ stretch main     ,  ,
+buster,                deb http://ftp.de.debian.org/debian/ buster main     ,  ,
+#
+stretch,                deb http://ftp.de.debian.org/debian/ stretch main   #  deb http://ftp.de.debian.org/debian-security/ stretch/updates main  ,  ,
+#stretch-backports,   deb http://ftp.de.debian.org/debian/ stretch-backports main , ,
 #
 jessie-backports,   deb http://ftp.de.debian.org/debian/ jessie-backports main , ,
 jessie,             deb http://ftp.de.debian.org/debian/ jessie main  #  deb http://ftp.de.debian.org/debian-security/ jessie/updates main           , ,
