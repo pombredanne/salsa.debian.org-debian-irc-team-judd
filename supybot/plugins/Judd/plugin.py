@@ -65,7 +65,7 @@ from uddcache.bts import BugNotFoundError
 
 
 class Judd(callbacks.Plugin):
-    """A plugin for querying a debian udd instance:  http://wiki.debian.org/UltimateDebianDatabase."""
+    """A plugin for querying a debian udd instance:  https://wiki.debian.org/UltimateDebianDatabase."""
     threaded = True
 
     def __init__(self, irc):
@@ -795,7 +795,7 @@ class Judd(callbacks.Plugin):
         """<packagename>
 
         Show the popcon (popularity contents) data for a given binary package.
-        http://popcon.debian.org/FAQ
+        https://popcon.debian.org/FAQ
         """
         try:
             popdata = self.dispatcher.popcon(package)
@@ -1011,7 +1011,7 @@ class Judd(callbacks.Plugin):
             status = [bug.readable_status]
             [status.append(t) for t in bug.tags if t not in status]
 
-            return u"Bug http://bugs.debian.org/%d in %s (%s): «%s»; " \
+            return u"Bug https://bugs.debian.org/%d in %s (%s): «%s»; " \
                         "severity: %s; opened: %s; last modified: %s." % \
                         (bug.id, bug.package, ", ".join(status), title,
                         bug.severity, bug.arrival.date(), bug.last_modified.date())
