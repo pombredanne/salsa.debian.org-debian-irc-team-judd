@@ -136,30 +136,16 @@ class DebianData(AvailableData):
     release_map = {
                     'rc-buggy':            'experimental',
                     'unstable':            'sid',
-                    'testing':             'buster',
-                    'stable':              'stretch',
-                    'oldstable':           'jessie',
-                    'oldstable-backports': 'jessie-backports',
-                    'oldoldstable':        'wheezy',
-                    'oldoldstable-backports': 'wheezy-backports',
+                    'testing':             'bullseye',
+                    'stable':              'buster',
+                    'stable-backports':    'buster-backports',
+                    'oldstable':           'stretch',
+                    'oldstable-backports': 'stretch-backports',
+                    'oldoldstable':        'jessie',
+                    'oldoldstable-backports': 'jessie-backports',
                 }
 
     releases = [
-                    'squeeze',
-                    'squeeze-security',
-                    'squeeze-security-lts',
-                    'squeeze-updates',
-                    'squeeze-proposed-updates',
-                    'squeeze-backports',
-                    'squeeze-backports-sloppy',
-                    'squeeze-multimedia',
-                    'wheezy',
-                    'wheezy-security',
-                    'wheezy-updates',
-                    'wheezy-proposed-updates',
-                    'wheezy-backports',
-                    'wheezy-backports-sloppy',
-                    'wheezy-multimedia',
                     'jessie',
                     'jessie-security',
                     'jessie-updates',
@@ -171,14 +157,20 @@ class DebianData(AvailableData):
                     'stretch-security',
                     'stretch-proposed-updates',
                     'stretch-backports',
-                    #'stretch-backports-sloppy',
+                    'stretch-backports-sloppy',
                     'stretch-multimedia',
                     'buster',
                     'buster-security',
                     'buster-proposed-updates',
-                    #'buster-backports',
+                    'buster-backports',
                     #'buster-backports-sloppy',
                     'buster-multimedia',
+                    'bullseye',
+                    'bullseye-security',
+                    'bullseye-proposed-updates',
+                    #'bullseye-backports',
+                    #'bullseye-backports-sloppy',
+                    'bullseye-multimedia',
                     'sid',
                     'sid-multimedia',
                     'experimental',
@@ -209,6 +201,6 @@ class DebianData(AvailableData):
         'all',
     ]
 
-    stable_release = 'stretch'
+    stable_release = 'buster'
 
     default_arch = 'amd64'
